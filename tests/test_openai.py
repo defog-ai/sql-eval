@@ -43,8 +43,7 @@ class TestGetMetadataSql(unittest.TestCase):
 
     def test_get_glossary_metadatasql(self):
         result = OpenAIChatQueryGenerator.get_metadata_sql(self.test_json_path)
-        expected = """
-CREATE TABLE table1 (
+        expected = """CREATE TABLE table1 (
   column1 int, --Description 1
   column2 varchar, --Description 2
 )
