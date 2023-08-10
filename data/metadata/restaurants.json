@@ -1,0 +1,70 @@
+{
+    "table_metadata": {
+        "location": [
+            {
+                "data_type": "bigint",
+                "column_name": "restaurant_id",
+                "column_description": "Unique identifier for each restaurant"
+            },
+            {
+                "data_type": "bigint",
+                "column_name": "house_number",
+                "column_description": "The number assigned to the building where the restaurant is located"
+            },
+            {
+                "data_type": "text",
+                "column_name": "street_name",
+                "column_description": "The name of the street where the restaurant is located"
+            },
+            {
+                "data_type": "text",
+                "column_name": "city_name",
+                "column_description": "The name of the city where the restaurant is located"
+            }
+        ],
+        "geographic": [
+            {
+                "data_type": "text",
+                "column_name": "city_name",
+                "column_description": "The name of the city"
+            },
+            {
+                "data_type": "text",
+                "column_name": "county",
+                "column_description": "The name of the county"
+            },
+            {
+                "data_type": "text",
+                "column_name": "region",
+                "column_description": "The name of the region"
+            }
+        ],
+        "restaurant": [
+            {
+                "data_type": "bigint",
+                "column_name": "id",
+                "column_description": "Unique identifier for each restaurant"
+            },
+            {
+                "data_type": "real",
+                "column_name": "rating",
+                "column_description": "The rating of the restaurant on a scale of 0 to 5"
+            },
+            {
+                "data_type": "text",
+                "column_name": "name",
+                "column_description": "The name of the restaurant"
+            },
+            {
+                "data_type": "text",
+                "column_name": "food_type",
+                "column_description": "The type of food served at the restaurant"
+            },
+            {
+                "data_type": "text",
+                "column_name": "city_name",
+                "column_description": "The city where the restaurant is located"
+            }
+        ]
+    }
+}
