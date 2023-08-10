@@ -49,3 +49,7 @@ The data for importing is already in the exported sql dumps in the `data/export`
 ```bash
 ./data/init_db.sh
 ```
+
+## Misc
+
+We welcome contributions to our project. Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.
