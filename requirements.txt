@@ -6,3 +6,4 @@ psycopg2
 pytest
 sqlalchemy
 tiktoken
+pyyaml
