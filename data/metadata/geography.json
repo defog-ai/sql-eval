@@ -1,0 +1,163 @@
+{
+    "table_metadata": {
+        "city": [
+            {
+                "data_type": "bigint",
+                "column_name": "population",
+                "column_description": "The population of the city"
+            },
+            {
+                "data_type": "text",
+                "column_name": "city_name",
+                "column_description": "The name of the city"
+            },
+            {
+                "data_type": "text",
+                "column_name": "country_name",
+                "column_description": "The name of the country where the city is located"
+            },
+            {
+                "data_type": "text",
+                "column_name": "state_name",
+                "column_description": "The name of the state where the city is located"
+            }
+        ],
+        "lake": [
+            {
+                "data_type": "double precision",
+                "column_name": "area",
+                "column_description": "The area of the lake in square kilometers"
+            },
+            {
+                "data_type": "text",
+                "column_name": "lake_name",
+                "column_description": "The name of the lake"
+            },
+            {
+                "data_type": "text",
+                "column_name": "country_name",
+                "column_description": "The name of the country where the lake is located"
+            },
+            {
+                "data_type": "text",
+                "column_name": "state_name",
+                "column_description": "The name of the state where the lake is located (if applicable)"
+            }
+        ],
+        "river": [
+            {
+                "data_type": "bigint",
+                "column_name": "length",
+                "column_description": "The length of the river in meters"
+            },
+            {
+                "data_type": "text",
+                "column_name": "river_name",
+                "column_description": "The name of the river"
+            },
+            {
+                "data_type": "text",
+                "column_name": "country_name",
+                "column_description": "The name of the country the river flows through"
+            },
+            {
+                "data_type": "text",
+                "column_name": "traverse",
+                "column_description": "The cities or landmarks the river passes through. Comma delimited, eg `new york,albany,boston`"
+            }
+        ],
+        "state": [
+            {
+                "data_type": "bigint",
+                "column_name": "population",
+                "column_description": "The population of the state"
+            },
+            {
+                "data_type": "double precision",
+                "column_name": "area",
+                "column_description": "The area of the state in square kilometers"
+            },
+            {
+                "data_type": "double precision",
+                "column_name": "density",
+                "column_description": "The population density of the state in people per square kilometer"
+            },
+            {
+                "data_type": "text",
+                "column_name": "state_name",
+                "column_description": "The name of the state"
+            },
+            {
+                "data_type": "text",
+                "column_name": "country_name",
+                "column_description": "The name of the country the state belongs to"
+            },
+            {
+                "data_type": "text",
+                "column_name": "capital",
+                "column_description": "The name of the capital city of the state"
+            }
+        ],
+        "highlow": [
+            {
+                "data_type": "text",
+                "column_name": "state_name",
+                "column_description": "The name of the state"
+            },
+            {
+                "data_type": "text",
+                "column_name": "highest_elevation",
+                "column_description": "The highest elevation point in the state"
+            },
+            {
+                "data_type": "text",
+                "column_name": "lowest_point",
+                "column_description": "The lowest elevation point in the state"
+            },
+            {
+                "data_type": "text",
+                "column_name": "highest_point",
+                "column_description": "The highest point in the state"
+            },
+            {
+                "data_type": "text",
+                "column_name": "lowest_elevation",
+                "column_description": "The lowest point in the state"
+            }
+        ],
+        "mountain": [
+            {
+                "data_type": "bigint",
+                "column_name": "mountain_altitude",
+                "column_description": "The altitude of the mountain in meters"
+            },
+            {
+                "data_type": "text",
+                "column_name": "mountain_name",
+                "column_description": "The name of the mountain"
+            },
+            {
+                "data_type": "text",
+                "column_name": "country_name",
+                "column_description": "The name of the country where the mountain is located"
+            },
+            {
+                "data_type": "text",
+                "column_name": "state_name",
+                "column_description": "The name of the state or province where the mountain is located (if applicable)"
+            }
+        ],
+        "border_info": [
+            {
+                "data_type": "text",
+                "column_name": "state_name",
+                "column_description": "The name of the state that shares a border with another state or country."
+            },
+            {
+                "data_type": "text",
+                "column_name": "border",
+                "column_description": "The name of the state that shares a border with the state specified in the state_name column."
+            }
+        ]
+    }
+}
