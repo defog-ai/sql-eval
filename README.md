@@ -1,5 +1,7 @@
 # SQL Generation Evaluation
 
+[![tests](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml/badge.svg)](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml)
+
 This repository contains the code that Defog uses for sql generation evaluation. It is based off the [spider](https://github.com/taoyds/spider) datasets' schema, but with a new set of hand-selected questions and queries grouped by query category.
 
 ## Introduction
