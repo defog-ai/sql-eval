@@ -1,4 +1,8 @@
+argparse
 func_timeout
+openai
 pandas
+psycopg2
 pytest
 sqlalchemy
+tiktoken
