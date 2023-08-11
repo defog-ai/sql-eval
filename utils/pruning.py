@@ -42,7 +42,7 @@ def knn(
     Get top most similar columns' embeddings to query using cosine similarity.
     """
     query_emb = encoder.encode(query, convert_to_tensor=True)
-    similarity_scores = F.cosine_similarity(query_emb, all_emb)
+    similarity_scores = F.cosine_similarity(query_emb, all_emb, device="cpu")
     top_results = torch.nonzero(similarity_scores > threshold).squeeze()
     # if top_results is empty, return empty tensors
     if top_results.numel() == 0:
