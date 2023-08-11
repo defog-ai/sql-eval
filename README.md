@@ -81,7 +81,7 @@ To test it out with just 10 questions (instead of all 175):
 mkdir results #create directory for storing results
 
 # use the -W option to ignore warnings about sequential use of transformers pipeline
-python -W main.py \
+python -W ignore main.py \
   -q data/questions_gen.csv \
   -o results/results.csv \
   -g hf \
