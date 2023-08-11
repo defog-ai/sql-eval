@@ -25,7 +25,8 @@ if __name__ == "__main__":
             questions_file = args.questions_file,
             prompt_file = args.prompt_file,
             num_questions = args.num_questions,
-            model_name = args.model
+            model_name = args.model,
+            output_file = args.output_file,
         )
     else:
         raise ValueError(f"Invalid model type: {args.model_type}. Model type must be one of: 'openai', 'hf'")

@@ -58,6 +58,7 @@ To test your own query generator with our framework, you would need to extend `Q
 
 ### Running the test
 
+#### OpenAI
 To test it out with just 1 question (instead of all 175):
 
 ```bash
@@ -71,6 +72,22 @@ python main.py \
   -n 1 \
   -p 1 \
   -v
+```
+
+#### HuggingFace
+To test it out with just 10 questions (instead of all 175):
+
+```bash
+mkdir results #create directory for storing results
+
+# use the -W option to ignore warnings about sequential use of pipeline
+python -W main.py \
+  -q data/questions_gen.csv \
+  -o results/results.csv \
+  -g hf \
+  -f query_generators/prompts/sample_hf_prompt.md \
+  -m defog/starcoder-finetune-v3 \
+  -n 10
 ```
 
 You can explore the results generated and aggregated the various metrics that you care about to understand your query generator's performance. Happy iterating!

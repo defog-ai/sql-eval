@@ -1,8 +1,10 @@
 from eval.eval import compare_df, query_postgres_db, subset_df
 import pandas as pd
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from utils.pruning import prune_metadata_str
+from tqdm import tqdm
+from psycopg2.extensions import QueryCanceledError
 
 def prepare_questions_df(questions_file, num_questions):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
@@ -39,6 +41,7 @@ def run_hf_eval(
     prompt_file: str,
     num_questions: int = None,
     model_name : str = "defog/starcoder-finetune-v3",
+    output_file : str = "results.csv",
 ):
     print("preparing questions...")
     # get questions
@@ -50,25 +53,79 @@ def run_hf_eval(
     print("questions prepared\nnow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name)
-    tokenizer.pad_token = tokenizer.eos_token
     
-    print("model loaded\nnow generating predictions...")
+    print("model loaded\nnow generating and evaluating predictions...")
     # generate predictions
     eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
-    inputs = tokenizer(df["prompt"].tolist(), return_tensors="pt", padding=True)
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=600,
-        do_sample=False,
-        num_beams=4,
-        num_return_sequences=1,
-        eos_token_id=eos_token_id,
+    pipe = pipeline("text-generation",
+        model=model,
+        tokenizer=tokenizer
     )
-    predictions = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-    df["prediction"] = predictions
-    df['generated_query'] = df['prediction'].apply(lambda x: x.split("```sql")[-1].split(";")[0].strip())
 
     # from here, just do the usual eval stuff
+    total_tried = 0
+    total_correct = 0
+    output_rows = []
+    with tqdm(total=len(df)) as pbar:
+        for row in df.to_dict("records"):
+            total_tried += 1
+            generated_query = pipe(
+                row['prompt'],
+                max_new_tokens=600,
+                do_sample=False,
+                num_beams=4,
+                num_return_sequences=1,
+                eos_token_id=eos_token_id,
+                pad_token_id=eos_token_id,
+            )[0]['generated_text'].split("```sql")[-1].split(";")[0].strip()
+            
+            row["generated_query"] = generated_query
+            golden_query = row["query"]
+            db_name = row["db_name"]
+            question = row["question"]
+            query_category = row["query_category"]
+            correct = subset = 0
+            generated_result = expected_result = None
 
-    # export results to CSV before doing anything else
-    df.to_csv("hf_pred.csv", index=False)
+            try:
+                expected_result = query_postgres_db(
+                    golden_query, db_name
+                ).rename(columns=str.lower)
+                
+                generated_result = query_postgres_db(
+                    generated_query, db_name
+                ).rename(columns=str.lower)
+                
+                correct = subset = int(
+                    compare_df(
+                        expected_result, generated_result, query_category, question
+                    )
+                )
+                if not correct:
+                    subset = subset_df(
+                        df_sub=expected_result,
+                        df_super=generated_result,
+                        query_category=query_category,
+                        question=question,
+                    )
+                row["correct"] = int(correct)
+                row["subset"] = int(subset)
+                row["error_msg"] = ""
+                if subset:
+                    total_correct += 1
+            except QueryCanceledError as e:
+                row["timeout"] = 1
+                row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
+            except Exception as e:
+                row["error_db_exec"] = 1
+                row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
+            
+            output_rows.append(row)
+            pbar.update(1)
+            pbar.set_description(
+                f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
+            )
+    
+    output_df = pd.DataFrame(output_rows)
+    output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
+    output_df.to_csv(output_file, index=False, float_format="%.2f")
