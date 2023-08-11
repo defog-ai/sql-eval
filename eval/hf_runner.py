@@ -40,6 +40,7 @@ def run_hf_eval(
     num_questions: int = None,
     model_name : str = "defog/starcoder-finetune-v3",
 ):
+    print("preparing questions...")
     # get questions
     df = prepare_questions_df(questions_file, num_questions)
 
@@ -49,6 +50,7 @@ def run_hf_eval(
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name)
     
+    print("questions prepared\nnow generating predictions...")
     # generate predictions
     eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     inputs = tokenizer(df["prompt"].tolist(), return_tensors="pt", padding=True)
