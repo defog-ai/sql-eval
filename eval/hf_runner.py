@@ -47,10 +47,12 @@ def run_hf_eval(
     # create a prompt for each question
     df["prompt"] = df[['question', 'db_name']].apply(lambda row: generate_prompt(prompt_file, row['question'], row['db_name']), axis=1)
 
+    print("questions prepared\nnow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
     
-    print("questions prepared\nnow generating predictions...")
+    print("model loaded\nnow generating predictions...")
     # generate predictions
     eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     inputs = tokenizer(df["prompt"].tolist(), return_tensors="pt", padding=True)
