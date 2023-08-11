@@ -22,11 +22,13 @@ if __name__ == "__main__":
         run_openai_eval(args)
     elif args.model_type == "hf":
         run_hf_eval(
-            questions_file = args.questions_file,
-            prompt_file = args.prompt_file,
-            num_questions = args.num_questions,
-            model_name = args.model,
-            output_file = args.output_file,
+            questions_file=args.questions_file,
+            prompt_file=args.prompt_file,
+            num_questions=args.num_questions,
+            model_name=args.model,
+            output_file=args.output_file,
         )
     else:
-        raise ValueError(f"Invalid model type: {args.model_type}. Model type must be one of: 'openai', 'hf'")
+        raise ValueError(
+            f"Invalid model type: {args.model_type}. Model type must be one of: 'openai', 'hf'"
+        )

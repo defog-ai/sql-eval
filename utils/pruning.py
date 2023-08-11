@@ -8,6 +8,7 @@ import torch.nn.functional as F
 encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 nlp = spacy.load("en_core_web_sm")
 
+
 def load_all_emb() -> Tuple[Dict[str, torch.tensor], List[str]]:
     """
     Load all embeddings from pickle file.
@@ -20,6 +21,7 @@ def load_all_emb() -> Tuple[Dict[str, torch.tensor], List[str]]:
         print("Embeddings not found.")
         exit(1)
 
+
 def load_ner_md() -> Tuple[Dict[str, Dict], Dict[str, Dict], Dict[str, Dict]]:
     """
     Load all NER and join metadata from pickle file.
@@ -31,6 +33,7 @@ def load_ner_md() -> Tuple[Dict[str, Dict], Dict[str, Dict], Dict[str, Dict]]:
     except FileNotFoundError:
         print("NER and join metadata not found.")
         exit(1)
+
 
 def knn(
     query: str,
@@ -49,12 +52,15 @@ def knn(
         return torch.tensor([]), torch.tensor([])
     # if only 1 result is returned, we need to convert it to a tensor
     elif top_results.numel() == 1:
-        return torch.tensor([similarity_scores[top_results]]), torch.tensor([top_results])
+        return torch.tensor([similarity_scores[top_results]]), torch.tensor(
+            [top_results]
+        )
     else:
         top_k_scores, top_k_indices = torch.topk(
             similarity_scores[top_results], k=min(k, top_results.numel())
         )
         return top_k_scores, top_results[top_k_indices]
+
 
 def get_entity_types(sentence, verbose: bool = False):
     """
@@ -69,7 +75,11 @@ def get_entity_types(sentence, verbose: bool = False):
 
     return named_entities
 
-def format_topk_sql(topk_table_columns: Dict[str, List[Tuple[str, str, str]]], exclude_column_descriptions: bool = False) -> str:
+
+def format_topk_sql(
+    topk_table_columns: Dict[str, List[Tuple[str, str, str]]],
+    exclude_column_descriptions: bool = False,
+) -> str:
     md_str = "```\n"
     for table_name in topk_table_columns:
         columns_str = ""
@@ -77,13 +87,16 @@ def format_topk_sql(topk_table_columns: Dict[str, List[Tuple[str, str, str]]], e
             if exclude_column_descriptions:
                 columns_str += f"\n  {column_tuple[0]} {column_tuple[1]},"
             else:
-                columns_str += f"\n  {column_tuple[0]} {column_tuple[1]}, --{column_tuple[2]}"
+                columns_str += (
+                    f"\n  {column_tuple[0]} {column_tuple[1]}, --{column_tuple[2]}"
+                )
         md_str += f"CREATE TABLE {table_name} ({columns_str}\n)\n-----------\n"
     return md_str
 
+
 def get_md_emb(
     question: str,
-    column_emb: torch.tensor, 
+    column_emb: torch.tensor,
     column_info_csv: List[str],
     column_ner: Dict[str, List[str]],
     column_join: Dict[str, dict],
@@ -114,13 +127,15 @@ def get_md_emb(
             topk_table_columns[table_name] = []
         topk_table_columns[table_name].append(column_tuple)
         table_column_names.add(f"{table_name}.{column_tuple[0]}")
-    
+
     # 2) get entity types from question + add corresponding columns
     entity_types = get_entity_types(question)
     for entity_type in entity_types:
         if entity_type in column_ner:
             for column_info in column_ner[entity_type]:
-                table_column_name, column_type, column_description = column_info.split(",", 2)
+                table_column_name, column_type, column_description = column_info.split(
+                    ",", 2
+                )
                 table_name, column_name = table_column_name.split(".", 1)
                 if table_name not in topk_table_columns:
                     topk_table_columns[table_name] = []
@@ -128,13 +143,15 @@ def get_md_emb(
                 if column_tuple not in topk_table_columns[table_name]:
                     topk_table_columns[table_name].append(column_tuple)
     topk_tables = sorted(list(topk_table_columns.keys()))
-    
+
     # 3) get table pairs that can be joined
     # create dict of table_column_name -> column_tuple for lookups
     column_name_to_tuple = {}
     ncols = len(column_info_csv)
     for i in range(ncols):
-        table_column_name, column_type, column_description = column_info_csv[i].split(",", 2)
+        table_column_name, column_type, column_description = column_info_csv[i].split(
+            ",", 2
+        )
         table_name, column_name = table_column_name.split(".", 1)
         column_tuple = (column_name, column_type, column_description)
         column_name_to_tuple[table_column_name] = column_tuple
@@ -159,15 +176,16 @@ def get_md_emb(
                     join_str = f"{table_col_1} can be joined with {table_col_2}"
                     if join_str not in join_list:
                         join_list.append(join_str)
-    
+
     # 4) format metadata string
     md_str = format_topk_sql(topk_table_columns, exclude_column_descriptions)
-    
+
     if join_list:
         md_str += "```\n\nAdditionally, is a list of joinable columns in this database schema:\n```\n"
         md_str += "\n".join(join_list)
         md_str += "\n```"
     return md_str
+
 
 def prune_metadata_str(question, db_name, exclude_column_descriptions=False):
     emb, csv_descriptions = load_all_emb()
