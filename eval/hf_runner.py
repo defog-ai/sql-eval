@@ -5,6 +5,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from utils.pruning import prune_metadata_str
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
+from time import time
 
 def prepare_questions_df(questions_file, num_questions):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
@@ -69,6 +70,7 @@ def run_hf_eval(
     with tqdm(total=len(df)) as pbar:
         for row in df.to_dict("records"):
             total_tried += 1
+            start_time = time()
             generated_query = pipe(
                 row['prompt'],
                 max_new_tokens=600,
@@ -78,8 +80,10 @@ def run_hf_eval(
                 eos_token_id=eos_token_id,
                 pad_token_id=eos_token_id,
             )[0]['generated_text'].split("```sql")[-1].split(";")[0].strip()
+            end_time = time()
             
             row["generated_query"] = generated_query
+            row["latency_seconds"] = end_time - start_time
             golden_query = row["query"]
             db_name = row["db_name"]
             question = row["question"]
