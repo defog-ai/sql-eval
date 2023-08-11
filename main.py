@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.model_type == "openai":
+    if args.model_type == "oa_chat":
         run_openai_eval(args)
     elif args.model_type == "hf":
         run_hf_eval(
