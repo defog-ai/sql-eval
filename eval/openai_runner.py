@@ -7,12 +7,9 @@ from query_generators.openai import OpenAIChatQueryGenerator
 from tqdm import tqdm
 
 
-def run(args):
+def run_openai_eval(args):
     question_query_df = pd.read_csv(args.questions_file, nrows=args.num_questions)
-    if args.qg_class == "oa_chat":
-        qg_class = OpenAIChatQueryGenerator
-    else:
-        raise ValueError(f"Unknown qg_class {args.qg_class}")
+    qg_class = OpenAIChatQueryGenerator
     # add columns for generated query and metrics
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
