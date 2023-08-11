@@ -39,7 +39,6 @@ def run_hf_eval(
     prompt_file: str,
     num_questions: int = None,
     model_name : str = "defog/starcoder-finetune-v3",
-    max_tokens : int = 600,
 ):
     # get questions
     df = prepare_questions_df(questions_file, num_questions)
@@ -55,7 +54,7 @@ def run_hf_eval(
     inputs = tokenizer(df["prompt"].tolist(), return_tensors="pt", padding=True)
     outputs = model.generate(
         **inputs,
-        max_new_tokens=max_tokens,
+        max_new_tokens=600,
         do_sample=False,
         num_beams=4,
         num_return_sequences=1,
