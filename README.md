@@ -80,7 +80,7 @@ To test it out with just 10 questions (instead of all 175):
 ```bash
 mkdir results #create directory for storing results
 
-# use the -W option to ignore warnings about sequential use of pipeline
+# use the -W option to ignore warnings about sequential use of transformers pipeline
 python -W main.py \
   -q data/questions_gen.csv \
   -o results/results.csv \
