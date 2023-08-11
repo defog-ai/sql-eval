@@ -47,7 +47,7 @@ def escape_percent(match):
 
 
 def query_postgres_db(
-    query: str, db_name: str, db_creds: dict, timeout: float
+    query: str, db_name: str, db_creds: dict = None, timeout: float = 10.0
 ) -> pd.DataFrame:
     """
     Runs query on postgres db and returns results as a dataframe.
@@ -56,6 +56,14 @@ def query_postgres_db(
 
     timeout: time in seconds to wait for query to finish before timing out
     """
+    if db_creds is None:
+        db_creds = {
+            "host": "localhost",
+            "port": 5432,
+            "user": "postgres",
+            "password": "postgres",
+            "database": db_name,
+        }
     try:
         db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
         engine = create_engine(db_url)
