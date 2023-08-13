@@ -6,7 +6,7 @@ from utils.pruning import prune_metadata_str
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
-
+import gc
 
 def prepare_questions_df(questions_file, num_questions):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
@@ -86,9 +86,11 @@ def run_hf_eval(
             generated_query = (
                 pipe(
                     row["prompt"],
-                    max_new_tokens=600,
+                    max_new_tokens=300,
                     do_sample=False,
-                    num_beams=4,
+                    # top_p=0.7,
+                    # temperature=0.2,
+                    num_beams=5,
                     num_return_sequences=1,
                     eos_token_id=eos_token_id,
                     pad_token_id=eos_token_id,
@@ -97,6 +99,9 @@ def run_hf_eval(
                 .split(";")[0]
                 .strip()
             )
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
             end_time = time()
 
             row["generated_query"] = generated_query
@@ -148,5 +153,7 @@ def run_hf_eval(
             )
 
     output_df = pd.DataFrame(output_rows)
+    del output_df["prompt"]
+    print(output_df.groupby("query_category")[['correct', 'subset']].mean())
     output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
     output_df.to_csv(output_file, index=False, float_format="%.2f")
