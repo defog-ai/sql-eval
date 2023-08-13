@@ -8,6 +8,7 @@ from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
 
+
 def prepare_questions_df(questions_file, num_questions):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
     question_query_df["generated_query"] = ""
@@ -154,6 +155,6 @@ def run_hf_eval(
 
     output_df = pd.DataFrame(output_rows)
     del output_df["prompt"]
-    print(output_df.groupby("query_category")[['correct', 'subset']].mean())
+    print(output_df.groupby("query_category")[["correct", "subset"]].mean())
     output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
     output_df.to_csv(output_file, index=False, float_format="%.2f")

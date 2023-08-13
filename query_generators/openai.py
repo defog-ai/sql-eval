@@ -11,6 +11,7 @@ import yaml
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
 
+
 class OpenAIChatQueryGenerator(QueryGenerator):
     """
     Query generator that uses OpenAI's chat models
