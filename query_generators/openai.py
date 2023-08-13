@@ -9,7 +9,7 @@ import tiktoken
 
 import yaml
 from query_generators.query_generator import QueryGenerator
-
+from utils.pruning import prune_metadata_str
 
 class OpenAIChatQueryGenerator(QueryGenerator):
     """
@@ -30,34 +30,9 @@ class OpenAIChatQueryGenerator(QueryGenerator):
         self.db_name = db_creds["database"]
         self.model = model
         self.prompt_file = prompt_file
-        self.metadata_file = f"data/metadata/{self.db_name}.json"
-        if not os.path.exists(self.metadata_file):
-            raise Exception(f"Metadata file {self.metadata_file} not found")
 
-        self.table_metadata_str = self.get_metadata_sql(self.metadata_file)
         self.timeout = timeout
         self.verbose = verbose
-
-    @staticmethod
-    def get_metadata_sql(metadata_file):
-        """
-        Get glossary and metadata in sql format from metadata json file
-        """
-        with open(metadata_file, "r") as f:
-            metadata = json.load(f)
-            table_metadata = metadata["table_metadata"]
-
-        table_metadata_string = ""
-        for table in table_metadata:
-            sql_text = ""
-            for item in table_metadata[table]:
-                if item["column_name"] != "":
-                    sql_text += f"\n  {item['column_name']} {item['data_type']}, --{item['column_description']}"
-            sql_text = sql_text + "\n"
-            table_metadata_string += f"CREATE TABLE {table} ({sql_text})"
-            table_metadata_string += "\n-----------\n"
-
-        return table_metadata_string
 
     def get_chat_completion(
         self,
@@ -127,7 +102,7 @@ class OpenAIChatQueryGenerator(QueryGenerator):
         user_prompt_yaml = chat_prompt_yaml["user_prompt"]
         user_prompt = user_prompt_yaml.format(
             user_question=question,
-            table_metadata_string=self.table_metadata_str,
+            table_metadata_string=prune_metadata_str(question, self.db_name),
         )
         assistant_prompt = chat_prompt_yaml["assistant_prompt"]
 
@@ -149,9 +124,12 @@ class OpenAIChatQueryGenerator(QueryGenerator):
                     ["```"],
                 ),
             )
-            results = yaml.safe_load(self.completion)
-            self.query = results["sql"]
-            self.reason = results["reason_for_query"]
+            # results = yaml.safe_load(self.completion)
+            # self.query = results["sql"]
+            # self.reason = results["reason_for_query"]
+            results = self.completion
+            self.query = results.split("```sql")[-1]
+            self.reason = "-"
         except FunctionTimedOut:
             if self.verbose:
                 print("generating query timed out")
