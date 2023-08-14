@@ -132,9 +132,6 @@ def run_hf_eval(
             exact_match = correct = 0
             generated_result = expected_result = None
 
-            print("===========")
-            print("question")
-
             try:
                 expected_result = query_postgres_db(golden_query, db_name).rename(
                     columns=str.lower
@@ -143,14 +140,6 @@ def run_hf_eval(
                 generated_result = query_postgres_db(generated_query, db_name).rename(
                     columns=str.lower
                 )
-
-                print(question)
-
-                print("expected_result")
-                print(expected_result)
-
-                print("generated_result")
-                print(generated_result)
 
                 exact_match = subset = int(
                     compare_df(
@@ -169,18 +158,12 @@ def run_hf_eval(
                 row["error_msg"] = ""
                 if subset:
                     total_correct += 1
-                print(f"correct: {exact_match}, subset: {subset}")
-                print("===========")
             except QueryCanceledError as e:
                 row["timeout"] = 1
                 row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
-                print(f"QUERY EXECUTION TIMEOUT: {e}")
-                print("===========")
             except Exception as e:
                 row["error_db_exec"] = 1
                 row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-                print(f"QUERY EXECUTION ERROR: {e}")
-                print("===========")
 
             output_rows.append(row)
             pbar.update(1)
