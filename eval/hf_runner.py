@@ -7,9 +7,7 @@ from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
-
-# from optimum.bettertransformer import BetterTransformer
-# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+import traceback
 
 
 def prepare_questions_df(questions_file, num_questions):
@@ -141,22 +139,22 @@ def run_hf_eval(
                     columns=str.lower
                 )
 
-                exact_match = subset = int(
+                exact_match = correct = int(
                     compare_df(
                         expected_result, generated_result, query_category, question
                     )
                 )
                 if not exact_match:
-                    subset = subset_df(
+                    correct = subset_df(
                         df_sub=expected_result,
                         df_super=generated_result,
                         query_category=query_category,
                         question=question,
                     )
-                row["exact_match"] = int(correct)
-                row["correct"] = int(exact_match)
+                row["exact_match"] = int(exact_match)
+                row["correct"] = int(correct)
                 row["error_msg"] = ""
-                if subset:
+                if correct:
                     total_correct += 1
             except QueryCanceledError as e:
                 row["timeout"] = 1
