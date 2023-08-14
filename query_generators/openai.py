@@ -92,20 +92,27 @@ class OpenAIChatQueryGenerator(QueryGenerator):
         self.err = ""
         self.query = ""
         self.reason = ""
+        # with open(self.prompt_file) as file:
+        #     chat_prompt_yaml = yaml.safe_load(file)
+
+        # sys_prompt_yaml = chat_prompt_yaml["sys_prompt"]
+        # sys_prompt = sys_prompt_yaml.format(
+        #     date_now=datetime.datetime.utcnow().date().isoformat(),
+        # )
+
+        # user_prompt_yaml = chat_prompt_yaml["user_prompt"]
+        # user_prompt = user_prompt_yaml.format(
+        #     user_question=question,
+        #     table_metadata_string=prune_metadata_str(question, self.db_name),
+        # )
+        # assistant_prompt = chat_prompt_yaml["assistant_prompt"]
+
         with open(self.prompt_file) as file:
-            chat_prompt_yaml = yaml.safe_load(file)
-
-        sys_prompt_yaml = chat_prompt_yaml["sys_prompt"]
-        sys_prompt = sys_prompt_yaml.format(
-            date_now=datetime.datetime.utcnow().date().isoformat(),
-        )
-
-        user_prompt_yaml = chat_prompt_yaml["user_prompt"]
-        user_prompt = user_prompt_yaml.format(
-            user_question=question,
-            table_metadata_string=prune_metadata_str(question, self.db_name),
-        )
-        assistant_prompt = chat_prompt_yaml["assistant_prompt"]
+            chat_prompt = file.read()
+        
+        sys_prompt = chat_prompt.split("###Input:")[0]
+        user_prompt = chat_prompt.split("###Input:")[1].split("### Generated SQL:")[0]
+        assistant_prompt = chat_prompt.split("### Generated SQL:")[1]
 
         messages = []
         messages.append({"role": "system", "content": sys_prompt})
