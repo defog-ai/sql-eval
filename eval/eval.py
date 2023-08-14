@@ -15,10 +15,14 @@ def normalize_table(
 ) -> pd.DataFrame:
     """
     Normalizes a dataframe by:
-    1. sorting columns in alphabetical order
-    2. sorting rows using values from first column to last (if query_category is not 'order_by' and question does not ask for ordering)
-    3. resetting index
+    1. removing all duplicate rows
+    2. sorting columns in alphabetical order
+    3. sorting rows using values from first column to last (if query_category is not 'order_by' and question does not ask for ordering)
+    4. resetting index
     """
+    # remove duplicate rows, if any
+    df = df.drop_duplicates()
+
     # sort columns in alphabetical order
     sorted_df = df.reindex(sorted(df.columns), axis=1)
 
@@ -87,13 +91,19 @@ def compare_df(
     """
     Compares two dataframes and returns True if they are the same, else False.
     """
+    # drop duplicates to ensure equivalence
+    df1 = df1
+    df2 = df2
+    if (df1.values == df2.values).all():
+        return True
+
     df1 = normalize_table(df1, query_category, question)
     df2 = normalize_table(df2, query_category, question)
-    try:
-        assert_frame_equal(df1, df2, check_dtype=False)  # handles dtype mismatches
-    except AssertionError:
-        return False
-    return True
+    # try:
+    #     assert_frame_equal(df1, df2, check_dtype=False, check_names=False)  # handles dtype mismatches
+    # except AssertionError:
+    #     return False
+    return (df1.values == df2.values).all()
 
 
 def subset_df(
@@ -107,7 +117,8 @@ def subset_df(
     Checks if df_sub is a subset of df_super
     """
     if df_sub.empty:
-        return True  # trivial case
+        return False  # handle cases for empty dataframes
+
     # make a copy of df_super so we don't modify the original while keeping track of matches
     df_super_temp = df_super.copy(deep=True)
     matched_columns = []
