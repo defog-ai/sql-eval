@@ -14,8 +14,8 @@ def run_openai_eval(args):
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
     question_query_df["error_msg"] = ""
+    question_query_df["exact_match"] = 0
     question_query_df["correct"] = 0
-    question_query_df["subset"] = 0
     question_query_df["error_query_gen"] = 0
     question_query_df["error_db_exec"] = 0
     question_query_df["timeout"] = 0
@@ -84,7 +84,7 @@ def run_openai_eval(args):
                 db_name = row["db_name"]
                 question = row["question"]
                 query_category = row["query_category"]
-                correct = subset = 0
+                exact_match = correct = 0
                 generated_result = expected_result = None
                 db_creds = {
                     "host": "localhost",
@@ -103,23 +103,23 @@ def run_openai_eval(args):
                         query_gen, db_name, db_creds, args.timeout_exec
                     )
                     generated_result = generated_result.rename(columns=str.lower)
-                    correct = subset = int(
+                    exact_match = correct = int(
                         compare_df(
                             expected_result, generated_result, query_category, question
                         )
                     )
-                    if not correct:
-                        subset = subset_df(
+                    if not exact_match:
+                        correct = subset_df(
                             df_sub=expected_result,
                             df_super=generated_result,
                             query_category=query_category,
                             question=question,
                             verbose=args.verbose,
                         )
+                    row["exact_match"] = int(exact_match)
                     row["correct"] = int(correct)
-                    row["subset"] = int(subset)
                     row["error_msg"] = ""
-                    if subset:
+                    if correct:
                         total_correct += 1
                 except QueryCanceledError as e:
                     row["timeout"] = 1
@@ -136,8 +136,8 @@ def run_openai_eval(args):
     output_df.to_csv(args.output_file, index=False, float_format="%.2f")
 
     # get average accuracy
-    avg_acc = output_df["correct"].sum() / len(output_df)
+    avg_acc = output_df["exact_match"].sum() / len(output_df)
     print(f"Average accuracy: {avg_acc:.2f}")
     # get average subset or correct accuracy
-    avg_subset = output_df["subset"].sum() / len(output_df)
+    avg_subset = output_df["correct"].sum() / len(output_df)
     print(f"Average subset accuracy: {avg_subset:.2f}")
