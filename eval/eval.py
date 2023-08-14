@@ -94,7 +94,7 @@ def compare_df(
     # drop duplicates to ensure equivalence
     df1 = df1
     df2 = df2
-    if (df1.values == df2.values).all():
+    if df1.shape == df2.shape and (df1.values == df2.values).all():
         return True
 
     df1 = normalize_table(df1, query_category, question)
@@ -103,7 +103,10 @@ def compare_df(
     #     assert_frame_equal(df1, df2, check_dtype=False, check_names=False)  # handles dtype mismatches
     # except AssertionError:
     #     return False
-    return (df1.values == df2.values).all()
+    if df1.shape == df2.shape and (df1.values == df2.values).all():
+        return True
+    else:
+        return False
 
 
 def subset_df(
