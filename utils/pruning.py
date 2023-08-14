@@ -181,7 +181,7 @@ def get_md_emb(
     md_str = format_topk_sql(topk_table_columns, exclude_column_descriptions)
 
     if join_list:
-        md_str += "```\n\nAdditionally, is a list of joinable columns in this database schema:\n```\n"
+        md_str += "```\n\nAdditionally, the following are tables/column pairs that can be joined in this database:\n```\n"
         md_str += "\n".join(join_list)
         md_str += "\n```"
     return md_str
