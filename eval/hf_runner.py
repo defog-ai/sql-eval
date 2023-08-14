@@ -8,14 +8,18 @@ from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
 
+# from optimum.bettertransformer import BetterTransformer
+# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+
 
 def prepare_questions_df(questions_file, num_questions):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
     question_query_df["error_msg"] = ""
+    question_query_df["exact_match"] = 0
     question_query_df["correct"] = 0
-    question_query_df["subset"] = 0
+    question_query_df["fuzzy_correct"] = 0
     question_query_df["error_query_gen"] = 0
     question_query_df["error_db_exec"] = 0
     question_query_df["timeout"] = 0
@@ -43,10 +47,13 @@ def get_tokenizer_model(model_name):
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
+        # load_in_8bit=True,
         device_map="auto",
         use_cache=True,
     )
+    # model = model.to_bettertransformer()
+    # model = BetterTransformer.transform(model)
     return tokenizer, model
 
 
@@ -80,6 +87,20 @@ def run_hf_eval(
     total_tried = 0
     total_correct = 0
     output_rows = []
+
+    # this config is pretty fast and quite accurate.
+    pipeline_config = {
+        "max_new_tokens": 300,
+        "do_sample": False,
+        "num_beams": 5,
+    }
+
+    # this config is also very fast, but seems to be less accurate
+    # pipeline_config = {
+    #     "max_new_tokens": 300,
+    #     "do_sample": True,
+    #     "temperature": 0.4,
+    # }
     with tqdm(total=len(df)) as pbar:
         for row in df.to_dict("records"):
             total_tried += 1
@@ -87,18 +108,15 @@ def run_hf_eval(
             generated_query = (
                 pipe(
                     row["prompt"],
-                    max_new_tokens=300,
-                    do_sample=False,
-                    # top_p=0.7,
-                    # temperature=0.2,
-                    num_beams=5,
                     num_return_sequences=1,
                     eos_token_id=eos_token_id,
                     pad_token_id=eos_token_id,
+                    **pipeline_config,
                 )[0]["generated_text"]
                 .split("```sql")[-1]
                 .split(";")[0]
                 .strip()
+                + ";"
             )
             gc.collect()
             torch.cuda.empty_cache()
@@ -111,8 +129,11 @@ def run_hf_eval(
             db_name = row["db_name"]
             question = row["question"]
             query_category = row["query_category"]
-            correct = subset = 0
+            exact_match = correct = 0
             generated_result = expected_result = None
+
+            print("===========")
+            print("question")
 
             try:
                 expected_result = query_postgres_db(golden_query, db_name).rename(
@@ -123,29 +144,43 @@ def run_hf_eval(
                     columns=str.lower
                 )
 
-                correct = subset = int(
+                print(question)
+
+                print("expected_result")
+                print(expected_result)
+
+                print("generated_result")
+                print(generated_result)
+
+                exact_match = subset = int(
                     compare_df(
                         expected_result, generated_result, query_category, question
                     )
                 )
-                if not correct:
+                if not exact_match:
                     subset = subset_df(
                         df_sub=expected_result,
                         df_super=generated_result,
                         query_category=query_category,
                         question=question,
                     )
-                row["correct"] = int(correct)
-                row["subset"] = int(subset)
+                row["exact_match"] = int(correct)
+                row["correct"] = int(exact_match)
                 row["error_msg"] = ""
                 if subset:
                     total_correct += 1
+                print(f"correct: {exact_match}, subset: {subset}")
+                print("===========")
             except QueryCanceledError as e:
                 row["timeout"] = 1
                 row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
+                print(f"QUERY EXECUTION TIMEOUT: {e}")
+                print("===========")
             except Exception as e:
                 row["error_db_exec"] = 1
                 row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
+                print(f"QUERY EXECUTION ERROR: {e}")
+                print("===========")
 
             output_rows.append(row)
             pbar.update(1)
@@ -155,6 +190,6 @@ def run_hf_eval(
 
     output_df = pd.DataFrame(output_rows)
     del output_df["prompt"]
-    print(output_df.groupby("query_category")[["correct", "subset"]].mean())
+    print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
     output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
     output_df.to_csv(output_file, index=False, float_format="%.2f")
