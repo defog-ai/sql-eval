@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.model_type == "oa_chat":
+    if args.model_type == "oa":
         run_openai_eval(args)
     elif args.model_type == "hf":
         run_hf_eval(
@@ -30,5 +30,5 @@ if __name__ == "__main__":
         )
     else:
         raise ValueError(
-            f"Invalid model type: {args.model_type}. Model type must be one of: 'openai', 'hf'"
+            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf'"
         )

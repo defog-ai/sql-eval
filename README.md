@@ -54,7 +54,7 @@ The data for importing is already in the exported sql dumps in the `data/export`
 
 ### Query Generator
 
-To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method returning the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see a sample `OpenAIChatQueryGenerator` in `query_generators/openai.py` implementing it and using a simple prompt to send a message over to openai's chat api. Feel free to extend it for your own use.
+To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method returning the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see a sample `OpenAIQueryGenerator` in `query_generators/openai.py` implementing it and using a simple prompt to send a message over to openai's api. Feel free to extend it for your own use.
 
 ### Running the test
 
@@ -66,8 +66,8 @@ mkdir results # create directory for storing results
 python main.py \
   -q data/questions_gen.csv \
   -o results/my_query_generator.csv \
-  -g oa_chat \
-  -f query_generators/prompts/sample_chat_prompt.yaml \
+  -g oa \
+  -f query_generators/prompts/prompt.md \
   -m gpt-3.5-turbo-0613 \
   -n 1 \
   -p 1 \
@@ -85,7 +85,7 @@ python -W ignore main.py \
   -q data/questions_gen.csv \
   -o results/results.csv \
   -g hf \
-  -f query_generators/prompts/sample_hf_prompt.md \
+  -f query_generators/prompts/prompt.md \
   -m defog/starcoder-finetune-v3 \
   -n 10
 ```
