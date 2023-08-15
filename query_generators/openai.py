@@ -112,7 +112,9 @@ class OpenAIQueryGenerator(QueryGenerator):
         return generated_text
 
     @staticmethod
-    def count_tokens(model: str, messages: List[Dict[str, str]] = [], prompt : str = "") -> int:
+    def count_tokens(
+        model: str, messages: List[Dict[str, str]] = [], prompt: str = ""
+    ) -> int:
         tokenizer = tiktoken.encoding_for_model(model)
         num_tokens = 0
         if model != "text-davinci-003":
@@ -191,7 +193,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}, Completion: {self.completion}"
             else:
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}"
-        
+
         if self.model == "text-davinci-003":
             tokens_used = self.count_tokens(self.model, prompt=prompt)
         else:
