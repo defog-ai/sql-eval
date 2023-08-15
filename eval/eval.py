@@ -203,9 +203,9 @@ def compare_query_results(
     query_gen: str,
     db_name: str,
     db_creds: dict,
-    timeout: float,
     question: str,
     query_category: str,
+    timeout: float = 10.0,
 ) -> "tuple[bool, bool]":
     """
     Compares the results of two queries and returns a tuple of booleans, where the first element is
