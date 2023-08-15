@@ -97,8 +97,8 @@ class OpenAIChatQueryGenerator(QueryGenerator):
             chat_prompt = file.read()
 
         sys_prompt = chat_prompt.split("### Input:")[0]
-        user_prompt = chat_prompt.split("### Input:")[1].split("### Generated SQL:")[0]
-        assistant_prompt = chat_prompt.split("### Generated SQL:")[1]
+        user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[0]
+        assistant_prompt = chat_prompt.split("### Response:")[1]
 
         user_prompt = user_prompt.format(
             user_question=question,

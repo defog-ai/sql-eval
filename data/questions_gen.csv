@@ -95,7 +95,7 @@ Which countries have lakes and rivers?,SELECT DISTINCT lake.country_name FROM pu
 What is the average length of rivers per country in countries with a lake?,"SELECT l.country_name, AVG(r.length) AS average_length FROM river r JOIN lake l ON r.country_name = l.country_name GROUP BY 1;",geography,table_join
 What is the ratio of the area of each lake to the total area of the state it is located in?,"SELECT lake.lake_name, lake.area / NULLIF(state.area, 0) AS ratio FROM lake JOIN state ON lake.state_name = state.state_name;",geography,table_join
 Get the cities in the United States and their population ,"SELECT city_name, population FROM city WHERE country_name = 'United States'; ",geography,where
-What are the areas of the lakes in Michigan?,"SELECT lake_name, area FROM lake WHERE state_name = 'Michigan';",geography,where
+What are the names and areas of the lakes in Michigan?,"SELECT lake_name, area FROM lake WHERE state_name = 'Michigan';",geography,where
 What are the names and altitudes of the mountains in Nepal?,"SELECT mountain_name, mountain_altitude FROM mountain WHERE country_name = 'Nepal'; ",geography,where
 Which rivers traverse at least 3 cities/landmarks?,"SELECT river_name, length FROM river WHERE traverse LIKE '%,%,%'; ",geography,where
 Which states have fewer than a hundred thousand people?,SELECT state_name FROM state WHERE population < 100000;,geography,where
@@ -173,5 +173,5 @@ What is the total number of check-ins for each business in the state of Californ
 How many reviews were posted for each business id in the year 2021?,"SELECT review.business_id, COUNT(*) AS review_count FROM review WHERE review.year = 2021 GROUP BY review.business_id ORDER BY review_count DESC NULLS LAST;",yelp,where
 How many check-ins occurred on Mondays at businesses in the state of California?,SELECT SUM(checkin.count) AS total_checkins FROM business JOIN checkin ON business.business_id = checkin.business_id WHERE business.state = 'CA' AND checkin.day = 'Monday';,yelp,where
 "What is the total number of reviews posted in the year 2021 for businesses in the category ""Cafe""?",SELECT COUNT(review.rid) AS total_reviews FROM review JOIN category ON review.business_id = category.business_id WHERE review.year = 2021 AND category.category_name ILIKE '%Cafe%';,yelp,where
-"How many reviews were posted by users with the name ""John Doe"" in the month of April?",SELECT COUNT(*)  FROM review  JOIN users ON review.user_id = users.user_id  WHERE users.name ILIKE '%John Doe%' AND review.month ILIKE '%April%';,yelp,where
+"How many reviews were posted by users with the name ""Sarah Williams"" in the month of April?",SELECT COUNT(*)  FROM review  JOIN users ON review.user_id = users.user_id  WHERE users.name ILIKE '%Sarah Williams%' AND review.month ILIKE '%April%';,yelp,where
 What is the average rating of businesses in the city of San Francisco?,SELECT AVG(business.rating)  FROM business  WHERE LOWER(business.city) = 'san francisco';,yelp,where
