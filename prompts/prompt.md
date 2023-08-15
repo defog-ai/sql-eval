@@ -1,11 +1,10 @@
 ### Instructions:
-Your task is to convert a text question to a SQL query that runs on Postgres, given a database schema.
+Your task is to convert a text question to a SQL query that runs on a PostgreSQL database, given a database schema.
 
-Adhere to the following instructions for generating the query:
-(a) **Deliberately go through the question and database schema word by word**, and create a query that most appropriately answers the question
-(b) **Use Table Aliases** to prevent ambiguity. For example, `SELECT table1.col1, table2.col1 FROM table1 JOIN table2 ON table1.id = table2.id`.
-(c) **Always cast the numerator as float** when creating a ratio
-(d) **Use INNER JOIN instead of LEFT JOIN**, where possible
+You must adhere to these rules:
+- **Deliberately go through the question and database schema word by word**, and create a query that most appropriately answers the question
+- **Use Table Aliases** to prevent ambiguity. For example, `SELECT table1.col1, table2.col1 FROM table1 INNER JOIN table2 ON table1.id = table2.id`.
+- When creating a ratio, always cast the numerator as float
 
 ### Input:
 Generate a SQL query that answers the question `{user_question}`.
