@@ -1,21 +1,17 @@
-import datetime
-import json
-import os
 import time
 from typing import Dict, List
 from func_timeout import FunctionTimedOut, func_timeout
 import openai
 import tiktoken
 
-import yaml
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
 
 
-class OpenAIChatQueryGenerator(QueryGenerator):
+class OpenAIQueryGenerator(QueryGenerator):
     """
-    Query generator that uses OpenAI's chat models
-    Models available: gpt-3.5-turbo-0613, gpt-4-0613
+    Query generator that uses OpenAI's models
+    Models available: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003
     """
 
     def __init__(
@@ -41,7 +37,6 @@ class OpenAIChatQueryGenerator(QueryGenerator):
         messages,
         max_tokens=600,
         temperature=0,
-        top_p=0.1,
         stop=["```"],
         logit_bias={},
     ):
@@ -53,7 +48,6 @@ class OpenAIChatQueryGenerator(QueryGenerator):
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                top_p=top_p,
                 stop=stop,
                 logit_bias=logit_bias,
             )
@@ -68,11 +62,50 @@ class OpenAIChatQueryGenerator(QueryGenerator):
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                top_p=top_p,
                 stop=stop,
                 logit_bias=logit_bias,
             )
             generated_text = completion["choices"][0]["message"]["content"]
+        except Exception as e:
+            if self.verbose:
+                print(type(e), e)
+        return generated_text
+    
+    def get_nonchat_completion(
+        self,
+        model,
+        prompt,
+        max_tokens=600,
+        temperature=0,
+        stop=["```"],
+        logit_bias={},
+    ):
+        """Get OpenAI nonchat completion for a given prompt and model"""
+        generated_text = ""
+        try:
+            completion = openai.Completion.create(
+                model=model,
+                prompt=prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stop=stop,
+                logit_bias=logit_bias,
+            )
+            generated_text = completion["choices"][0]["text"]
+        except (openai.error.RateLimitError, openai.error.ServiceUnavailableError) as e:
+            if self.verbose:
+                print("Model overloaded. Pausing for 5s before retrying...")
+            time.sleep(5)
+            # Retry the api call after 5s
+            completion = openai.ChatCompletion.create(
+                model=model,
+                prompt=prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stop=stop,
+                logit_bias=logit_bias,
+            )
+            generated_text = completion["choices"][0]["text"]
         except Exception as e:
             if self.verbose:
                 print(type(e), e)
@@ -95,31 +128,37 @@ class OpenAIChatQueryGenerator(QueryGenerator):
 
         with open(self.prompt_file) as file:
             chat_prompt = file.read()
+        
+        if self.model != "text-davinci-003":
+            sys_prompt = chat_prompt.split("### Input:")[0]
+            user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[0]
+            assistant_prompt = chat_prompt.split("### Response:")[1]
 
-        sys_prompt = chat_prompt.split("### Input:")[0]
-        user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[0]
-        assistant_prompt = chat_prompt.split("### Response:")[1]
+            user_prompt = user_prompt.format(
+                user_question=question,
+                table_metadata_string=prune_metadata_str(question, self.db_name),
+            )
 
-        user_prompt = user_prompt.format(
-            user_question=question,
-            table_metadata_string=prune_metadata_str(question, self.db_name),
-        )
-
-        messages = []
-        messages.append({"role": "system", "content": sys_prompt})
-        messages.append({"role": "user", "content": user_prompt})
-        messages.append({"role": "assistant", "content": assistant_prompt})
+            messages = []
+            messages.append({"role": "system", "content": sys_prompt})
+            messages.append({"role": "user", "content": user_prompt})
+            messages.append({"role": "assistant", "content": assistant_prompt})
+        else:
+            prompt = chat_prompt.format(
+                user_question=question,
+                table_metadata_string=prune_metadata_str(question, self.db_name),
+            )
+        function_to_run = self.get_chat_completion if self.model != "text-davinci-003" else self.get_nonchat_completion
 
         try:
             self.completion = func_timeout(
                 self.timeout,
-                self.get_chat_completion,
+                function_to_run,
                 args=(
                     self.model,
                     messages,
                     400,
                     0,
-                    0.1,
                     ["```"],
                 ),
             )
