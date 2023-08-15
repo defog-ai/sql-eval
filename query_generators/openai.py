@@ -70,7 +70,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             if self.verbose:
                 print(type(e), e)
         return generated_text
-    
+
     def get_nonchat_completion(
         self,
         model,
@@ -112,12 +112,15 @@ class OpenAIQueryGenerator(QueryGenerator):
         return generated_text
 
     @staticmethod
-    def count_tokens(model: str, messages: List[Dict[str, str]]) -> int:
+    def count_tokens(model: str, messages: List[Dict[str, str]] = [], prompt : str = "") -> int:
         tokenizer = tiktoken.encoding_for_model(model)
         num_tokens = 0
-        for message in messages:
-            for _, value in message.items():
-                num_tokens += len(tokenizer.encode(value))
+        if model != "text-davinci-003":
+            for message in messages:
+                for _, value in message.items():
+                    num_tokens += len(tokenizer.encode(value))
+        else:
+            num_tokens = len(tokenizer.encode(prompt))
         return num_tokens
 
     def generate_query(self, question: str) -> dict:
@@ -128,7 +131,7 @@ class OpenAIQueryGenerator(QueryGenerator):
 
         with open(self.prompt_file) as file:
             chat_prompt = file.read()
-        
+
         if self.model != "text-davinci-003":
             sys_prompt = chat_prompt.split("### Input:")[0]
             user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[0]
@@ -148,7 +151,14 @@ class OpenAIQueryGenerator(QueryGenerator):
                 user_question=question,
                 table_metadata_string=prune_metadata_str(question, self.db_name),
             )
-        function_to_run = self.get_chat_completion if self.model != "text-davinci-003" else self.get_nonchat_completion
+        function_to_run = None
+        package = None
+        if self.model == "text-davinci-003":
+            function_to_run = self.get_nonchat_completion
+            package = prompt
+        else:
+            function_to_run = self.get_chat_completion
+            package = messages
 
         try:
             self.completion = func_timeout(
@@ -156,7 +166,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 function_to_run,
                 args=(
                     self.model,
-                    messages,
+                    package,
                     400,
                     0,
                     ["```"],
@@ -181,10 +191,16 @@ class OpenAIQueryGenerator(QueryGenerator):
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}, Completion: {self.completion}"
             else:
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}"
+        
+        if self.model == "text-davinci-003":
+            tokens_used = self.count_tokens(self.model, prompt=prompt)
+        else:
+            tokens_used = self.count_tokens(self.model, messages=messages)
+
         return {
             "query": self.query,
             "reason": self.reason,
             "err": self.err,
             "latency_seconds": time.time() - start_time,
-            "tokens_used": self.count_tokens(self.model, messages),
+            "tokens_used": tokens_used,
         }
