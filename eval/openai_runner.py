@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import copy
-from eval.eval import compare_df, compare_query_results, query_postgres_db, subset_df
+from eval.eval import compare_query_results
 import pandas as pd
 from psycopg2.extensions import QueryCanceledError
 from query_generators.openai import OpenAIChatQueryGenerator
