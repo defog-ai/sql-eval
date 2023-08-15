@@ -99,13 +99,22 @@ def test_find_bracket_indices():
 def test_get_all_minimal_queries():
     query1 = "SELECT * FROM persons WHERE persons.age > 25"
     assert get_all_minimal_queries(query1) == [query1]
-    query2 = "SELECT persons.name FROM persons WHERE persons.age > 25"
+    query2 = "SELECT persons.name FROM persons WHERE persons.age > 25 GROUP BY 1"
     assert get_all_minimal_queries(query2) == [query2]
     query3 = "SELECT {persons.name,persons.id} FROM persons WHERE persons.age > 25"
     option1 = "SELECT persons.name FROM persons WHERE persons.age > 25"
     option2 = "SELECT persons.id FROM persons WHERE persons.age > 25"
     option3 = "SELECT persons.name, persons.id FROM persons WHERE persons.age > 25"
     assert get_all_minimal_queries(query3) == [option1, option2, option3]
+    query4 = "SELECT {persons.name,persons.id} FROM persons WHERE persons.age > 25 GROUP BY {}"
+    option1 = (
+        "SELECT persons.name FROM persons WHERE persons.age > 25 GROUP BY persons.name"
+    )
+    option2 = (
+        "SELECT persons.id FROM persons WHERE persons.age > 25 GROUP BY persons.id"
+    )
+    option3 = "SELECT persons.name, persons.id FROM persons WHERE persons.age > 25 GROUP BY persons.name, persons.id"
+    assert get_all_minimal_queries(query4) == [option1, option2, option3]
 
 
 @mock.patch("pandas.read_sql_query")
