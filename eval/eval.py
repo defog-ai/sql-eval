@@ -1,5 +1,6 @@
 # this file contains all of the helper functions used for evaluations
 
+import itertools
 import re
 from func_timeout import func_timeout
 import pandas as pd
@@ -44,6 +45,36 @@ def escape_percent(match):
     escaped_group = group.replace("%", "%%")
     # Return the escaped group
     return escaped_group
+
+
+# find start and end index of { } in a string. return (start, end) if found, else return (-1, -1)
+def find_bracket_indices(s: str) -> tuple[int, int]:
+    start = s.find("{")
+    end = s.find("}", start + 1)
+    if start == -1 or end == -1:
+        return (-1, -1)
+    return (start, end)
+
+
+# extrapolate all possible queries from a query with { } in it
+def get_all_minimal_queries(query: str) -> list[str]:
+    start, end = find_bracket_indices(query)
+    if (start, end) == (-1, -1):
+        return [query]
+
+    # get all possible column subsets
+    column_options = query[start + 1 : end].split(",")
+    column_combinations = list(
+        itertools.chain.from_iterable(
+            itertools.combinations(column_options, r)
+            for r in range(1, len(column_options) + 1)
+        )
+    )
+    queries = []
+    for column_tuple in column_combinations:
+        column_str = ", ".join(column_tuple)
+        queries.append(query[:start] + column_str + query[end + 1 :])
+    return queries
 
 
 def query_postgres_db(
@@ -138,3 +169,30 @@ def subset_df(
         return True
     except AssertionError:
         return False
+
+
+def compare_query_results(
+    query_gold: str,
+    query_gen: str,
+    db_name: str,
+    db_creds: dict,
+    timeout: float,
+    question: str,
+    query_category: str,
+) -> tuple[bool, bool]:
+    """
+    Compares the results of two queries and returns a tuple of booleans, where the first element is
+    whether the queries produce exactly the same result, and the second element is whether the
+    result of the gold query is a subset of the result of the generated query (still correct).
+    We bubble up exceptions (mostly from query_postgres_db) to be handled in the runner.
+    """
+    queries_gold = get_all_minimal_queries(query_gold)
+    results_gen = query_postgres_db(query_gen, db_name, db_creds, timeout)
+    correct = False
+    for q in queries_gold:
+        results_gold = query_postgres_db(q, db_name, db_creds, timeout)
+        if compare_df(results_gold, results_gen, query_category, question):
+            return (True, True)
+        elif subset_df(results_gold, results_gen, query_category, question):
+            correct = True
+    return (False, correct)

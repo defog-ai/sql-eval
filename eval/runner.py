@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import copy
-from eval.eval import compare_df, query_postgres_db, subset_df
+from eval.eval import compare_df, compare_query_results, query_postgres_db, subset_df
 import pandas as pd
 from psycopg2.extensions import QueryCanceledError
 from query_generators.openai import OpenAIChatQueryGenerator
@@ -17,8 +17,8 @@ def run(args):
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
     question_query_df["error_msg"] = ""
+    question_query_df["exact_match"] = 0
     question_query_df["correct"] = 0
-    question_query_df["subset"] = 0
     question_query_df["error_query_gen"] = 0
     question_query_df["error_db_exec"] = 0
     question_query_df["timeout"] = 0
@@ -87,8 +87,7 @@ def run(args):
                 db_name = row["db_name"]
                 question = row["question"]
                 query_category = row["query_category"]
-                correct = subset = 0
-                generated_result = expected_result = None
+                exact_match = correct = 0
                 db_creds = {
                     "host": "localhost",
                     "port": 5432,
@@ -98,31 +97,19 @@ def run(args):
                 }
                 # try executing the queries and compare the results if they succeed
                 try:
-                    expected_result = query_postgres_db(
-                        expected_query, db_name, db_creds, args.timeout_exec
+                    exact_match, correct = compare_query_results(
+                        query_gold=expected_query,
+                        query_gen=query_gen,
+                        db_name=db_name,
+                        db_creds=db_creds,
+                        timeout=args.timeout_exec,
+                        question=question,
+                        query_category=query_category,
                     )
-                    expected_result = expected_result.rename(columns=str.lower)
-                    generated_result = query_postgres_db(
-                        query_gen, db_name, db_creds, args.timeout_exec
-                    )
-                    generated_result = generated_result.rename(columns=str.lower)
-                    correct = subset = int(
-                        compare_df(
-                            expected_result, generated_result, query_category, question
-                        )
-                    )
-                    if not correct:
-                        subset = subset_df(
-                            df_sub=expected_result,
-                            df_super=generated_result,
-                            query_category=query_category,
-                            question=question,
-                            verbose=args.verbose,
-                        )
+                    row["exact_match"] = int(exact_match)
                     row["correct"] = int(correct)
-                    row["subset"] = int(subset)
                     row["error_msg"] = ""
-                    if subset:
+                    if correct:
                         total_correct += 1
                 except QueryCanceledError as e:
                     row["timeout"] = 1
@@ -138,9 +125,9 @@ def run(args):
     output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
     output_df.to_csv(args.output_file, index=False, float_format="%.2f")
 
-    # get average accuracy
-    avg_acc = output_df["correct"].sum() / len(output_df)
-    print(f"Average accuracy: {avg_acc:.2f}")
-    # get average subset or correct accuracy
-    avg_subset = output_df["subset"].sum() / len(output_df)
-    print(f"Average subset accuracy: {avg_subset:.2f}")
+    # get average rate of exact matches
+    avg_acc = output_df["exact_match"].sum() / len(output_df)
+    print(f"Average rate of exact match: {avg_acc:.2f}")
+    # get average rate of correct results
+    avg_subset = output_df["correct"].sum() / len(output_df)
+    print(f"Average correct rate: {avg_subset:.2f}")
