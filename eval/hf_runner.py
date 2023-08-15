@@ -111,6 +111,7 @@ def run_hf_eval(
                     **pipeline_config,
                 )[0]["generated_text"]
                 .split("```sql")[-1]
+                .split("```")[0]
                 .split(";")[0]
                 .strip()
                 + ";"
