@@ -52,7 +52,7 @@ def escape_percent(match):
 
 
 # find start and end index of { } in a string. return (start, end) if found, else return (-1, -1)
-def find_bracket_indices(s: str, start_index: int = 0) -> tuple[int, int]:
+def find_bracket_indices(s: str, start_index: int = 0) -> "tuple[int, int]":
     start = s.find("{", start_index)
     end = s.find("}", start + 1)
     if start == -1 or end == -1:
@@ -61,7 +61,7 @@ def find_bracket_indices(s: str, start_index: int = 0) -> tuple[int, int]:
 
 
 # extrapolate all possible queries from a query with { } in it
-def get_all_minimal_queries(query: str) -> list[str]:
+def get_all_minimal_queries(query: str) -> "list[str]":
     start, end = find_bracket_indices(query, 0)
     if (start, end) == (-1, -1):
         return [query]
@@ -206,7 +206,7 @@ def compare_query_results(
     timeout: float,
     question: str,
     query_category: str,
-) -> tuple[bool, bool]:
+) -> "tuple[bool, bool]":
     """
     Compares the results of two queries and returns a tuple of booleans, where the first element is
     whether the queries produce exactly the same result, and the second element is whether the
