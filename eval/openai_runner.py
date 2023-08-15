@@ -3,13 +3,13 @@ import copy
 from eval.eval import compare_query_results
 import pandas as pd
 from psycopg2.extensions import QueryCanceledError
-from query_generators.openai import OpenAIChatQueryGenerator
+from query_generators.openai import OpenAIQueryGenerator
 from tqdm import tqdm
 
 
 def run_openai_eval(args):
     question_query_df = pd.read_csv(args.questions_file, nrows=args.num_questions)
-    qg_class = OpenAIChatQueryGenerator
+    qg_class = OpenAIQueryGenerator
     # add columns for generated query and metrics
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
