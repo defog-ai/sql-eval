@@ -309,9 +309,19 @@ columns_join = {
         ("ps_studios", "sales"): [("ps_studios.site_id", "sales.site_id")],
         ("ps_studios", "visits"): [("ps_studios.site_id", "visits.site_id")],
         ("clients", "ps_studios"): [("clients.site_id", "ps_studios.site_id")],
-        ("sales", "visits"): [("sales.client_id", "visits.client_id"), ("sales.site_id", "visits.site_id")],
-        ("clients", "sales"): [("clients.client_id", "sales.client_id"), ("clients.client_id", "sales.recipient_client_id"), ("clients.site_id", "sales.site_id")],
-        ("clients", "visits"): [("clients.client_id", "visits.client_id"), ("clients.site_id", "visits.site_id")],
+        ("sales", "visits"): [
+            ("sales.client_id", "visits.client_id"),
+            ("sales.site_id", "visits.site_id"),
+        ],
+        ("clients", "sales"): [
+            ("clients.client_id", "sales.client_id"),
+            ("clients.client_id", "sales.recipient_client_id"),
+            ("clients.site_id", "sales.site_id"),
+        ],
+        ("clients", "visits"): [
+            ("clients.client_id", "visits.client_id"),
+            ("clients.site_id", "visits.site_id"),
+        ],
     },
     "yelp": {
         ("business", "tip"): [("business.business_id", "tip.business_id")],
