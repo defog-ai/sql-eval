@@ -3,29 +3,11 @@ import pandas as pd
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from utils.pruning import prune_metadata_str
+from utils.questions import prepare_questions_df
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
-
-
-def prepare_questions_df(questions_file, num_questions):
-    question_query_df = pd.read_csv(questions_file, nrows=num_questions)
-    question_query_df["generated_query"] = ""
-    question_query_df["reason"] = ""
-    question_query_df["error_msg"] = ""
-    question_query_df["exact_match"] = 0
-    question_query_df["correct"] = 0
-    question_query_df["fuzzy_correct"] = 0
-    question_query_df["error_query_gen"] = 0
-    question_query_df["error_db_exec"] = 0
-    question_query_df["timeout"] = 0
-    # add custom metrics below:
-    question_query_df["latency_seconds"] = 0.0  # latency of query generation in seconds
-    question_query_df["tokens_used"] = 0  # number of tokens used in query generation
-
-    question_query_df.reset_index(inplace=True, drop=True)
-    return question_query_df
 
 
 def generate_prompt(prompt_file, question, db_name):
@@ -45,12 +27,9 @@ def get_tokenizer_model(model_name):
         model_name,
         trust_remote_code=True,
         torch_dtype=torch.float16,
-        # load_in_8bit=True,
         device_map="auto",
         use_cache=True,
     )
-    # model = model.to_bettertransformer()
-    # model = BetterTransformer.transform(model)
     return tokenizer, model
 
 
@@ -76,28 +55,21 @@ def run_hf_eval(
     tokenizer, model = get_tokenizer_model(model_name)
 
     print("model loaded\nnow generating and evaluating predictions...")
-    # generate predictions
+    
+    # from here, we generate and evaluate predictions
     eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
-    # from here, just do the usual eval stuff
     total_tried = 0
     total_correct = 0
     output_rows = []
 
-    # this config is pretty fast and quite accurate.
     pipeline_config = {
         "max_new_tokens": 300,
         "do_sample": False,
         "num_beams": 5,
     }
 
-    # this config is also very fast, but seems to be less accurate
-    # pipeline_config = {
-    #     "max_new_tokens": 300,
-    #     "do_sample": True,
-    #     "temperature": 0.4,
-    # }
     with tqdm(total=len(df)) as pbar:
         for row in df.to_dict("records"):
             total_tried += 1
@@ -145,8 +117,6 @@ def run_hf_eval(
                     question=question,
                     query_category=query_category,
                 )
-                row["exact_match"] = int(exact_match)
-                row["correct"] = int(correct)
                 row["exact_match"] = int(exact_match)
                 row["correct"] = int(correct)
                 row["error_msg"] = ""

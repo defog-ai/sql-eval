@@ -115,6 +115,12 @@ class OpenAIQueryGenerator(QueryGenerator):
     def count_tokens(
         model: str, messages: List[Dict[str, str]] = [], prompt: str = ""
     ) -> int:
+        """
+        This function csount the number of tokens used in a prompt
+        model: the model used to generate the prompt. can be one of the following: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003
+        messages: (only for non text-davinci-003 models) a list of messages to be used as a prompt. Each message is a dict with two keys: role and content
+        prompt: (only for text-davinci-003 model) a string to be used as a prompt
+        """
         tokenizer = tiktoken.encoding_for_model(model)
         num_tokens = 0
         if model != "text-davinci-003":
@@ -174,9 +180,6 @@ class OpenAIQueryGenerator(QueryGenerator):
                     ["```"],
                 ),
             )
-            # results = yaml.safe_load(self.completion)
-            # self.query = results["sql"]
-            # self.reason = results["reason_for_query"]
             results = self.completion
             self.query = results.split("```sql")[-1]
             self.reason = "-"

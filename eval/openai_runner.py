@@ -5,10 +5,12 @@ import pandas as pd
 from psycopg2.extensions import QueryCanceledError
 from query_generators.openai import OpenAIQueryGenerator
 from tqdm import tqdm
-
+from utils.questions import prepare_questions_df
 
 def run_openai_eval(args):
-    question_query_df = pd.read_csv(args.questions_file, nrows=args.num_questions)
+    print("preparing questions...")
+    # get questions
+    question_query_df = prepare_questions_df(args.questions_file, args.num_questions)
     qg_class = OpenAIQueryGenerator
     # add columns for generated query and metrics
     question_query_df["generated_query"] = ""
