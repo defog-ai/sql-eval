@@ -1,7 +1,4 @@
 data/postgres
-nohup.out
-.local_tests.sh
-compare_results.ipynb
 
 # pycache
 **/__pycache__/
