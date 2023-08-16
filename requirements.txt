@@ -2,8 +2,13 @@ argparse
 func_timeout
 openai
 pandas
-psycopg2
+psycopg2-binary
 pytest
 sqlalchemy
 tiktoken
 pyyaml
+spacy
+sentence-transformers
+torch
+transformers
+tqdm
