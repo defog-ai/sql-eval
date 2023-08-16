@@ -1,18 +1,18 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import copy
-from eval.eval import compare_df, compare_query_results, query_postgres_db, subset_df
+from eval.eval import compare_query_results
 import pandas as pd
 from psycopg2.extensions import QueryCanceledError
-from query_generators.openai import OpenAIChatQueryGenerator
+from query_generators.openai import OpenAIQueryGenerator
 from tqdm import tqdm
+from utils.questions import prepare_questions_df
 
 
-def run(args):
-    question_query_df = pd.read_csv(args.questions_file, nrows=args.num_questions)
-    if args.qg_class == "oa_chat":
-        qg_class = OpenAIChatQueryGenerator
-    else:
-        raise ValueError(f"Unknown qg_class {args.qg_class}")
+def run_openai_eval(args):
+    print("preparing questions...")
+    # get questions
+    question_query_df = prepare_questions_df(args.questions_file, args.num_questions)
+    qg_class = OpenAIQueryGenerator
     # add columns for generated query and metrics
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""

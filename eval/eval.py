@@ -16,10 +16,14 @@ def normalize_table(
 ) -> pd.DataFrame:
     """
     Normalizes a dataframe by:
-    1. sorting columns in alphabetical order
-    2. sorting rows using values from first column to last (if query_category is not 'order_by' and question does not ask for ordering)
-    3. resetting index
+    1. removing all duplicate rows
+    2. sorting columns in alphabetical order
+    3. sorting rows using values from first column to last (if query_category is not 'order_by' and question does not ask for ordering)
+    4. resetting index
     """
+    # remove duplicate rows, if any
+    df = df.drop_duplicates()
+
     # sort columns in alphabetical order
     sorted_df = df.reindex(sorted(df.columns), axis=1)
 
@@ -48,7 +52,7 @@ def escape_percent(match):
 
 
 # find start and end index of { } in a string. return (start, end) if found, else return (-1, -1)
-def find_bracket_indices(s: str, start_index: int = 0) -> tuple[int, int]:
+def find_bracket_indices(s: str, start_index: int = 0) -> "tuple[int, int]":
     start = s.find("{", start_index)
     end = s.find("}", start + 1)
     if start == -1 or end == -1:
@@ -57,7 +61,7 @@ def find_bracket_indices(s: str, start_index: int = 0) -> tuple[int, int]:
 
 
 # extrapolate all possible queries from a query with { } in it
-def get_all_minimal_queries(query: str) -> list[str]:
+def get_all_minimal_queries(query: str) -> "list[str]":
     start, end = find_bracket_indices(query, 0)
     if (start, end) == (-1, -1):
         return [query]
@@ -83,7 +87,7 @@ def get_all_minimal_queries(query: str) -> list[str]:
 
 
 def query_postgres_db(
-    query: str, db_name: str, db_creds: dict, timeout: float
+    query: str, db_name: str, db_creds: dict = None, timeout: float = 10.0
 ) -> pd.DataFrame:
     """
     Runs query on postgres db and returns results as a dataframe.
@@ -92,6 +96,14 @@ def query_postgres_db(
 
     timeout: time in seconds to wait for query to finish before timing out
     """
+    if db_creds is None:
+        db_creds = {
+            "host": "localhost",
+            "port": 5432,
+            "user": "postgres",
+            "password": "postgres",
+            "database": db_name,
+        }
     try:
         db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
         engine = create_engine(db_url)
@@ -115,13 +127,17 @@ def compare_df(
     """
     Compares two dataframes and returns True if they are the same, else False.
     """
+    # drop duplicates to ensure equivalence
+    if df1.shape == df2.shape and (df1.values == df2.values).all():
+        return True
+
     df1 = normalize_table(df1, query_category, question)
     df2 = normalize_table(df2, query_category, question)
-    try:
-        assert_frame_equal(df1, df2, check_dtype=False)  # handles dtype mismatches
-    except AssertionError:
+
+    if df1.shape == df2.shape and (df1.values == df2.values).all():
+        return True
+    else:
         return False
-    return True
 
 
 def subset_df(
@@ -135,7 +151,8 @@ def subset_df(
     Checks if df_sub is a subset of df_super
     """
     if df_sub.empty:
-        return True  # trivial case
+        return False  # handle cases for empty dataframes
+
     # make a copy of df_super so we don't modify the original while keeping track of matches
     df_super_temp = df_super.copy(deep=True)
     matched_columns = []
@@ -181,10 +198,10 @@ def compare_query_results(
     query_gen: str,
     db_name: str,
     db_creds: dict,
-    timeout: float,
     question: str,
     query_category: str,
-) -> tuple[bool, bool]:
+    timeout: float = 10.0,
+) -> "tuple[bool, bool]":
     """
     Compares the results of two queries and returns a tuple of booleans, where the first element is
     whether the queries produce exactly the same result, and the second element is whether the
