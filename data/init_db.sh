@@ -27,3 +27,7 @@ for db_name in "$@"; do
     docker_db_path="export/${db_name}.sql"
     docker exec -i postgres-sql-eval psql -U postgres -d "${db_name}" -f "${docker_db_path}"
 done
+
+# get the default embeddings and ner metadata pkl files from GCS bucket, and save them here
+curl -L https://storage.googleapis.com/defog-ai/embeddings.pkl -o data/embeddings.pkl
+curl -L https://storage.googleapis.com/defog-ai/ner_metadata.pkl -o data/ner_metadata.pkl
