@@ -133,7 +133,7 @@ def compare_df(
 
     df1 = normalize_table(df1, query_category, question)
     df2 = normalize_table(df2, query_category, question)
-    
+
     if df1.shape == df2.shape and (df1.values == df2.values).all():
         return True
     else:

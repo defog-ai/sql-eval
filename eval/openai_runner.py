@@ -7,6 +7,7 @@ from query_generators.openai import OpenAIQueryGenerator
 from tqdm import tqdm
 from utils.questions import prepare_questions_df
 
+
 def run_openai_eval(args):
     print("preparing questions...")
     # get questions
