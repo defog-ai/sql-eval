@@ -78,18 +78,19 @@ def get_entity_types(sentence, verbose: bool = False):
 
 def format_topk_sql(
     topk_table_columns: Dict[str, List[Tuple[str, str, str]]],
-    exclude_column_descriptions: bool = False,
 ) -> str:
     md_str = "```\n"
     for table_name in topk_table_columns:
         columns_str = ""
         for column_tuple in topk_table_columns[table_name]:
-            if exclude_column_descriptions:
-                columns_str += f"\n  {column_tuple[0]} {column_tuple[1]},"
-            else:
+            if len(column_tuple) > 2:
                 columns_str += (
                     f"\n  {column_tuple[0]} {column_tuple[1]}, --{column_tuple[2]}"
                 )
+            else:
+                columns_str += (
+                    f"\n  {column_tuple[0]} {column_tuple[1]}, "
+                ) 
         md_str += f"CREATE TABLE {table_name} ({columns_str}\n)\n-----------\n"
     return md_str
 
@@ -102,7 +103,6 @@ def get_md_emb(
     column_join: Dict[str, dict],
     k: int = 20,
     threshold: float = 0.2,
-    exclude_column_descriptions: bool = False,
 ) -> str:
     """
     Given question, generated metadata csv string with top k columns and tables
@@ -178,7 +178,7 @@ def get_md_emb(
                         join_list.append(join_str)
 
     # 4) format metadata string
-    md_str = format_topk_sql(topk_table_columns, exclude_column_descriptions)
+    md_str = format_topk_sql(topk_table_columns)
 
     if join_list:
         md_str += "```\n\nAdditionally, the following are tables/column pairs that can be joined in this database:\n```\n"
@@ -187,7 +187,7 @@ def get_md_emb(
     return md_str
 
 
-def prune_metadata_str(question, db_name, exclude_column_descriptions=False):
+def prune_metadata_str(question, db_name):
     emb, csv_descriptions = load_all_emb()
     columns_ner, columns_join = load_ner_md()
     table_metadata_csv = get_md_emb(
@@ -196,6 +196,5 @@ def prune_metadata_str(question, db_name, exclude_column_descriptions=False):
         csv_descriptions[db_name],
         columns_ner[db_name],
         columns_join[db_name],
-        exclude_column_descriptions=exclude_column_descriptions,
     )
     return table_metadata_csv
