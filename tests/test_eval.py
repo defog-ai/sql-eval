@@ -314,7 +314,13 @@ def test_compare_query_results(mock_query_postgres_db):
     ) in test_queries_expected:
         print(f"evaluating query: {query_gen}")
         result_same, result_subset = compare_query_results(
-            query_gold, query_gen, db_name, db_creds, question, query_category, timeout=timeout
+            query_gold,
+            query_gen,
+            db_name,
+            db_creds,
+            question,
+            query_category,
+            timeout=timeout,
         )
         assert mock_query_postgres_db.call_count == expected_call_count
         assert result_same == expected_same
