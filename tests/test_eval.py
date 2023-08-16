@@ -170,11 +170,11 @@ def test_compare_df(test_dataframes):
     # Test case 4: Reordered Columns, expect True
     assert compare_df(df1, df1_columns_reordered, query, question) == True
 
-    # Test case 5: Different Case in Column Names, assume already done so False
-    assert compare_df(df1, df1_columns_diffcase, query, question) == False
+    # Test case 5: Different Case in Column Names, expect True
+    assert compare_df(df1, df1_columns_diffcase, query, question) == True
 
-    # Test case 6: Renamed Columns, expect False
-    assert compare_df(df1, df1_columns_renamed, query, question) == False
+    # Test case 6: Renamed Columns, expect True
+    assert compare_df(df1, df1_columns_renamed, query, question) == True
 
     # Test case 7: Reordered Rows, expect True
     assert compare_df(df1, df1_rows_reordered, query, question) == True
@@ -182,10 +182,10 @@ def test_compare_df(test_dataframes):
     # Test case 8: Reordered Rows with specific ordering, expect False
     assert compare_df(df1, df1_rows_reordered, query_order_by, question_sort) == False
 
-    # Test case 9: Reordered Rows with specific ordering and renamed columns, expect False
+    # Test case 9: Reordered Rows with specific ordering and renamed columns, expect True
     assert (
         compare_df(df1, df1_rows_reordered_columns_renamed, query, question)
-    ) == False
+    ) == True
 
     # Test case 10: Reordered Rows with specific ordering and renamed and additional columns, expect False
     assert (compare_df(df1, df1_rows_reordered_more_cols, query, question)) == False
@@ -210,8 +210,8 @@ def test_subset_df(test_dataframes):
     question = "What is the average age of the people in the table?"
     question_sort = "What is the average age of the people in the table? sort by name."
 
-    # Test case 1: Empty DataFrames
-    assert subset_df(df0, df0_same, query, question) == True
+    # Test case 1: Empty DataFrames, expect False
+    assert subset_df(df0, df0_same, query, question) == False
 
     # Test case 2: Identical DataFrames
     assert subset_df(df1, df1_same, query, question) == True
@@ -314,7 +314,7 @@ def test_compare_query_results(mock_query_postgres_db):
     ) in test_queries_expected:
         print(f"evaluating query: {query_gen}")
         result_same, result_subset = compare_query_results(
-            query_gold, query_gen, db_name, db_creds, timeout, question, query_category
+            query_gold, query_gen, db_name, db_creds, question, query_category, timeout=timeout
         )
         assert mock_query_postgres_db.call_count == expected_call_count
         assert result_same == expected_same
