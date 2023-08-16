@@ -88,9 +88,7 @@ def format_topk_sql(
                     f"\n  {column_tuple[0]} {column_tuple[1]}, --{column_tuple[2]}"
                 )
             else:
-                columns_str += (
-                    f"\n  {column_tuple[0]} {column_tuple[1]}, "
-                ) 
+                columns_str += f"\n  {column_tuple[0]} {column_tuple[1]}, "
         md_str += f"CREATE TABLE {table_name} ({columns_str}\n)\n-----------\n"
     return md_str
 
