@@ -4,6 +4,7 @@ openai
 pandas
 psycopg2
 pytest
+spacy
 sqlalchemy
 tiktoken
 pyyaml
