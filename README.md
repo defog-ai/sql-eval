@@ -16,9 +16,16 @@ Our testing procedure comprises the following steps. For each question/query pai
 
 This is a comprehensive set of instructions that assumes basic familiarity with the command line, Docker, running SQL queries on a database, and common Python data manipulation libraries (e.g. pandas).
 
+### Install Dependencies
+
+Firstly, install all Python libraries listed in the `requirements.txt` file.
+```bash
+pip install -r requirements.txt
+```
+
 ### Start Postgres Instance
 
-Firstly, you would need to set up the databases that the queries are executed on. We use Postgres here, since it is the most common OSS database with the widest distribution and usage in production. In addition, we would recommend using Docker to do this, as it is the easiest way to get started. You can install Docker [here](https://docs.docker.com/get-docker/). 
+Next, you would need to set up the databases that the queries are executed on. We use Postgres here, since it is the most common OSS database with the widest distribution and usage in production. In addition, we would recommend using Docker to do this, as it is the easiest way to get started. You can install Docker [here](https://docs.docker.com/get-docker/). 
 
 Once you have Docker installed, you can create the Docker container and start the Postgres database using the following commands. We recommend mounting a volume on `data/postgres` to persist the data, as well as `data/export` to make it easier to import the data. To create the container, run:
 
@@ -54,6 +61,14 @@ The data for importing is already in the exported SQL dumps in the `data/export`
 ./data/init_db.sh
 ```
 
+### Generate Embeddings for Pruning
+
+We use an [embedding-based method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py) to prune the metadata that goes into the prompt. Thus, you would need to download the spacy model used in our NER heuristic, and then generate the pickle files that will contain the pre-processed embeddings:
+```bash
+python -m spacy download en_core_web_sm
+python data/gen_embeddings.py
+```
+
 ### Query Generator
 
 To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see the sample `OpenAIQueryGenerator` in `query_generators/openai.py` which implements the class and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use. 
@@ -64,9 +79,9 @@ If there are functions that are generally useful for all query generators, they 
 
 Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) to the query generator for each question/query pair. We have provided 2 most common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support) and `eval/hf_runner.py` for calling a local Hugging Face model. When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
 
-### Running the test
+## Running the Test
 
-#### OpenAI
+### OpenAI
 To test it out with just 1 question (instead of all 175):
 
 ```bash
@@ -82,7 +97,7 @@ python main.py \
   -v
 ```
 
-#### Hugging Face
+### Hugging Face
 To test it out with just 10 questions (instead of all 175):
 
 ```bash
