@@ -18,9 +18,10 @@ This is a comprehensive set of instructions that assumes basic familiarity with 
 
 ### Install Dependencies
 
-Firstly, install all Python libraries listed in the `requirements.txt` file.
+Firstly, install all Python libraries listed in the `requirements.txt` file. You would also need to download the spacy model used in the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py).
 ```bash
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 ```
 
 ### Start Postgres Instance
@@ -59,14 +60,6 @@ The data for importing is already in the exported SQL dumps in the `data/export`
 
 ```bash
 ./data/init_db.sh
-```
-
-### Generate Embeddings for Pruning
-
-We use an [embedding-based method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py) to prune the metadata that goes into the prompt. Thus, you would need to download the spacy model used in our NER heuristic, and then generate the pickle files that will contain the pre-processed embeddings:
-```bash
-python -m spacy download en_core_web_sm
-python data/gen_embeddings.py
 ```
 
 ### Query Generator
@@ -117,11 +110,11 @@ python -W ignore main.py \
 You can use the following flags in the command line to change the configurations of your evaluation runs.
 | CLI Flags     | Description |
 |-------------|-------|
-|  -q, --questions_file   |  File that contains the test questions and true queries.   |
-|  -o, --output_file   |  Output file that will store your results.   |
+|  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
+|  -o, --output_file   |  Output CSV file that will store your results.   |
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models and `hf` for Hugging Face models.   |
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/starcoder-finetune-v3`).  |
-|  -f, --prompt_file   |  Prompt file used for query generation.  |
+|  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
