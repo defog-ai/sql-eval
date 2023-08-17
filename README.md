@@ -54,7 +54,11 @@ The data for importing is already in the exported sql dumps in the `data/export`
 
 ### Query Generator
 
-To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method returning the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see a sample `OpenAIQueryGenerator` in `query_generators/openai.py` implementing it and using a simple prompt to send a message over to openai's api. Feel free to extend it for your own use.
+To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method returning the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see a sample `OpenAIQueryGenerator` in `query_generators/openai.py` implementing it and using a simple prompt to send a message over to openai's api. Feel free to extend it for your own use. If there are functions that are generally useful for all query generators, it can be put in the `utils` folder. If you need to incorporate specific verbose templates (e.g. for prompt testing), you can put them in the `prompts` folder, and import them. Being able to version control the prompts in a central place has been a productivity win for our team.
+
+### Runner
+
+Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization/batching/model selected etc) to the query generator for each question/query pair. We have provided 2 most common runners: `eval/openai_runner.py` for calling openai's api (with parallelization support) and `eval/hf_runner.py` for calling a local huggingface model. When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
 
 ### Running the test
 
@@ -94,4 +98,10 @@ You can explore the results generated and aggregated the various metrics that yo
 
 ## Misc
 
-We welcome contributions to our project. Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.
+We welcome contributions to our project, specifically:
+- Dataset
+  - Adding new database schema/data
+- Framework code
+  - New query generators/runners
+  - Improving existing generators/runners (e.g. adding new metrics)
+Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.
