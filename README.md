@@ -2,12 +2,12 @@
 
 [![tests](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml/badge.svg)](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml)
 
-This repository contains the code that Defog uses for the evaluation of LLM-generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category.
+This repository contains the code that Defog uses for the evaluation of generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category.
 
 ## Introduction
 
 Our testing procedure comprises the following steps. For each question/query pair:
-1. We generate a SQL query from an LLM.
+1. We generate a SQL query (possibly from an LLM).
 2. We run both the "gold" query and the generated query on their respective Postgres database to obtain 2 dataframes with the results.
 3. We compare the 2 dataframes using an "exact" and a "subset" match. TODO add link to blogpost.
 4. We log these alongside other metrics of interest (e.g. tokens used, latency) and aggregate the results for reporting.
