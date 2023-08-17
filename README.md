@@ -83,7 +83,7 @@ python main.py \
   -q data/questions_gen.csv \
   -o results/my_query_generator.csv \
   -g oa \
-  -f query_generators/prompts/prompt.md \
+  -f prompts/prompt.md \
   -m gpt-3.5-turbo-0613 \
   -n 1 \
   -p 1 \
@@ -101,7 +101,7 @@ python -W ignore main.py \
   -q data/questions_gen.csv \
   -o results/results.csv \
   -g hf \
-  -f query_generators/prompts/prompt.md \
+  -f prompts/prompt.md \
   -m defog/starcoder-finetune-v3 \
   -n 10
 ```
