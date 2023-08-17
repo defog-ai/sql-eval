@@ -14,13 +14,12 @@ db_names = [
     "geography",
     "restaurants",
     "scholar",
-    "yelp",
-    "pipeline",
+    "yelp"
 ]
 emb = {}
 csv_descriptions = {}
 for db_name in db_names:
-    with open(f"auto_eval/data/metadata/{db_name}.json", "r") as f:
+    with open(f"data/metadata/{db_name}.json", "r") as f:
         metadata = json.load(f)["table_metadata"]
     column_descriptions = []
     column_descriptions_typed = []
@@ -111,21 +110,6 @@ columns_ner = {
             "airport.airport_name,text,The name of the airport",
             "airport.airport_code,text,The 3-letter airport code",
             "dual_carrier.main_airline,text,The name of the main airline operating the flight",
-        ],
-    },
-    "pipeline": {
-        "GPE": [
-            "ps_studios.country,text,The country where the studio is located",
-            "ps_studios.region,text,The region where the studio is located",
-            "ps_studios.state_province,text,The state/province where the studio is located",
-            "ps_studios.city,text,The city where the studio is located",
-        ],
-        "ORG": [
-            "ps_studios.name,text,The name of the studio",
-        ],
-        "PER": [
-            "clients.first_name,text,The first name of the client",
-            "clients.last_name,text,The last name of the client",
         ],
     },
     "yelp": {
@@ -303,24 +287,6 @@ columns_join = {
             ("airport.state_code", "city.state_code"),
             ("airport.country_name", "city.state_code"),
             ("airport.time_zone_code", "city.state_code"),
-        ],
-    },
-    "pipeline": {
-        ("ps_studios", "sales"): [("ps_studios.site_id", "sales.site_id")],
-        ("ps_studios", "visits"): [("ps_studios.site_id", "visits.site_id")],
-        ("clients", "ps_studios"): [("clients.site_id", "ps_studios.site_id")],
-        ("sales", "visits"): [
-            ("sales.client_id", "visits.client_id"),
-            ("sales.site_id", "visits.site_id"),
-        ],
-        ("clients", "sales"): [
-            ("clients.client_id", "sales.client_id"),
-            ("clients.client_id", "sales.recipient_client_id"),
-            ("clients.site_id", "sales.site_id"),
-        ],
-        ("clients", "visits"): [
-            ("clients.client_id", "visits.client_id"),
-            ("clients.site_id", "visits.site_id"),
         ],
     },
     "yelp": {
