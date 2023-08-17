@@ -14,7 +14,7 @@ db_names = [
     "geography",
     "restaurants",
     "scholar",
-    "yelp"
+    "yelp",
 ]
 emb = {}
 csv_descriptions = {}
