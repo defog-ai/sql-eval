@@ -1,5 +1,5 @@
 # Defining your prompt
-You can define your prompt in the following structure way
+You can define your prompt using the following structure.
 
 ```
 ### Instructions:
@@ -16,7 +16,7 @@ THE RESPONSE TEXT FOR THE MODEL
 ```
 
 # Adding variables
-You can add variables using curly braces - like so `{user_question}`. Then, these can be updated at runtime using Python's `.format()` function for strings. Like [here](../eval/hf_runner.py#L18)
+You can add variables using curly braces - like so `{user_question}`. These can then be updated at runtime using Python's `.format()` method for strings. Like [here](../eval/hf_runner.py#L18).
 
 # Translating to OpenAI's messages prompt
-If evaluating OpenAI's chat models, please ensure that your prompt always has the keywords `### Instructions:`, `### Input:`, and `### Response:` in them. This will help ensure that the model is automatically converted to OpenAI's `system`, `user`, and `assistant` prompts. The section under Instructions is mapped to the `system` prompt, the section under Input is mapped to the `user` prompt, and the section under Response is mapped to the `assistant` prompt
+If you're performing evaluation with OpenAI's chat models, please ensure that your prompt contains the keywords `### Instructions:`, `### Input:`, and `### Response:`. This will help ensure that the prompt sections are automatically mapped to OpenAI's different prompt roles. The text under Instructions, Input and Response will be converted to the `system`, `user` and `assistant` prompts respectively.
