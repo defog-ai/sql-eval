@@ -117,7 +117,7 @@ You can use the following flags in the command line to change the configurations
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/starcoder-finetune-v3`).  |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
-| -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error.  |
+| -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
 | -v, --verbose  |  Prints details in command line. |
