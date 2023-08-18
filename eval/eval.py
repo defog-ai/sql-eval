@@ -92,7 +92,7 @@ def query_postgres_db(
     """
     Runs query on postgres db and returns results as a dataframe.
     This assumes that you have the evaluation database running locally.
-    If you don't, you can following the instructions in the README (Restoring to Postgres) to set it up.
+    If you don't, you can following the instructions in the README (Start Postgres Instance) to set it up.
 
     timeout: time in seconds to wait for query to finish before timing out
     """
