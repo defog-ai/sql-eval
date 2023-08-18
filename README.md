@@ -2,12 +2,12 @@
 
 [![tests](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml/badge.svg)](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml)
 
-This repository contains the code that Defog uses for the evaluation of LLM-generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category.
+This repository contains the code that Defog uses for the evaluation of generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category.
 
 ## Introduction
 
 Our testing procedure comprises the following steps. For each question/query pair:
-1. We generate a SQL query from an LLM.
+1. We generate a SQL query (possibly from an LLM).
 2. We run both the "gold" query and the generated query on their respective Postgres database to obtain 2 dataframes with the results.
 3. We compare the 2 dataframes using an "exact" and a "subset" match. TODO add link to blogpost.
 4. We log these alongside other metrics of interest (e.g. tokens used, latency) and aggregate the results for reporting.
@@ -16,9 +16,17 @@ Our testing procedure comprises the following steps. For each question/query pai
 
 This is a comprehensive set of instructions that assumes basic familiarity with the command line, Docker, running SQL queries on a database, and common Python data manipulation libraries (e.g. pandas).
 
+### Install Dependencies
+
+Firstly, install all Python libraries listed in the `requirements.txt` file. You would also need to download the spacy model used in the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py).
+```bash
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+```
+
 ### Start Postgres Instance
 
-Firstly, you would need to set up the databases that the queries are executed on. We use Postgres here, since it is the most common OSS database with the widest distribution and usage in production. In addition, we would recommend using Docker to do this, as it is the easiest way to get started. You can install Docker [here](https://docs.docker.com/get-docker/). 
+Next, you would need to set up the databases that the queries are executed on. We use Postgres here, since it is the most common OSS database with the widest distribution and usage in production. In addition, we would recommend using Docker to do this, as it is the easiest way to get started. You can install Docker [here](https://docs.docker.com/get-docker/). 
 
 Once you have Docker installed, you can create the Docker container and start the Postgres database using the following commands. We recommend mounting a volume on `data/postgres` to persist the data, as well as `data/export` to make it easier to import the data. To create the container, run:
 
@@ -64,9 +72,10 @@ If there are functions that are generally useful for all query generators, they 
 
 Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) to the query generator for each question/query pair. We have provided 2 most common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support) and `eval/hf_runner.py` for calling a local Hugging Face model. When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
 
-### Running the test
+## Running the Test
 
-#### OpenAI
+### OpenAI
+Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test. Instructions [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety). <br> 
 To test it out with just 1 question (instead of all 175):
 
 ```bash
@@ -75,14 +84,14 @@ python main.py \
   -q data/questions_gen.csv \
   -o results/my_query_generator.csv \
   -g oa \
-  -f query_generators/prompts/prompt.md \
+  -f prompts/prompt.md \
   -m gpt-3.5-turbo-0613 \
   -n 1 \
   -p 1 \
   -v
 ```
 
-#### Hugging Face
+### Hugging Face
 To test it out with just 10 questions (instead of all 175):
 
 ```bash
@@ -93,11 +102,27 @@ python -W ignore main.py \
   -q data/questions_gen.csv \
   -o results/results.csv \
   -g hf \
-  -f query_generators/prompts/prompt.md \
+  -f prompts/prompt.md \
   -m defog/starcoder-finetune-v3 \
   -n 10
 ```
 
+### CLI Flags
+You can use the following flags in the command line to change the configurations of your evaluation runs.
+| CLI Flags     | Description |
+|-------------|-------|
+|  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
+|  -o, --output_file   |  Output CSV file that will store your results.   |
+|  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models and `hf` for Hugging Face models.   |
+|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/starcoder-finetune-v3`).  |
+|  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
+| -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
+| -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error.  |
+| -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
+| -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
+| -v, --verbose  |  Prints details in command line. |
+
+## Checking the Results
 To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about. Happy iterating!
 
 ## Misc
