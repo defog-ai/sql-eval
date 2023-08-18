@@ -75,6 +75,7 @@ Having implemented the query generator, the next piece of abstraction would be t
 ## Running the Test
 
 ### OpenAI
+Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test. Instructions [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety). <br> 
 To test it out with just 1 question (instead of all 175):
 
 ```bash
