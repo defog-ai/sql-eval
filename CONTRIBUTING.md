@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for considering contributing to our project! We value your contributions and want to ensure a smooth and collaborative experience for everyone. Please take a moment to review the following guidelines.
+Thank you for your interest in contributing to our project! We value your contributions and want to ensure a smooth and collaborative experience for everyone. Please take a moment to review the following guidelines.
 
 ## Table of Contents
 - [Linting](#linting)
