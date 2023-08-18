@@ -1,3 +1,4 @@
+accelerate
 argparse
 func_timeout
 openai
