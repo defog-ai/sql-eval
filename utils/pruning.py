@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List, Tuple
 from sentence_transformers import SentenceTransformer
 import spacy
@@ -5,6 +6,8 @@ import pickle
 import torch
 import torch.nn.functional as F
 
+if os.getenv("TOKENIZERS_PARALLELISM") is None:
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 nlp = spacy.load("en_core_web_sm")
 
