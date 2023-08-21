@@ -8,7 +8,6 @@ def prepare_questions_df(questions_file, num_questions):
     question_query_df["error_msg"] = ""
     question_query_df["exact_match"] = 0
     question_query_df["correct"] = 0
-    question_query_df["fuzzy_correct"] = 0
     question_query_df["error_query_gen"] = 0
     question_query_df["error_db_exec"] = 0
     question_query_df["timeout"] = 0
