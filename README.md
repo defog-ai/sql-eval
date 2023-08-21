@@ -64,7 +64,7 @@ The data for importing is already in the exported SQL dumps in the `data/export`
 
 ### Query Generator
 
-To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see the sample `OpenAIQueryGenerator` in `query_generators/openai.py` which implements the class and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use. 
+To test your own query generator with our framework, you would need to extend [Query Generator](query_generators/query_generator.py) and implement the [generate_query](query_generators/query_generator.py#L18) method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can also reference [OpenAIQueryGenerator](query_generators/openai.py) which implements `Query Generator` and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use.
 
 If there are functions that are generally useful for all query generators, they can be placed in the `utils` folder. If you need to incorporate specific verbose templates (e.g. for prompt testing), you can store them in the `prompts` folder, and later import them. Being able to version control the prompts in a central place has been a productivity win for our team.
 
@@ -76,7 +76,7 @@ Having implemented the query generator, the next piece of abstraction would be t
 
 ### OpenAI
 Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test. Instructions [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety). <br> 
-To test it out with just 1 question (instead of all 175):
+To test it out with just 10 questions (instead of all 175):
 
 ```bash
 mkdir results # create directory for storing results
@@ -86,13 +86,12 @@ python main.py \
   -g oa \
   -f prompts/prompt.md \
   -m gpt-3.5-turbo-0613 \
-  -n 1 \
-  -p 1 \
-  -v
+  -n 10 \
+  -p 5
 ```
 
 ### Hugging Face
-To test it out with just 10 questions (instead of all 175):
+To test it out with our fine-tuned sql model with just 10 questions (instead of all 175):
 
 ```bash
 mkdir results #create directory for storing results
@@ -131,6 +130,7 @@ We welcome contributions to our project, specifically:
 - Dataset
   - Adding new database schema/data
 - Framework code
-  - New query generators/runners
+  - New query generators/runners (in the [query_generators](query_generators) and [eval](eval) folders respectively)
   - Improving existing generators/runners (e.g. adding new metrics)
+
 Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.
