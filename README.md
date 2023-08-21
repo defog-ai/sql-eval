@@ -24,6 +24,11 @@ pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
+You may also optionally install [accelerate](https://huggingface.co/docs/accelerate/index) if using a distributed setup. 
+```bash
+pip install accelerate
+```
+
 ### Start Postgres Instance
 
 Next, you would need to set up the databases that the queries are executed on. We use Postgres here, since it is the most common OSS database with the widest distribution and usage in production. In addition, we would recommend using Docker to do this, as it is the easiest way to get started. You can install Docker [here](https://docs.docker.com/get-docker/). 
@@ -76,7 +81,7 @@ Having implemented the query generator, the next piece of abstraction would be t
 
 ### OpenAI
 Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test. Instructions [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety). <br> 
-To test it out with just 10 questions (instead of all 175):
+To test it out with just 10 questions (instead of all 175), parallelized across 5 :
 
 ```bash
 mkdir results # create directory for storing results
