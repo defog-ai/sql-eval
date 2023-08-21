@@ -23,6 +23,10 @@ if __name__ == "__main__":
             args.model = "gpt-3.5-turbo-0613"
         run_openai_eval(args)
     elif args.model_type == "hf":
+        if args.model is None:
+            raise ValueError(
+                "Model must be specified for HF model type. See section on CLI flags in README.md for more details."
+            )
         run_hf_eval(
             questions_file=args.questions_file,
             prompt_file=args.prompt_file,
