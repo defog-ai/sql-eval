@@ -19,13 +19,15 @@ echo -e '#!/bin/sh\n#\n# Run linter before commit\nblack $(git rev-parse --show-
 
 [_Quis probabit ipsa probationem?_](https://en.wikipedia.org/wiki/Quis_custodiet_ipsos_custodes%3F)
 
-We have a comprehensive test suite that ensures the quality and reliability of our codebase. To run the tests, you can use the following command:
+We have a comprehensive test suite that ensures the quality and reliability of our codebase. To run the python tests, you can use the following command:
 
 ```bash
 pytest tests
 ```
 
 Please make sure that all tests pass before submitting your changes.
+
+We also understand that some changes might not be easily testable with unit tests, for example, modifications of the underlying data schema, like column descriptions. In such cases, please provide a detailed description of your changes and how you tested them. We will review your changes and work with you to ensure that they are tested and verified.
 
 ## Submitting Changes
 
@@ -36,5 +38,9 @@ When submitting changes to this repository, please follow these steps:
 - Run the tests to ensure your changes don't introduce any regressions.
 - Lint your code and [squash your commits](https://www.git-tower.com/learn/git/faq/git-squash) down to 1 single commit.
 - Commit your changes and push them to your forked repository.
-- Open a pull request to the main repository and provide a detailed description of your changes.
+- Open a pull request to the main repository and provide a detailed description of your changes:
+  - What problem you are trying to solve.
+  - Alternatives considered and how you decided on which one to take
+  - How you solved it.
+  - How you tested your changes.
 - Your pull request will be reviewed by our team, and we may ask for further improvements or clarifications before merging. Thank you for your contribution!
