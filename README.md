@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml/badge.svg)](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml)
 
-This repository contains the code that Defog uses for the evaluation of generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category.
+This repository contains the code that Defog uses for the evaluation of generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category. For an in-depth look into our process of creating this evaluation approach, see [this](https://defog.ai/blog/open-sourcing-sqleval/).
 
 ## Introduction
 
@@ -113,7 +113,7 @@ You can use the following flags in the command line to change the configurations
 |  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
 |  -o, --output_file   |  Output CSV file that will store your results.   |
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models and `hf` for Hugging Face models.   |
-|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/starcoder-finetune-v3`).  |
+|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
