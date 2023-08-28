@@ -8,7 +8,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from sqlalchemy import create_engine
 
 # like_pattern = r"LIKE\s+'[^']*'"
-like_pattern = r"LIKE[\s\S]*'"
+LIKE_PATTERN = r"LIKE[\s\S]*'"
 
 
 def normalize_table(
@@ -62,6 +62,9 @@ def find_bracket_indices(s: str, start_index: int = 0) -> "tuple[int, int]":
 
 # extrapolate all possible queries from a query with { } in it
 def get_all_minimal_queries(query: str) -> "list[str]":
+    query = " ".join(
+        query.split()
+    )  # replace multiple whitespaces with single space to avoid errors
     start, end = find_bracket_indices(query, 0)
     if (start, end) == (-1, -1):
         return [query]
@@ -92,7 +95,7 @@ def query_postgres_db(
     """
     Runs query on postgres db and returns results as a dataframe.
     This assumes that you have the evaluation database running locally.
-    If you don't, you can following the instructions in the README (Start Postgres Instance) to set it up.
+    If you don't, you can following the instructions in the README (Restoring to Postgres) to set it up.
 
     timeout: time in seconds to wait for query to finish before timing out
     """
@@ -108,7 +111,7 @@ def query_postgres_db(
         db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
         engine = create_engine(db_url)
         escaped_query = re.sub(
-            like_pattern, escape_percent, query, flags=re.IGNORECASE
+            LIKE_PATTERN, escape_percent, query, flags=re.IGNORECASE
         )  # ignore case of LIKE
         results_df = func_timeout(
             timeout, pd.read_sql_query, args=(escaped_query, engine)
