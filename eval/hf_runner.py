@@ -1,14 +1,13 @@
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, LlamaForCausalLM, pipeline
 from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
-
 
 def generate_prompt(prompt_file, question, db_name):
     with open(prompt_file, "r") as f:
@@ -22,14 +21,23 @@ def generate_prompt(prompt_file, question, db_name):
 
 
 def get_tokenizer_model(model_name):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        trust_remote_code=True,
-        torch_dtype=torch.float16,
-        device_map="auto",
-        use_cache=True,
-    )
+    if "llama" not in model_name:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            trust_remote_code=True,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            use_cache=True,
+        )
+    else:
+        tokenizer = LlamaTokenizer.from_pretrained(model_name, legacy=False, use_fast=True)
+        model = LlamaForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            use_cache=True,
+        )
     return tokenizer, model
 
 
@@ -53,6 +61,7 @@ def run_hf_eval(
     print("questions prepared\nnow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name)
+    model.tie_weights()
 
     print("model loaded\nnow generating and evaluating predictions...")
 
@@ -64,11 +73,18 @@ def run_hf_eval(
     total_correct = 0
     output_rows = []
 
-    pipeline_config = {
-        "max_new_tokens": 300,
-        "do_sample": False,
-        "num_beams": 5,
-    }
+    if "llama" not in model_name.lower():
+        pipeline_config = {
+            "max_new_tokens": 300,
+            "do_sample": False,
+            "num_beams": 5,
+        }
+    else:
+        pipeline_config = {
+            "max_new_tokens": 300,
+            "do_sample": False,
+            "num_beams": 3,
+        }
 
     with tqdm(total=len(df)) as pbar:
         for row in df.to_dict("records"):
