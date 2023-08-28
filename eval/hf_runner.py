@@ -1,13 +1,20 @@
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, LlamaForCausalLM, pipeline
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    LlamaTokenizer,
+    LlamaForCausalLM,
+    pipeline,
+)
 from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
+
 
 def generate_prompt(prompt_file, question, db_name):
     with open(prompt_file, "r") as f:
@@ -31,7 +38,9 @@ def get_tokenizer_model(model_name):
             use_cache=True,
         )
     else:
-        tokenizer = LlamaTokenizer.from_pretrained(model_name, legacy=False, use_fast=True)
+        tokenizer = LlamaTokenizer.from_pretrained(
+            model_name, legacy=False, use_fast=True
+        )
         model = LlamaForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
