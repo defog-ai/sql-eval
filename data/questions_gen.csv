@@ -6,13 +6,19 @@ Which authors have published papers in journals within the past 3 years?,"SELECT
 What's the difference in time between the first and last paper published?,"SELECT max(year) - min(year) as time_difference
 FROM   publication;",academic,date_functions
 "Which authors have written publications in both the domain ""Machine Learning"" and the domain ""Data Science""?","SELECT {author.name,author.aid} FROM author WHERE author.aid IN (   SELECT domain_author.aid   FROM domain_author   WHERE domain_author.did IN (     SELECT domain.did     FROM domain     WHERE domain.name IN ('Machine Learning', 'Data Science')   )   GROUP BY 1   HAVING COUNT(DISTINCT domain_author.did) = 2 );",academic,group_by
-What is the total number of publications that cite each publication?,"WITH cited_pubs AS (SELECT cite.cited AS publication_id, COUNT(*) AS total_citations FROM cite GROUP BY cite.cited ORDER BY total_citations DESC NULLS LAST) SELECT COUNT(*) FROM cited_pubs WHERE total_citations > 0;",academic,group_by
+What is the total number of citations received by each author?,"SELECT {author.name, author.aid},
+       sum(publication.citation_num) as total_citations
+FROM   author join writes
+        ON author.aid = writes.aid join publication
+        ON writes.pid = publication.pid
+GROUP BY {}
+ORDER BY total_citations desc nulls last;",academic,group_by
 What is the total number of publications published in each year?,"SELECT publication.year, COUNT(DISTINCT publication.pid) AS total_publications FROM publication GROUP BY publication.year ORDER BY publication.year;",academic,group_by
-What is the average number of references cited by publications in each domain name?,"SELECT {domain.name,domain.did}, AVG(publication.reference_num) as average_references FROM domain_publication JOIN publication ON domain_publication.pid = publication.pid JOIN domain ON domain.did = domain_publication.did GROUP BY 1;",academic,group_by
+What is the average number of references cited by publications in each domain name?,"SELECT {domain.name,domain.did}, AVG(publication.reference_num) as average_references FROM domain_publication JOIN publication ON domain_publication.pid = publication.pid JOIN domain ON domain.did = domain_publication.did GROUP BY {};",academic,group_by
 What is the average number of citations received by publications in each year?,"SELECT publication.year, AVG(publication.citation_num) AS average_citations FROM publication GROUP BY publication.year ORDER BY publication.year NULLS LAST;",academic,group_by
 What is the title of the publication that has received the highest number of citations?,SELECT publication.title FROM publication ORDER BY publication.citation_num DESC NULLS LAST LIMIT 1;,academic,order_by
 What are the top 5 domains with the highest number of authors associated with them?,"SELECT {d.name, d.did}, COUNT(DISTINCT a.aid) as author_count FROM author a JOIN domain_author da ON a.aid = da.aid JOIN domain d ON da.did = d.did GROUP BY {} ORDER BY author_count DESC, d.name LIMIT 5;",academic,order_by
-"What are the top 3 titles of the publications that have the highest number of references cited, ordered by the number of references cited in descending order?","SELECT publication.title, publication.reference_num FROM publication ORDER BY publication.reference_num DESC LIMIT 3;",academic,order_by
+"What are the top 3 titles of the publications that have the highest number of references cited, ordered by the number of references cited in descending order?",SELECT publication.title FROM publication ORDER BY publication.reference_num DESC LIMIT 3;,academic,order_by
 What are the top 3 publications with the highest number of citations?,"SELECT {publication.title, publication.pid}, publication.citation_num FROM publication ORDER BY publication.citation_num DESC LIMIT 3;",academic,order_by
 What are the titles of all publications ordered alphabetically?,SELECT DISTINCT publication.title  FROM publication  ORDER BY publication.title ASC NULLS LAST;,academic,order_by
 What is the ratio of publications to authors in the database?,"SELECT    CAST(COUNT(DISTINCT publication.pid) AS FLOAT) / NULLIF(COUNT(DISTINCT author.aid), 0) AS publication_to_author_ratio FROM    publication, author;",academic,ratio
@@ -20,7 +26,7 @@ What is the ratio of publications presented in conferences to publications publi
 How does the ratio of publications to keywords vary across different domain ids?,"SELECT domain_publication.did,         CAST(COUNT(DISTINCT domain_publication.pid) AS FLOAT) / NULLIF(COUNT(DISTINCT domain_keyword.kid), 0) AS publication_to_keyword_ratio FROM domain_publication JOIN domain_keyword ON domain_publication.did = domain_keyword.did GROUP BY domain_publication.did ORDER BY publication_to_keyword_ratio DESC NULLS LAST;",academic,ratio
 How does the ratio of publications to journals change over the years? Return the annual numbers of publications and journals as well.,"SELECT    publication.year,    COUNT(DISTINCT publication.pid) AS num_publications,    COUNT(DISTINCT publication.jid) AS num_journals,    CAST(COUNT(DISTINCT publication.pid) AS FLOAT) / NULLIF(COUNT(DISTINCT publication.jid), 0) AS ratio FROM    publication GROUP BY    publication.year ORDER BY    publication.year;",academic,ratio
 How does the ratio of authors to organizations differ by continent?,"SELECT organization.continent,         COUNT(DISTINCT author.aid)::float / NULLIF(COUNT(DISTINCT organization.oid), 0) AS ratio FROM author JOIN organization ON author.oid = organization.oid GROUP BY organization.continent ORDER BY ratio DESC NULLS LAST;",academic,ratio
-Which author had the most publications in the year 2021?,"SELECT {author.name, author.aid}, COUNT(publication.pid) AS publication_count FROM writes JOIN author ON writes.aid = author.aid JOIN publication ON writes.pid = publication.pid WHERE publication.year = 2021 GROUP BY {} ORDER BY publication_count DESC NULLS LAST LIMIT 1; ",academic,table_join
+Which author had the most publications in the year 2021 and how many publications did he/she have that year?,"SELECT {author.name, author.aid}, COUNT(publication.pid) AS publication_count FROM writes JOIN author ON writes.aid = author.aid JOIN publication ON writes.pid = publication.pid WHERE publication.year = 2021 GROUP BY {} ORDER BY publication_count DESC NULLS LAST LIMIT 1; ",academic,table_join
 What is the total number of publications presented in each conference?,"SELECT {conference.name, conference.cid}, COUNT(publication.pid) AS total_publications FROM publication JOIN conference ON publication.cid = conference.cid GROUP BY {} ORDER BY total_publications DESC;",academic,table_join
 "What is the total number of publications in each journal, ordered by the number of publications in descending order?","SELECT {journal.name, journal.jid}, COUNT(publication.pid) AS total_publications FROM publication JOIN journal ON publication.jid=journal.jid GROUP BY {} ORDER BY total_publications DESC NULLS LAST;",academic,table_join
 "How many publications were presented at each conference, ordered by the number of publications in descending order? Give the names of the conferences and their corresponding number of publications.","SELECT conference.name, COUNT(publication.pid) AS num_publications FROM publication JOIN conference ON publication.cid=conference.cid GROUP BY conference.cid ORDER BY num_publications DESC NULLS LAST;",academic,table_join
@@ -47,7 +53,7 @@ FROM   date_trunc('month', predicted_graduation_semester) - interval '2 weeks') 
 FROM   student
 ORDER BY predicted_graduation_semester desc limit 1;",advising,date_functions
 What is the total number of students who found the instructor to be hilarious per course id?,"SELECT course_tags_count.course_id, SUM(course_tags_count.hilarious) AS total_hilarious FROM course_tags_count GROUP BY course_tags_count.course_id;",advising,group_by
-What is the average clarity score for each instructor who taught a course?,"SELECT {instructor.name, instructor.instructor_id}, AVG(comment_instructor.score) as average_score FROM comment_instructor JOIN instructor ON comment_instructor.instructor_id = instructor.instructor_id GROUP BY {} ORDER BY average_score DESC NULLS LAST;",advising,group_by
+What is the average clarity score for each instructor who taught a course?,"SELECT {instructor.name, instructor.instructor_id}, avg(course.clarity_score) AS average_clarity_score FROM course JOIN instructor ON course.course_id = instructor.instructor_id GROUP BY {} ORDER BY average_clarity_score DESC NULLS LAST;",advising,group_by
 How many courses have a final exam and how many do not?,"SELECT    course_offering.has_final_exam,    COUNT(*) AS num_courses FROM    course_offering GROUP BY    course_offering.has_final_exam;",advising,group_by
 How many courses does each department offer?,"SELECT course.department, COUNT(DISTINCT course.course_id) AS num_courses FROM course GROUP BY course.department ORDER BY num_courses DESC NULLS LAST;",advising,group_by
 How many courses are offered in each semester id?,"SELECT course_offering.semester, COUNT(DISTINCT course_offering.course_id) AS num_courses FROM course_offering GROUP BY course_offering.semester ORDER BY course_offering.semester;",advising,group_by
@@ -70,7 +76,11 @@ Which students have declared a minor program? List their firstname and lastname.
 "What is the average GPA of students in the program ""Computer Engineering""?",SELECT AVG(student.total_gpa)  FROM student  JOIN program ON student.program_id = program.program_id  WHERE LOWER(program.name) LIKE '%computer engineering%';,advising,where
 What are the names of all the courses offered by the department of Computer Science?,"SELECT {course.name, course.course_id}  FROM course  WHERE course.department = 'Computer Science'  ORDER BY course.name ASC NULLS LAST;",advising,where
 "What are the easiness scores for courses in the ""Computer Science"" department?","SELECT {name, course_id}, course.easiness_score FROM course WHERE course.department ilike '%Computer Science%';",advising,where
-How many students have taken a course in-person vs. online?,"SELECT    student_record.how,    COUNT(DISTINCT student_record.student_id) AS num_students FROM    student_record WHERE    student_record.how IN ('in-person', 'online') GROUP BY    student_record.how;",advising,where
+How many students have taken a course in-person or online?,"SELECT count(distinct sr.student_id) as num_students
+FROM   student_record sr join student s
+        ON sr.student_id = s.student_id
+WHERE  sr.how ilike '%in-person%'
+    or sr.how ilike '%online%';",advising,where
 Which flight has the shortest duration between departure and arrival times? Convert to minutes.,"SELECT flight_number,
        (arrival_time - departure_time) / 60 as duration_minutes
 FROM   flight
@@ -116,7 +126,7 @@ Which flights operate on Mondays and Wednesdays? Give me the relevant flight num
 What is the total cost of all round-trip fares from New York (JFK) to Los Angeles?,SELECT SUM(fare.round_trip_cost) AS total_round_trip_cost FROM fare WHERE fare.from_airport = 'JFK' AND fare.to_airport = 'LAX';,atis,where
 What is the minimum amount of time required for a connecting flight at JFK Airport?,SELECT minimum_connect_time  FROM airport  WHERE airport_code = 'JFK';,atis,where
 How many flights require a round-trip to purchase the fare?,SELECT COUNT(*)  FROM fare  WHERE round_trip_required = 'Yes';,atis,where
-What is the total population of each country in the database?,"SELECT city.country_name, SUM(city.population) AS total_population FROM city GROUP BY city.country_name ORDER BY total_population DESC NULLS LAST;",geography,group_by
+What is the total population in cities by country?,"SELECT city.country_name, SUM(city.population) AS total_population FROM city GROUP BY city.country_name ORDER BY total_population DESC NULLS LAST;",geography,group_by
 What is the average length of rivers in each country?,"SELECT    river.country_name,    AVG(river.length) AS average_length FROM    river GROUP BY    river.country_name ORDER BY    average_length DESC NULLS LAST;",geography,group_by
 How many rivers flow through each country?,"SELECT river.country_name, COUNT(DISTINCT river.river_name) AS number_of_rivers FROM river GROUP BY river.country_name ORDER BY number_of_rivers DESC;",geography,group_by
 How many mountains are there in each country?,"SELECT mountain.country_name, COUNT(mountain.mountain_name) AS number_of_mountains FROM mountain GROUP BY mountain.country_name ORDER BY number_of_mountains DESC;",geography,group_by
@@ -132,8 +142,12 @@ What is the ratio of the altitude of Mount Everest to the altitude of Dhaulagiri
 "How does the population of each city vary in relation to the population of its corresponding state? Return the city name, and the proportion of each city's population relative to the state.","SELECT city.city_name, CAST(city.population AS float) / NULLIF(state.population, 0) AS population_ratio FROM city JOIN state ON city.state_name = state.state_name ORDER BY population_ratio DESC NULLS LAST;",geography,ratio
 Get the ratio of population per area for each state,"SELECT state_name, population / NULLIF(area, 0) AS population_density FROM state;",geography,ratio
 Which countries have lakes and rivers?,SELECT DISTINCT lake.country_name FROM public.lake JOIN public.river ON lake.country_name = river.country_name;,geography,table_join
-Which cities are not associated with any state?,SELECT city.city_name FROM city LEFT JOIN state ON city.state_name = state.state_name WHERE state.state_name IS NULL;,geography,table_join
-"Which lakes have a name that starts with ""Lake"" and are located in states with an area greater than 1000 square kilometers?",SELECT lake.lake_name FROM   lake join state         ON lake.state_name = state.state_name WHERE  state.area > 1000    and lake.lake_name ilike 'Lake%' ORDER BY lake.lake_name nulls last;,geography,table_join
+Which states border the state where lake ontario is?,"SELECT border_info.border
+FROM   border_info join lake
+        ON border_info.state_name = lake.state_name
+WHERE  lake.lake_name ilike '%Ontario%'
+ORDER BY border_info.border nulls last;",geography,table_join
+"Which lakes have a name that starts with ""Lake""? They should be located in states with an area greater than 1000 square kilometers.",SELECT lake.lake_name FROM   lake join state         ON lake.state_name = state.state_name WHERE  state.area > 1000    and lake.lake_name ilike 'Lake%' ORDER BY lake.lake_name nulls last;,geography,table_join
 What is the highest point in each state and what is the population density of that state?,"SELECT    highlow.state_name,    highlow.highest_point,    state.density FROM    highlow JOIN    state ON highlow.state_name = state.state_name GROUP BY    highlow.state_name,    highlow.highest_point,    state.density;",geography,table_join
 What is the average length of rivers per country in countries with a lake?,"SELECT l.country_name, AVG(r.length) AS average_length FROM river r JOIN lake l ON r.country_name = l.country_name GROUP BY 1;",geography,table_join
 Which states have fewer than a hundred thousand people?,SELECT state_name FROM state WHERE population < 100000;,geography,where
@@ -171,11 +185,11 @@ FROM   paper p join writes w
         ON p.paperid = w.paperid
 WHERE  p.year < extract(year
 FROM   current_date - interval '1 year');",scholar,date_functions
-"How many keyphrases are associated with papers published after July 1, 2019 and before 31 September 2035?","SELECT count(distinct pk.keyphraseid) as num_keyphrases
+How many keyphrases are associated with papers published between 2020 and 2035?,"SELECT count(distinct pk.keyphraseid) as num_keyphrases
 FROM   paper p join paperkeyphrase pk
         ON p.paperid = pk.paperid
-WHERE  p.year > 2019
-   and p.year < 2035 ;",scholar,date_functions
+WHERE  p.year >= 2020
+   and p.year <= 2035 ;",scholar,date_functions
 What's the number of papers published per year excluding those published in the year that is 6 years before 2025?,"SELECT year,
        count(*) as num_papers
 FROM   paper
@@ -258,7 +272,7 @@ WHERE
 What is the total count of check-ins for each business id?,"SELECT checkin.business_id, SUM(checkin.count) AS total_checkins FROM checkin GROUP BY checkin.business_id ORDER BY total_checkins DESC NULLS LAST;",yelp,group_by
 What is the average rating of each business in the city of NEW YORK?,"SELECT    {business.name, business.business_id, business.bid},    business.rating AS average_rating FROM    business WHERE    business.city ILIKE '%NEW YORK%' GROUP BY    {};",yelp,group_by
 How many check-ins occurred on each day of the week?,"SELECT checkin.day, SUM(checkin.count) AS total_checkins FROM checkin GROUP BY checkin.day ORDER BY total_checkins DESC NULLS LAST;",yelp,group_by
-"Which businesses have the highest average rating in the city of ""New York"" and what are their names?","SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST;",yelp,order_by
+Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.,"SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST;",yelp,order_by
 What is the latitude and longitude of the business with the highest rating?,"SELECT business.latitude, business.longitude FROM business ORDER BY business.rating DESC NULLS LAST LIMIT 1;",yelp,order_by
 What are the top 3 businesses in terms of review count?,"SELECT {business.name, business.business_id, business.bid}, business.review_count FROM business ORDER BY business.review_count DESC NULLS LAST LIMIT 3;",yelp,order_by
 "What are the names of the businesses in the database, ordered alphabetically?",SELECT business.name  FROM business  ORDER BY business.name ASC NULLS LAST;,yelp,order_by
