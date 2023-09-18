@@ -240,9 +240,14 @@ COPY public.author (aid, homepage, name, oid) FROM stdin;
 
 COPY public.cite (cited, citing) FROM stdin;
 1	2
-4	3
-5	4
-5	3
+1	3
+1	4
+1	5
+2	3
+2	5
+3	4
+3	5
+4	5
 \.
 
 
@@ -374,11 +379,11 @@ Europe	www.organization5.com	Organization 5	5
 --
 
 COPY public.publication (abstract, cid, citation_num, jid, pid, reference_num, title, year) FROM stdin;
-Abstract 1	1	10	1	1	5	The Effects of Climate Change on Agriculture	2020
-Abstract 2	2	12	2	2	8	A Study on the Effects of Social Media on Mental Health	2020
-Abstract 3	3	23	2	3	2	Data Mining Techniques	2021
-Abstract 4	3	14	2	4	14	Optimizing GPU Throughput	2021
-Abstract 5	3	30	4	5	4	Attention is all you need	2021
+Abstract 1	1	4	1	1	5	The Effects of Climate Change on Agriculture	2020
+Abstract 2	2	2	2	2	8	A Study on the Effects of Social Media on Mental Health	2020
+Abstract 3	3	2	2	3	2	Data Mining Techniques	2021
+Abstract 4	3	1	2	4	14	Optimizing GPU Throughput	2021
+Abstract 5	3	0	4	5	4	Attention is all you need	2021
 \.
 
 
