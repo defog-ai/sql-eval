@@ -260,8 +260,8 @@ CREATE TABLE public.student (
     total_credit bigint,
     total_gpa numeric,
     entered_as text DEFAULT 'firstyear'::text,
-    admit_term bigint,
-    predicted_graduation_semester bigint,
+    admit_term date,
+    predicted_graduation_semester date,
     degree text,
     minor text,
     internship text
@@ -435,9 +435,9 @@ COPY public.semester (semester_id, semester, year) FROM stdin;
 --
 
 COPY public.student (student_id, lastname, firstname, program_id, declare_major, total_credit, total_gpa, entered_as, admit_term, predicted_graduation_semester, degree, minor, internship) FROM stdin;
-1	Smith	John	1	Computer Science	120	3.5	Freshman	201801	202205	Bachelor of Science	\N	\N
-2	Doe	Jane	1	Computer Science	90	3.2	Freshman	201801	202205	Bachelor of Science	\N	\N
-3	Johnson	David	2	Mathematics	100	3.6	Freshman	201801	202205	Bachelor of Arts	Mathematics	\N
+1	Smith	John	1	Computer Science	120	3.5	Freshman	2018-01-01	2022-05-01	Bachelor of Science	\N	\N
+2	Doe	Jane	1	Computer Science	90	3.2	Freshman	2018-01-01	2022-05-01	Bachelor of Science	\N	\N
+3	Johnson	David	2	Mathematics	100	3.6	Freshman	2019-01-01	2022-05-01	Bachelor of Arts	Mathematics	\N
 \.
 
 
