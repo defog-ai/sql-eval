@@ -152,20 +152,6 @@ CREATE TABLE public.compartment_class (
 ALTER TABLE public.compartment_class OWNER TO postgres;
 
 --
--- Name: date_day; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.date_day (
-    month_number bigint,
-    day_number bigint,
-    year bigint,
-    day_name text
-);
-
-
-ALTER TABLE public.date_day OWNER TO postgres;
-
---
 -- Name: days; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -541,14 +527,6 @@ Economy	Economy Class
 
 
 --
--- Data for Name: date_day; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.date_day (month_number, day_number, year, day_name) FROM stdin;
-\.
-
-
---
 -- Data for Name: days; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -815,6 +793,10 @@ daily	1577901600	1577905200
 --
 
 COPY public.time_zone (time_zone_code, time_zone_name, hours_from_gmt) FROM stdin;
+PST	Pacific Standard Time	-8
+MST	Mountain Standard Time	-7
+CST	Central Standard Time	-6
+EST	Eastern Standard Time	-5
 \.
 
 
