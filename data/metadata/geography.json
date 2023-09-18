@@ -107,7 +107,7 @@
             {
                 "data_type": "text",
                 "column_name": "highest_elevation",
-                "column_description": "The highest elevation point in the state"
+                "column_description": "The highest elevation point in the state in meters above sea level"
             },
             {
                 "data_type": "text",
@@ -122,7 +122,7 @@
             {
                 "data_type": "text",
                 "column_name": "lowest_elevation",
-                "column_description": "The lowest point in the state"
+                "column_description": "The lowest point in the state in meters above sea level"
             }
         ],
         "mountain": [
