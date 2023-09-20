@@ -110,7 +110,7 @@ Which states border the state where lake ontario is?,SELECT border_info.border F
 What is the highest point in each state and what is the population density of that state?,"SELECT highlow.state_name, highlow.highest_point, state.density FROM highlow JOIN state ON highlow.state_name = state.state_name GROUP BY highlow.state_name, highlow.highest_point, state.density;",geography,table_join
 What is the average length of rivers per country in countries with a lake?,"SELECT l.country_name, AVG(r.length) AS average_length FROM river r JOIN lake l ON r.country_name = l.country_name GROUP BY 1;",geography,table_join
 Which states have fewer than a hundred thousand people?,SELECT state_name FROM state WHERE population < 100000;,geography,where
-Which rivers traverse at least 3 cities/landmarks?,"SELECT river_name, LENGTH FROM river WHERE traverse LIKE '%,%,%';",geography,where
+Which rivers traverse at least 3 cities/landmarks?,"SELECT river_name FROM river WHERE traverse LIKE '%,%,%';",geography,where
 What are the names and areas of the lakes in Michigan?,"SELECT lake_name, area FROM lake WHERE state_name = 'Michigan';",geography,where
 What are the names and altitudes of the mountains in Nepal?,"SELECT mountain_name, mountain_altitude FROM mountain WHERE country_name = 'Nepal';",geography,where
 Get the cities in the United States and their population,"SELECT city_name, population FROM city WHERE country_name = 'United States';",geography,where
