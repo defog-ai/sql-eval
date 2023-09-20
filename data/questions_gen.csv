@@ -97,7 +97,7 @@ What is the ratio of the area of each lake to the total area of the state it is 
 Get the cities in the United States and their population ,"SELECT city_name, population FROM city WHERE country_name = 'United States'; ",geography,where
 What are the names and areas of the lakes in Michigan?,"SELECT lake_name, area FROM lake WHERE state_name = 'Michigan';",geography,where
 What are the names and altitudes of the mountains in Nepal?,"SELECT mountain_name, mountain_altitude FROM mountain WHERE country_name = 'Nepal'; ",geography,where
-Which rivers traverse at least 3 cities/landmarks?,"SELECT river_name, length FROM river WHERE traverse LIKE '%,%,%'; ",geography,where
+Which rivers traverse at least 3 cities/landmarks?,"SELECT river_name FROM river WHERE traverse LIKE '%,%,%'; ",geography,where
 Which states have fewer than a hundred thousand people?,SELECT state_name FROM state WHERE population < 100000;,geography,where
 What is the total count of restaurants in each city?,"SELECT location.city_name, COUNT(DISTINCT location.restaurant_id) AS total_count FROM location GROUP BY location.city_name;",restaurants,group_by
 What is the average rating of restaurants serving each type of food?,"SELECT    restaurant.food_type,    AVG(restaurant.rating) AS average_rating FROM    restaurant GROUP BY    restaurant.food_type ORDER BY    average_rating DESC NULLS LAST;",restaurants,group_by
