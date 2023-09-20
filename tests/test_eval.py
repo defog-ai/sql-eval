@@ -1,4 +1,3 @@
-from sqlalchemy.engine.base import Engine
 from eval.eval import (
     compare_query_results,
     find_bracket_indices,
@@ -12,7 +11,6 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import pytest
 from unittest import mock
-from unittest.mock import MagicMock
 
 query = "SELECT * FROM table_name"
 query_order_by = "SELECT * FROM table_name ORDER BY name DESC"

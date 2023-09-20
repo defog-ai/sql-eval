@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml/badge.svg)](https://github.com/defog-ai/sql-generation-evaluation/actions/workflows/main.yml)
 
-This repository contains the code that Defog uses for the evaluation of generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category.
+This repository contains the code that Defog uses for the evaluation of generated SQL. It's based off the schema from the [Spider](https://github.com/taoyds/spider), but with a new set of hand-selected questions and queries grouped by query category. For an in-depth look into our process of creating this evaluation approach, see [this](https://defog.ai/blog/open-sourcing-sqleval/).
 
 ## Introduction
 
@@ -64,7 +64,7 @@ The data for importing is already in the exported SQL dumps in the `data/export`
 
 ### Query Generator
 
-To test your own query generator with our framework, you would need to extend `QueryGenerator` and implement the `generate_query` method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can see the sample `OpenAIQueryGenerator` in `query_generators/openai.py` which implements the class and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use. 
+To test your own query generator with our framework, you would need to extend [Query Generator](query_generators/query_generator.py) and implement the [generate_query](query_generators/query_generator.py#L18) method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can also reference [OpenAIQueryGenerator](query_generators/openai.py) which implements `Query Generator` and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use.
 
 If there are functions that are generally useful for all query generators, they can be placed in the `utils` folder. If you need to incorporate specific verbose templates (e.g. for prompt testing), you can store them in the `prompts` folder, and later import them. Being able to version control the prompts in a central place has been a productivity win for our team.
 
@@ -76,7 +76,7 @@ Having implemented the query generator, the next piece of abstraction would be t
 
 ### OpenAI
 Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test. Instructions [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety). <br> 
-To test it out with just 1 question (instead of all 175):
+To test it out with just 10 questions (instead of all 175), parallelized across 5 :
 
 ```bash
 mkdir results # create directory for storing results
@@ -86,13 +86,12 @@ python main.py \
   -g oa \
   -f prompts/prompt.md \
   -m gpt-3.5-turbo-0613 \
-  -n 1 \
-  -p 1 \
-  -v
+  -n 10 \
+  -p 5
 ```
 
 ### Hugging Face
-To test it out with just 10 questions (instead of all 175):
+To test it out with our fine-tuned sql model with just 10 questions (instead of all 175):
 
 ```bash
 mkdir results #create directory for storing results
@@ -114,10 +113,10 @@ You can use the following flags in the command line to change the configurations
 |  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
 |  -o, --output_file   |  Output CSV file that will store your results.   |
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models and `hf` for Hugging Face models.   |
-|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/starcoder-finetune-v3`).  |
+|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
-| -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error.  |
+| -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
 | -v, --verbose  |  Prints details in command line. |
@@ -131,6 +130,7 @@ We welcome contributions to our project, specifically:
 - Dataset
   - Adding new database schema/data
 - Framework code
-  - New query generators/runners
+  - New query generators/runners (in the [query_generators](query_generators) and [eval](eval) folders respectively)
   - Improving existing generators/runners (e.g. adding new metrics)
+
 Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.
