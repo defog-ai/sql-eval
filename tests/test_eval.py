@@ -113,6 +113,15 @@ def test_get_all_minimal_queries():
     )
     option3 = "SELECT persons.name, persons.id FROM persons WHERE persons.age > 25 GROUP BY persons.name, persons.id"
     assert get_all_minimal_queries(query4) == [option1, option2, option3]
+    query5 = "SELECT {persons.name,persons.id} FROM persons WHERE persons.age > 25 GROUP BY {};SELECT {user.name,user.id} FROM user WHERE user.age > 25 GROUP BY {};"
+    option4 = (
+        "SELECT user.name FROM user WHERE user.age > 25 GROUP BY user.name"
+    )
+    option5 = (
+        "SELECT user.id FROM user WHERE user.age > 25 GROUP BY user.id"
+    )
+    option6 = "SELECT user.name, user.id FROM user WHERE user.age > 25 GROUP BY user.name, user.id"
+    assert get_all_minimal_queries(query5) == [option1, option2, option3, option4, option5, option6]
 
 
 @mock.patch("pandas.read_sql_query")
@@ -243,18 +252,18 @@ def test_subset_df(test_dataframes):
 def test_compare_query_results(mock_query_postgres_db):
     # Set up mock behavior
     def mock_query_postgres_db_fn(query, db_name, db_creds, timeout) -> pd.DataFrame:
-        if query == "SELECT id FROM users WHERE age < 18;":
+        if query == "SELECT id FROM users WHERE age < 18":
             return pd.DataFrame({"id": [1, 2, 3]})
-        elif query == "SELECT name FROM users WHERE age < 18;":
+        elif query == "SELECT name FROM users WHERE age < 18":
             return pd.DataFrame({"name": ["alice", "bob", "carol"]})
-        elif query == "SELECT id, name FROM users WHERE age < 18;":
+        elif query == "SELECT id, name FROM users WHERE age < 18":
             return pd.DataFrame({"id": [1, 2, 3], "name": ["alice", "bob", "carol"]})
-        elif query == "SELECT id, age FROM users WHERE age < 18;":
+        elif query == "SELECT id, age FROM users WHERE age < 18":
             return pd.DataFrame({"id": [1, 2, 3], "age": [16, 12, 17]})
-        elif query == "SELECT id, age FROM users WHERE age < 18 ORDER BY age;":
+        elif query == "SELECT id, age FROM users WHERE age < 18 ORDER BY age":
             return pd.DataFrame({"id": [2, 1, 3], "age": [12, 16, 17]})
         else:
-            raise ValueError("Unexpected query")
+            raise ValueError(f"Unexpected query: {query}")
 
     mock_query_postgres_db.side_effect = mock_query_postgres_db_fn
 
@@ -273,35 +282,35 @@ def test_compare_query_results(mock_query_postgres_db):
 
     test_queries_expected = [
         (
-            "SELECT id FROM users WHERE age < 18;",
+            "SELECT id FROM users WHERE age < 18",
             True,
             True,
             2,
         ),  # uses id column (exact match on 1st column)
         (
-            "SELECT name FROM users WHERE age < 18;",
+            "SELECT name FROM users WHERE age < 18",
             True,
             True,
             3,
         ),  # uses name column (exact match on 2nd column)
         (
-            "SELECT id, name FROM users WHERE age < 18;",
+            "SELECT id, name FROM users WHERE age < 18",
             True,
             True,
             4,
         ),  # uses both columns (exact match on 3rd subset, both columns)
         (
-            "SELECT id, age FROM users WHERE age < 18;",
+            "SELECT id, age FROM users WHERE age < 18",
             False,
             True,
             4,
         ),  # returns additional columns (subset correct)
         (
-            "SELECT id, age FROM users WHERE age < 18 ORDER BY age;",
+            "SELECT id, age FROM users WHERE age < 18 ORDER BY age",
             False,
             True,
             4,
-        ),  # returns additional columns in different order (subset correct)
+        ),  # returns additional columns in different row order (subset correct)
     ]
 
     for (
