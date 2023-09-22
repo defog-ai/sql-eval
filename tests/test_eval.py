@@ -114,14 +114,17 @@ def test_get_all_minimal_queries():
     option3 = "SELECT persons.name, persons.id FROM persons WHERE persons.age > 25 GROUP BY persons.name, persons.id"
     assert get_all_minimal_queries(query4) == [option1, option2, option3]
     query5 = "SELECT {persons.name,persons.id} FROM persons WHERE persons.age > 25 GROUP BY {};SELECT {user.name,user.id} FROM user WHERE user.age > 25 GROUP BY {};"
-    option4 = (
-        "SELECT user.name FROM user WHERE user.age > 25 GROUP BY user.name"
-    )
-    option5 = (
-        "SELECT user.id FROM user WHERE user.age > 25 GROUP BY user.id"
-    )
+    option4 = "SELECT user.name FROM user WHERE user.age > 25 GROUP BY user.name"
+    option5 = "SELECT user.id FROM user WHERE user.age > 25 GROUP BY user.id"
     option6 = "SELECT user.name, user.id FROM user WHERE user.age > 25 GROUP BY user.name, user.id"
-    assert get_all_minimal_queries(query5) == [option1, option2, option3, option4, option5, option6]
+    assert get_all_minimal_queries(query5) == [
+        option1,
+        option2,
+        option3,
+        option4,
+        option5,
+        option6,
+    ]
 
 
 @mock.patch("pandas.read_sql_query")
