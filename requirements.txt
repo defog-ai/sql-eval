@@ -9,7 +9,6 @@ spacy
 sqlalchemy
 tiktoken
 pyyaml
-spacy
 sentence-transformers
 torch
 transformers
