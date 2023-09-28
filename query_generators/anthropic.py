@@ -9,6 +9,7 @@ from utils.pruning import prune_metadata_str
 
 anthropic = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
+
 class AnthropicQueryGenerator(QueryGenerator):
     """
     Query generator that uses Anthropic's models
@@ -49,7 +50,7 @@ class AnthropicQueryGenerator(QueryGenerator):
                 prompt=prompt,
                 max_tokens_to_sample=max_tokens,
                 temperature=temperature,
-                stop_sequences=stop
+                stop_sequences=stop,
             )
             generated_text = completion.completion
         except Exception as e:
@@ -58,9 +59,7 @@ class AnthropicQueryGenerator(QueryGenerator):
         return generated_text
 
     @staticmethod
-    def count_tokens(
-        prompt: str = ""
-    ) -> int:
+    def count_tokens(prompt: str = "") -> int:
         """
         This function counts the number of tokens used in a prompt
         model: the model used to generate the prompt. can be one of the following: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003
@@ -78,7 +77,7 @@ class AnthropicQueryGenerator(QueryGenerator):
 
         with open(self.prompt_file) as file:
             model_prompt = file.read()
-        
+
         prompt = model_prompt.format(
             user_question=question,
             table_metadata_string=prune_metadata_str(question, self.db_name),
