@@ -16,6 +16,7 @@ from time import time
 import gc
 from peft import PeftModel, PeftConfig
 
+
 def generate_prompt(prompt_file, question, db_name):
     with open(prompt_file, "r") as f:
         prompt = f.read()
@@ -45,7 +46,7 @@ def get_tokenizer_model(model_name):
             use_auth_token=True,
             torch_dtype=torch.bfloat16,
             trust_remote_code=True,
-            device_map="auto"
+            device_map="auto",
         )
         model = PeftModel.from_pretrained(model, model_path)
         model = model.merge_and_unload()
