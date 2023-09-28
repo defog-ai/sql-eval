@@ -108,11 +108,10 @@ def run_openai_eval(args):
             )
     output_df = pd.DataFrame(output_rows)
     output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
+    del output_df["prompt"]
+    print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
     output_df.to_csv(args.output_file, index=False, float_format="%.2f")
 
-    # get average rate of exact matches
-    avg_acc = output_df["exact_match"].sum() / len(output_df)
-    print(f"Average rate of exact match: {avg_acc:.2f}")
     # get average rate of correct results
     avg_subset = output_df["correct"].sum() / len(output_df)
     print(f"Average correct rate: {avg_subset:.2f}")
