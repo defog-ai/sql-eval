@@ -1,7 +1,7 @@
 from eval.openai_runner import run_openai_eval
 from eval.hf_runner import run_hf_eval
+from eval.anthropic_runner import run_anthropic_eval
 import argparse
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -22,6 +22,10 @@ if __name__ == "__main__":
         if args.model is None:
             args.model = "gpt-3.5-turbo-0613"
         run_openai_eval(args)
+    elif args.model_type == "anthropic":
+        if args.model is None:
+            args.model = "claude-2"
+        run_anthropic_eval(args)
     elif args.model_type == "hf":
         if args.model is None:
             raise ValueError(
