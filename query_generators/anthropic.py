@@ -115,7 +115,7 @@ class AnthropicQueryGenerator(QueryGenerator):
             else:
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}"
 
-        tokens_used = self.count_tokens(self.model, prompt=prompt)
+        tokens_used = self.count_tokens(prompt=prompt)
 
         return {
             "query": self.query,
