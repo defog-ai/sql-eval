@@ -115,7 +115,7 @@ columns_ner = {
     "yelp": {
         "GPE": [
             "business.city,text,The name of the city where the business is located",
-            "business.state,text,The US state where the business is located. This is represented by two-letter state abbreviations.",
+            "business.state,text,The US state where the business is located. This is represented by two-letter state abbreviations (eg. 'CA', 'NV', 'NY', etc.)",
             "business.full_address,text,The full address of the business",
         ],
         "ORG": [
@@ -285,8 +285,53 @@ columns_join = {
         ],
         ("airport", "city"): [
             ("airport.state_code", "city.state_code"),
-            ("airport.country_name", "city.state_code"),
-            ("airport.time_zone_code", "city.state_code"),
+            ("airport.country_name", "city.country_name"),
+            ("airport.time_zone_code", "city.time_zone_code"),
+        ],
+        ("airport", "state"): [
+            ("airport.state_code", "state.state_code"),
+        ],
+        ("city", "state"): [
+            ("city.state_code", "state.state_code"),
+        ],
+        ("airport_service", "city"): [
+            ("airport_service.city_code", "city.city_code"),
+        ],
+        ("ground_service", "city"): [
+            ("ground_service.city_code", "city.city_code"),
+        ],
+        ("airport", "time_zone"): [
+            ("airport.time_zone_code", "time_zone.time_zone_code"),
+        ],
+        ("city", "time_zone"): [
+            ("city.time_zone_code", "time_zone.time_zone_code"),
+        ],
+        ("flight", "flight_fare"): [
+            ("flight.flight_id", "flight_fare.flight_id"),
+        ],
+        ("flight", "flight_leg"): [
+            ("flight.flight_id", "flight_leg.flight_id"),
+        ],
+        ("flight", "flight_stop"): [
+            ("flight.flight_id", "flight_stop.flight_id"),
+        ],
+        ("flight_fare", "flight_leg"): [
+            ("flight_fare.flight_id", "flight_leg.flight_id"),
+        ],
+        ("flight_fare", "flight_stop"): [
+            ("flight_fare.flight_id", "flight_stop.flight_id"),
+        ],
+        ("flight_leg", "flight_stop"): [
+            ("flight_leg.flight_id", "flight_stop.flight_id"),
+        ],
+        ("aircraft", "equipment_sequence"): [
+            ("aircraft.aircraft_code", "equipment_sequence.aircraft_code"),
+        ],
+        ("flight", "equipment_sequence"): [
+            ("flight.aircraft_code_sequence", "equipment_sequence.aircraft_code_sequence"),
+        ],
+        ("flight", "food_service"): [
+            ("flight.meal_code", "food_service.meal_code"),
         ],
     },
     "yelp": {
