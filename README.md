@@ -24,11 +24,6 @@ pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
-You may also optionally install [accelerate](https://huggingface.co/docs/accelerate/index) if using a distributed setup. 
-```bash
-pip install accelerate
-```
-
 ### Start Postgres Instance
 
 Next, you would need to set up the databases that the queries are executed on. We use Postgres here, since it is the most common OSS database with the widest distribution and usage in production. In addition, we would recommend using Docker to do this, as it is the easiest way to get started. You can install Docker [here](https://docs.docker.com/get-docker/). 
