@@ -328,7 +328,10 @@ columns_join = {
             ("aircraft.aircraft_code", "equipment_sequence.aircraft_code"),
         ],
         ("flight", "equipment_sequence"): [
-            ("flight.aircraft_code_sequence", "equipment_sequence.aircraft_code_sequence"),
+            (
+                "flight.aircraft_code_sequence",
+                "equipment_sequence.aircraft_code_sequence",
+            ),
         ],
         ("flight", "food_service"): [
             ("flight.meal_code", "food_service.meal_code"),
