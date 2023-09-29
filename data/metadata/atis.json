@@ -63,7 +63,7 @@
             {
                 "data_type": "text",
                 "column_name": "fare_airline",
-                "column_description": "The airline associated with this fare"
+                "column_description": "The airline code associated with this fare"
             },
             {
                 "data_type": "text",
@@ -428,7 +428,7 @@
                 "column_description": "The order of the stop in the flight"
             },
             {
-                "data_type": "bigint",
+                "data_type": "text",
                 "column_name": "arrival_flight_number",
                 "column_description": "Flight number of the arriving flight at this stop"
             },
@@ -438,7 +438,7 @@
                 "column_description": "The time at which the flight departs from this stop. This is in Unix timestamp format. Always convert to regular date time format."
             },
             {
-                "data_type": "bigint",
+                "data_type": "text",
                 "column_name": "departure_flight_number",
                 "column_description": "Flight number of the departing flight from this stop"
             },

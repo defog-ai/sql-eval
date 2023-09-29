@@ -147,7 +147,7 @@
             {
                 "data_type": "text",
                 "column_name": "state",
-                "column_description": "The US state where the business is located. This is represented by two-letter state abbreviations."
+                "column_description": "The US state where the business is located, represented by two-letter abbreviations (eg. 'CA', 'NV', 'NY', etc.)"
             },
             {
                 "data_type": "text",

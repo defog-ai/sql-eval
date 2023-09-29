@@ -275,7 +275,7 @@
             {
                 "data_type": "bigint",
                 "column_name": "semester",
-                "column_description": "The semester in which the course was taken"
+                "column_description": "The semester ID in which the course was taken"
             },
             {
                 "data_type": "bigint",
@@ -327,7 +327,7 @@
             {
                 "data_type": "bigint",
                 "column_name": "semester",
-                "column_description": "The semester in which the course is offered"
+                "column_description": "The semester ID in which the course is offered"
             },
             {
                 "data_type": "bigint",

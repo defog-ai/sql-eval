@@ -53,7 +53,7 @@
             {
                 "data_type": "text",
                 "column_name": "river_name",
-                "column_description": "The name of the river"
+                "column_description": "The name of the river. Names exclude the word 'river' e.g. 'Mississippi' instead of 'Mississippi River'"
             },
             {
                 "data_type": "text",
