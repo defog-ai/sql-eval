@@ -385,8 +385,8 @@ COPY public.instructor (instructor_id, name, uniqname) FROM stdin;
 COPY public.offering_instructor (offering_instructor_id, offering_id, instructor_id) FROM stdin;
 1	1	1
 2	2	2
-3	3	2
-4	4	3
+3	3	3
+4	4	4
 \.
 
 
