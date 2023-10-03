@@ -56,10 +56,23 @@ Some notes:
 
 ### Import Data into Postgres
 
+#### Docker
 The data for importing is already in the exported SQL dumps in the `data/export` folder. Each SQL file corresponds to a single database (e.g. `data/export/academic.sql` contains all the data required to reload the 'academic' database). We will create a new database in `postgres-sql-eval` for each of the 7 SQL files with the following command.
 
 ```bash
-./data/init_db.sh
+./data/init_db_docker.sh
+```
+
+#### PSQL
+If you're unable to start another postgres instance or a docker image locally (eg you're already in a container) but can only use the postgres client `psql` for accessing a remote postgres instance, you can use the following commands to import the data into your remote postgres instance of choice. Note that the script relies on a few environment variables.
+
+```bash
+# set the following environment variables
+DBPASSWORD="your_password"
+DBHOST="your_host"
+DBPORT="your_port"
+DBUSER="your_user"
+./data/init_db_psql.sh
 ```
 
 ### Query Generator
