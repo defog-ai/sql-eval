@@ -8,7 +8,8 @@ import torch.nn.functional as F
 
 if os.getenv("TOKENIZERS_PARALLELISM") is None:
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
 nlp = spacy.load("en_core_web_sm")
 
 

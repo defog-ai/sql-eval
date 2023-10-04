@@ -24,7 +24,7 @@
             {
                 "data_type": "text",
                 "column_name": "time_zone_code",
-                "column_description": "The code assigned to the time zone where the city is located"
+                "column_description": "The code assigned to the time zone where the city is located. Either 'EST', 'CST', 'MST', or 'PST'."
             }
         ],
         "days": [
@@ -63,7 +63,7 @@
             {
                 "data_type": "text",
                 "column_name": "fare_airline",
-                "column_description": "The airline associated with this fare"
+                "column_description": "The airline code associated with this fare"
             },
             {
                 "data_type": "text",
@@ -124,12 +124,12 @@
             {
                 "data_type": "bigint",
                 "column_name": "departure_time",
-                "column_description": "Epoch timestamp for departure time"
+                "column_description": "Epoch timestamp for departure time. This is in Unix timestamp format. Always convert to regular date time format."
             },
             {
                 "data_type": "bigint",
                 "column_name": "arrival_time",
-                "column_description": "Epoch timestamp for arrival time"
+                "column_description": "Epoch timestamp for arrival time. This is in Unix timestamp format. Always convert to regular date time format."
             },
             {
                 "data_type": "text",
@@ -149,7 +149,7 @@
             {
                 "data_type": "bigint",
                 "column_name": "time_elapsed",
-                "column_description": "Total time elapsed during the flight"
+                "column_description": "Total time elapsed during the flight in seconds"
             },
             {
                 "data_type": "text",
@@ -323,28 +323,6 @@
                 "column_description": "The code assigned to the aircraft by the International Air Transport Association (IATA)."
             }
         ],
-        "date_day": [
-            {
-                "data_type": "bigint",
-                "column_name": "month_number",
-                "column_description": "The numeric representation of the month (1-12)"
-            },
-            {
-                "data_type": "bigint",
-                "column_name": "day_number",
-                "column_description": "The numeric representation of the day of the month (1-31)"
-            },
-            {
-                "data_type": "bigint",
-                "column_name": "year",
-                "column_description": "The year in which the date falls"
-            },
-            {
-                "data_type": "text",
-                "column_name": "day_name",
-                "column_description": "The name of the day of the week (e.g. Monday, Tuesday, etc.)"
-            }
-        ],
         "time_zone": [
             {
                 "data_type": "bigint",
@@ -450,17 +428,17 @@
                 "column_description": "The order of the stop in the flight"
             },
             {
-                "data_type": "bigint",
+                "data_type": "text",
                 "column_name": "arrival_flight_number",
                 "column_description": "Flight number of the arriving flight at this stop"
             },
             {
                 "data_type": "bigint",
                 "column_name": "departure_time",
-                "column_description": "The time at which the flight departs from this stop"
+                "column_description": "The time at which the flight departs from this stop. This is in Unix timestamp format. Always convert to regular date time format."
             },
             {
-                "data_type": "bigint",
+                "data_type": "text",
                 "column_name": "departure_flight_number",
                 "column_description": "Flight number of the departing flight from this stop"
             },
@@ -472,7 +450,7 @@
             {
                 "data_type": "bigint",
                 "column_name": "arrival_time",
-                "column_description": "The time at which the flight arrives at this stop"
+                "column_description": "The time at which the flight arrives at this stop. This is in Unix timestamp format. Always convert to regular date time format."
             },
             {
                 "data_type": "text",
@@ -590,12 +568,12 @@
             {
                 "data_type": "bigint",
                 "column_name": "begin_time",
-                "column_description": "The beginning time of the time interval in Unix timestamp format."
+                "column_description": "The beginning time of the time interval in Unix timestamp format. Always convert to regular date time format."
             },
             {
                 "data_type": "bigint",
                 "column_name": "end_time",
-                "column_description": "The end time of the time interval in Unix timestamp format."
+                "column_description": "The end time of the time interval in Unix timestamp format. Always convert to regular date time format."
             },
             {
                 "data_type": "text",

@@ -160,14 +160,14 @@
                 "column_description": "Cumulative GPA of the student"
             },
             {
-                "data_type": "bigint",
+                "data_type": "date",
                 "column_name": "admit_term",
-                "column_description": "Term in which the student was admitted"
+                "column_description": "Term in which the student was admitted. Format is YYYY-MM-DD"
             },
             {
-                "data_type": "bigint",
+                "data_type": "date",
                 "column_name": "predicted_graduation_semester",
-                "column_description": "Semester in which the student is predicted to graduate"
+                "column_description": "Semester in which the student is predicted to graduate. Format is YYYY-MM-DD"
             },
             {
                 "data_type": "text",
@@ -275,7 +275,7 @@
             {
                 "data_type": "bigint",
                 "column_name": "semester",
-                "column_description": "The semester in which the course was taken"
+                "column_description": "The semester ID in which the course was taken"
             },
             {
                 "data_type": "bigint",
@@ -327,7 +327,7 @@
             {
                 "data_type": "bigint",
                 "column_name": "semester",
-                "column_description": "The semester in which the course is offered"
+                "column_description": "The semester ID in which the course is offered"
             },
             {
                 "data_type": "bigint",

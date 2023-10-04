@@ -62,31 +62,48 @@ def find_bracket_indices(s: str, start_index: int = 0) -> "tuple[int, int]":
 
 # extrapolate all possible queries from a query with { } in it
 def get_all_minimal_queries(query: str) -> "list[str]":
-    query = " ".join(
-        query.split()
-    )  # replace multiple whitespaces with single space to avoid errors
-    start, end = find_bracket_indices(query, 0)
-    if (start, end) == (-1, -1):
-        return [query]
-
-    # get all possible column subsets
-    column_options = query[start + 1 : end].split(",")
-    column_combinations = list(
-        itertools.chain.from_iterable(
-            itertools.combinations(column_options, r)
-            for r in range(1, len(column_options) + 1)
-        )
-    )
-    queries = []
-    for column_tuple in column_combinations:
-        left = query[:start]
-        column_str = ", ".join(column_tuple)
-        right = query[end + 1 :]
-        # change group by size dynamically if necessary
-        if right.find("GROUP BY {}"):
-            right = right.replace("GROUP BY {}", f"GROUP BY {column_str}")
-        queries.append(left + column_str + right)
-    return queries
+    """
+    extrapolate all possible queries
+    - split by semicolon. this is to accommodate queries where joins to other tables are also acceptable.
+    - expand all column permutations if there are braces { } in it. eg:
+    ```sql
+        SELECT {user.id, user.name} FROM user;
+    ```
+    Would be expanded to:
+    ```sql
+        SELECT user.id FROM user;
+        SELECT user.name FROM user;
+        SELECT user.id, user.name FROM user;
+    ```
+    """
+    queries = query.split(";")
+    result_queries = []
+    for query in queries:
+        query = query.strip()
+        if query == "":
+            continue
+        start, end = find_bracket_indices(query, 0)
+        if (start, end) == (-1, -1):
+            result_queries.append(query)
+            continue
+        else:
+            # get all possible column subsets
+            column_options = query[start + 1 : end].split(",")
+            column_combinations = list(
+                itertools.chain.from_iterable(
+                    itertools.combinations(column_options, r)
+                    for r in range(1, len(column_options) + 1)
+                )
+            )
+            for column_tuple in column_combinations:
+                left = query[:start]
+                column_str = ", ".join(column_tuple)
+                right = query[end + 1 :]
+                # change group by size dynamically if necessary
+                if right.find("GROUP BY {}"):
+                    right = right.replace("GROUP BY {}", f"GROUP BY {column_str}")
+                result_queries.append(left + column_str + right)
+    return result_queries
 
 
 def query_postgres_db(

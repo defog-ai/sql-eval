@@ -152,20 +152,6 @@ CREATE TABLE public.compartment_class (
 ALTER TABLE public.compartment_class OWNER TO postgres;
 
 --
--- Name: date_day; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.date_day (
-    month_number bigint,
-    day_number bigint,
-    year bigint,
-    day_name text
-);
-
-
-ALTER TABLE public.date_day OWNER TO postgres;
-
---
 -- Name: days; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -303,10 +289,10 @@ CREATE TABLE public.flight_stop (
     stop_airport text,
     arrival_time bigint,
     arrival_airline text,
-    arrival_flight_number bigint,
+    arrival_flight_number text,
     departure_time bigint,
     departure_airline text,
-    departure_flight_number bigint,
+    departure_flight_number text,
     stop_time bigint
 );
 
@@ -541,14 +527,6 @@ Economy	Economy Class
 
 
 --
--- Data for Name: date_day; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.date_day (month_number, day_number, year, day_name) FROM stdin;
-\.
-
-
---
 -- Data for Name: days; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -641,15 +619,15 @@ AAA	First	First Class	Yes	No	No	No	Regular	30
 
 COPY public.flight (flight_id, flight_days, from_airport, to_airport, departure_time, arrival_time, airline_flight, airline_code, flight_number, aircraft_code_sequence, meal_code, stops, connections, dual_carrier, time_elapsed) FROM stdin;
 1	mon,wed	ORD	JFK	1577836800	1577840400	AA123	AA	AA123	1	BF	0	0	AA123	3600
-2	tue,thu	ORD	JFK	1577844000	1577847700	UA456	UA	UA456	2	LN	1	1	UA456	3700
+2	tue,thu	ORD	JFK	1577844000	1577854000	UA456	UA	UA456	2	LN	1	1	UA456	10000
 3	wed	ORD	JFK	1577851200	1577854900	AA789	AA	AA789	3	DN	0	0	AA789	3700
-4	thu	ORD	JFK	1577858400	1577862400	WN012	WN	WN012	4	BS	1	1	WN012	4000
+4	thu	ORD	JFK	1577858400	1577873400	WN012	WN	WN012	4	BS	1	1	WN012	15000
 5	fri	ORD	LAX	1577865600	1577869600	AS345	AS	AS345	5	BF	0	0	AS345	4000
-6	sat,mon	JFK	ORD	1577872800	1577876400	AA124	AA	AA123	6	LN	1	1	B678	3600
+6	sat,mon	JFK	ORD	1577872800	1577884800	AA124	AA	AA123	6	LN	1	1	B678	12000
 7	sun	JFK	ORD	1577880000	1577883700	UA457	UA	UA457	7	DN	0	0	UA457	3700
-8	mon	JFK	ORD	1577887200	1577890900	F934	F9	F934	8	BS	1	1	F934	3700
+8	mon	JFK	ORD	1577887200	1577897200	F934	F9	F934	8	BS	1	1	F934	10000
 9	tue	LAX	ORD	1577894400	1577898400	HA567	HA	HA567	9	LS	0	0	HA567	4000
-10	wed,mon	LAX	ORD	1577901600	1577905600	VX890	VX	VX890	10	DS	1	1	VX890	4000
+10	wed,mon	LAX	ORD	1577901600	1577921600	VX890	VX	VX890	10	DS	1	1	VX890	20000
 \.
 
 
@@ -694,16 +672,11 @@ COPY public.flight_leg (flight_id, leg_number, leg_flight) FROM stdin;
 --
 
 COPY public.flight_stop (flight_id, stop_number, stop_days, stop_airport, arrival_time, arrival_airline, arrival_flight_number, departure_time, departure_airline, departure_flight_number, stop_time) FROM stdin;
-1	1	1	DFW	1577840400	UA	2	1577836800	AA	1	3600
-2	1	2	DFW	1577847600	DL	3	1577844000	UA	2	3600
-3	1	3	DEN	1577854800	WN	4	1577851200	DL	3	3600
-4	1	4	DEN	1577862000	AS	5	1577858400	WN	4	3600
-5	1	5	JFK	1577869200	B6	6	1577865600	AS	5	3600
-6	1	6	SFO	1577876400	NK	7	1577872800	B6	6	3600
-7	1	7	LAX	1577883600	F9	8	1577880000	NK	7	3600
-8	1	1	LAX	1577890800	HA	9	1577887200	F9	8	3600
-9	1	2	DFW	1577898000	VX	10	1577894400	HA	9	3600
-10	1	3	JFK	1577905200	AA	1	1577901600	VX	10	3600
+2	1	2	DFW	1577847600	UA	UA456	1577851200	UA	UA456	3600
+4	1	4	DEN	1577862000	WN	WN012	1577865600	WN	WN012	3600
+6	1	6	DFW	1577876400	AA	AA123	1577880000	AA	AA123	3600
+8	1	1	LAX	1577890800	F9	F934	1577894400	F9	F934	3600
+10	1	3	JFK	1577905200	VX	VX890	1577908800	VX	VX890	3600
 \.
 
 
@@ -815,6 +788,10 @@ daily	1577901600	1577905200
 --
 
 COPY public.time_zone (time_zone_code, time_zone_name, hours_from_gmt) FROM stdin;
+PST	Pacific Standard Time	-8
+MST	Mountain Standard Time	-7
+CST	Central Standard Time	-6
+EST	Eastern Standard Time	-5
 \.
 
 

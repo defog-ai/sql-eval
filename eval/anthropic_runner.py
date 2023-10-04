@@ -3,16 +3,16 @@ import copy
 from eval.eval import compare_query_results
 import pandas as pd
 from psycopg2.extensions import QueryCanceledError
-from query_generators.openai import OpenAIQueryGenerator
+from query_generators.anthropic import AnthropicQueryGenerator
 from tqdm import tqdm
 from utils.questions import prepare_questions_df
 
 
-def run_openai_eval(args):
+def run_anthropic_eval(args):
     print("preparing questions...")
     # get questions
     question_query_df = prepare_questions_df(args.questions_file, args.num_questions)
-    qg_class = OpenAIQueryGenerator
+    qg_class = AnthropicQueryGenerator
     # add columns for generated query and metrics
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
@@ -123,10 +123,11 @@ def run_openai_eval(args):
             )
     output_df = pd.DataFrame(output_rows)
     output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-    del output_df["prompt"]
-    print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
     output_df.to_csv(args.output_file, index=False, float_format="%.2f")
 
+    # get average rate of exact matches
+    avg_acc = output_df["exact_match"].sum() / len(output_df)
+    print(f"Average rate of exact match: {avg_acc:.2f}")
     # get average rate of correct results
     avg_subset = output_df["correct"].sum() / len(output_df)
     print(f"Average correct rate: {avg_subset:.2f}")

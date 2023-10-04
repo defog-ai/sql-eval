@@ -1,4 +1,5 @@
 accelerate
+anthropic
 argparse
 func_timeout
 openai
@@ -11,5 +12,5 @@ tiktoken
 pyyaml
 sentence-transformers
 torch
-transformers
 tqdm
+transformers

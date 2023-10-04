@@ -171,16 +171,16 @@ Tokyo	700000	Japan	Tokyo
 --
 
 COPY public.highlow (state_name, highest_elevation, lowest_point, highest_point, lowest_elevation) FROM stdin;
-California	Mount Whitney	Death Valley	Mount Whitney	-86
-Texas	Guadalupe Peak	Gulf of Mexico	Guadalupe Peak	0
-Florida	Unnamed location	Atlantic Ocean	Unnamed location	0
-New York	Mount Marcy	Atlantic Ocean	Mount Marcy	0
-Ontario	Unnamed location	Atlantic Ocean	Unnamed location	0
-Sao Paulo	Unnamed location	Atlantic Ocean	Unnamed location	0
-Guangdong	Unnamed location	South China Sea	Unnamed location	0
-Maharashtra	Unnamed location	Arabian Sea	Unnamed location	0
-England	Scafell Pike	North Sea	Scafell Pike	0
-Tokyo	Mount Fuji	Pacific Ocean	Mount Fuji	0
+California	4421	Death Valley	Mount Whitney	-86
+Texas	2667	Gulf of Mexico	Guadalupe Peak	0
+Florida	None	Atlantic Ocean	Unnamed location	0
+New York	1629	Atlantic Ocean	Mount Marcy	0
+Ontario	None	Atlantic Ocean	Unnamed location	0
+Sao Paulo	None	Atlantic Ocean	Unnamed location	0
+Guangdong	None	South China Sea	Unnamed location	0
+Maharashtra	None	Arabian Sea	Unnamed location	0
+England	978	North Sea	Scafell Pike	0
+Tokyo	3776	Pacific Ocean	Mount Fuji	0
 \.
 
 

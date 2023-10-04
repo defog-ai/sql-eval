@@ -260,8 +260,8 @@ CREATE TABLE public.student (
     total_credit bigint,
     total_gpa numeric,
     entered_as text DEFAULT 'firstyear'::text,
-    admit_term bigint,
-    predicted_graduation_semester bigint,
+    admit_term date,
+    predicted_graduation_semester date,
     degree text,
     minor text,
     internship text
@@ -298,6 +298,7 @@ COPY public.area (course_id, area) FROM stdin;
 1	Computer Science
 2	Mathematics
 3	Physics
+4	Computer Science
 \.
 
 
@@ -316,10 +317,10 @@ COPY public.comment_instructor (instructor_id, student_id, score, comment_text) 
 --
 
 COPY public.course (course_id, name, department, number, credits, advisory_requirement, enforced_requirement, description, num_semesters, num_enrolled, has_discussion, has_lab, has_projects, has_exams, num_reviews, clarity_score, easiness_score, helpfulness_score) FROM stdin;
-1	Introduction to Computer Science	Computer Science	CS101	3	\N	\N	This course introduces the basics of computer science.	2	50	true	false	true	false	10	5	3	4
-2	Advanced Calculus	Mathematics	MATH201	4	CS101	\N	This course covers advanced topics in calculus.	1	30	false	false	false	true	5	4	2	3
-3	Introduction to Physics	Physics	PHYS101	3	\N	MATH201	This course provides an introduction to physics principles.	2	40	true	true	false	true	8	4	3	5
-4	Distributed Databases	Computer Science	CS302	3	\N	CS101	This course provides an introduction to distributed databases.	2	21	true	true	false	true	4	2	1	5
+1	Introduction to Computer Science	Computer Science	CS101	3	\N	\N	This course introduces the basics of computer science.	2	2	true	false	true	false	10	5	3	4
+2	Advanced Calculus	Mathematics	MATH201	4	CS101	\N	This course covers advanced topics in calculus.	1	3	false	false	true	true	5	4	2	3
+3	Introduction to Physics	Physics	PHYS101	3	\N	MATH201	This course provides an introduction to physics principles.	2	1	true	true	true	true	8	4	3	5
+4	Distributed Databases	Computer Science	CS302	3	\N	CS101	This course provides an introduction to distributed databases.	2	2	true	true	false	true	4	2	1	5
 \.
 
 
@@ -353,6 +354,7 @@ COPY public.course_tags_count (course_id, clear_grading, pop_quiz, group_project
 1	5	2	3	4	2	1	3	4	2	1	5	3	4	2	1	5	3	4	2	\N
 2	4	1	2	3	1	2	2	3	1	2	4	2	3	1	2	4	2	3	1	\N
 3	3	2	1	2	3	1	1	2	3	1	3	1	2	3	1	3	1	2	3	\N
+4	2	3	0	2	3	1	1	2	3	0	3	4	2	3	5	3	1	2	3	\N
 \.
 
 
@@ -372,6 +374,7 @@ COPY public.instructor (instructor_id, name, uniqname) FROM stdin;
 1	John Smith	jsmith
 2	Jane Doe	jdoe
 3	Gilbert Strang	gstrang
+4	Brendan Burns	bburns
 \.
 
 
@@ -382,8 +385,8 @@ COPY public.instructor (instructor_id, name, uniqname) FROM stdin;
 COPY public.offering_instructor (offering_instructor_id, offering_id, instructor_id) FROM stdin;
 1	1	1
 2	2	2
-3	3	2
-4	4	3
+3	3	3
+4	4	4
 \.
 
 
@@ -404,8 +407,9 @@ COPY public.program (program_id, name, college, introduction) FROM stdin;
 
 COPY public.program_course (program_id, course_id, workload, category) FROM stdin;
 1	1	100	Core
-1	2	80	Elective
+1	4	80	Elective
 2	2	90	Core
+3	3	70	Core
 \.
 
 
@@ -416,6 +420,7 @@ COPY public.program_course (program_id, course_id, workload, category) FROM stdi
 COPY public.program_requirement (program_id, category, min_credit, additional_req) FROM stdin;
 1	Core	120	\N
 2	Core	90	\N
+3	Core	200	\N
 \.
 
 
@@ -435,9 +440,9 @@ COPY public.semester (semester_id, semester, year) FROM stdin;
 --
 
 COPY public.student (student_id, lastname, firstname, program_id, declare_major, total_credit, total_gpa, entered_as, admit_term, predicted_graduation_semester, degree, minor, internship) FROM stdin;
-1	Smith	John	1	Computer Science	120	3.5	Freshman	201801	202205	Bachelor of Science	\N	\N
-2	Doe	Jane	1	Computer Science	90	3.2	Freshman	201801	202205	Bachelor of Science	\N	\N
-3	Johnson	David	2	Mathematics	100	3.6	Freshman	201801	202205	Bachelor of Arts	Mathematics	\N
+1	Smith	John	1	Computer Science	120	3.5	Freshman	2018-01-01	2022-05-01	Bachelor of Science	\N	\N
+2	Doe	Jane	1	Computer Science	90	3.2	Freshman	2018-01-01	2022-05-01	Bachelor of Science	\N	\N
+3	Johnson	David	2	Mathematics	100	3.6	Freshman	2019-01-01	2022-05-01	Bachelor of Arts	Mathematics	\N
 \.
 
 
@@ -447,8 +452,13 @@ COPY public.student (student_id, lastname, firstname, program_id, declare_major,
 
 COPY public.student_record (student_id, course_id, semester, grade, how, transfer_source, earn_credit, repeat_term, test_id, offering_id) FROM stdin;
 1	1	1	A	in-person	\N	Yes	\N	1	1
+1	2	1	A	in-person	\N	Yes	\N	1	2
+1	3	2	A	in-person	\N	Yes	\N	1	3
+1	4	2	A	in-person	\N	Yes	\N	1	4
+2	2	1	C	in-person	\N	Yes	\N	1	2
 2	1	1	B	online	\N	Yes	\N	1	1
 3	2	1	B+	in-person	\N	Yes	\N	1	2
+3	4	2	B+	in-person	\N	Yes	\N	1	4
 \.
 
 

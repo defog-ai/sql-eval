@@ -14,6 +14,7 @@ from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
+from peft import PeftModel, PeftConfig
 
 
 def generate_prompt(prompt_file, question, db_name):
@@ -29,14 +30,26 @@ def generate_prompt(prompt_file, question, db_name):
 
 def get_tokenizer_model(model_name):
     if "llama" not in model_name:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # model = AutoModelForCausalLM.from_pretrained(
+        #     model_name,
+        #     trust_remote_code=True,
+        #     torch_dtype=torch.float16,
+        #     device_map="auto",
+        #     use_cache=True
+        # )
+        model_path = "/home/defog/finetuning/starcoder/sqlcoder_npl_cfc_map_600"
+        config = PeftConfig.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
         model = AutoModelForCausalLM.from_pretrained(
-            model_name,
+            config.base_model_name_or_path,
+            use_auth_token=True,
+            torch_dtype=torch.bfloat16,
             trust_remote_code=True,
-            torch_dtype=torch.float16,
             device_map="auto",
-            use_cache=True,
         )
+        model = PeftModel.from_pretrained(model, model_path)
+        model = model.merge_and_unload()
     else:
         tokenizer = LlamaTokenizer.from_pretrained(
             model_name, legacy=False, use_fast=True
@@ -46,6 +59,7 @@ def get_tokenizer_model(model_name):
             torch_dtype=torch.float16,
             device_map="auto",
             use_cache=True,
+            use_flash_attention_2=True,
         )
     return tokenizer, model
 
@@ -75,7 +89,7 @@ def run_hf_eval(
     print("model loaded\nnow generating and evaluating predictions...")
 
     # from here, we generate and evaluate predictions
-    eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
+    # eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
     total_tried = 0
@@ -103,8 +117,8 @@ def run_hf_eval(
                 pipe(
                     row["prompt"],
                     num_return_sequences=1,
-                    eos_token_id=eos_token_id,
-                    pad_token_id=eos_token_id,
+                    # eos_token_id=eos_token_id,
+                    pad_token_id=tokenizer.eos_token_id,
                     **pipeline_config,
                 )[0]["generated_text"]
                 .split("```sql")[-1]
