@@ -18,10 +18,13 @@ This is a comprehensive set of instructions that assumes basic familiarity with 
 
 ### Install Dependencies
 
-Firstly, install all Python libraries listed in the `requirements.txt` file. You would also need to download the spacy model used in the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py).
+Firstly, install all Python libraries listed in the `requirements.txt` file. You would also need to download the spacy model used in the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py). Also, you would need to clone the repository where we store our database data and schema, and install the library.
 ```bash
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
+git clone https://github.com/defog-ai/defog-data.git
+cd defog-data
+pip install -e .
 ```
 
 ### Start Postgres Instance
@@ -56,24 +59,18 @@ Some notes:
 
 ### Import Data into Postgres
 
-#### Docker
-The data for importing is already in the exported SQL dumps in the `data/export` folder. Each SQL file corresponds to a single database (e.g. `data/export/academic.sql` contains all the data required to reload the 'academic' database). We will create a new database in `postgres-sql-eval` for each of the 7 SQL files with the following command.
-
-```bash
-./data/init_db_docker.sh
-```
-
-#### PSQL
-If you're unable to start another postgres instance or a docker image locally (eg you're already in a container) but can only use the postgres client `psql` for accessing a remote postgres instance, you can use the following commands to import the data into your remote postgres instance of choice. Note that the script relies on a few environment variables.
+The data for importing is in the `defog-data` repository which we cloned earlier. Each folder contains the metadata and data corresponding to a single database (e.g. `academic` contains all the data required to reload the 'academic' database). We assume that you have a `psql` client installed locally. We will create a new database in our postgres instance for each of the 7 SQL databases with the following commands:
 
 ```bash
 # set the following environment variables
-DBPASSWORD="your_password"
-DBHOST="your_host"
-DBPORT="your_port"
-DBUSER="your_user"
-./data/init_db_psql.sh
+cd defog-data # if you're not already in the defog-data directory
+export DBPASSWORD="postgres"
+export DBUSER="postgres"
+export DBHOST="localhost"
+export DBPORT=5432
+./setup.sh
 ```
+
 
 ### Query Generator
 
