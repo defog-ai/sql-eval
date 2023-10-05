@@ -19,6 +19,7 @@ def load_all_emb() -> Tuple[Dict[str, torch.tensor], List[str]]:
     """
     try:
         from gen_embeddings import csv_descriptions, emb
+
         return emb, csv_descriptions
     except ModuleNotFoundError:
         print("Module for embeddings not found. Have you installed defog-data?")
@@ -31,9 +32,12 @@ def load_ner_md() -> Tuple[Dict[str, Dict], Dict[str, Dict], Dict[str, Dict]]:
     """
     try:
         from gen_embeddings import columns_ner, columns_join
+
         return columns_ner, columns_join
     except ModuleNotFoundError:
-        print("Module for NER and join columns not found. Have you installed defog-data?")
+        print(
+            "Module for NER and join columns not found. Have you installed defog-data?"
+        )
         exit(1)
 
 
