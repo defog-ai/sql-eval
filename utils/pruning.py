@@ -15,27 +15,25 @@ nlp = spacy.load("en_core_web_sm")
 
 def load_all_emb() -> Tuple[Dict[str, torch.tensor], List[str]]:
     """
-    Load all embeddings from pickle file.
+    Load all embeddings from our data library.
     """
     try:
-        with open(f"data/embeddings.pkl", "rb") as f:
-            all_emb, col_descriptions = pickle.load(f)
-            return all_emb, col_descriptions
-    except FileNotFoundError:
-        print("Embeddings not found.")
+        from gen_embeddings import csv_descriptions, emb
+        return emb, csv_descriptions
+    except ModuleNotFoundError:
+        print("Module for embeddings not found. Have you installed defog-data?")
         exit(1)
 
 
 def load_ner_md() -> Tuple[Dict[str, Dict], Dict[str, Dict], Dict[str, Dict]]:
     """
-    Load all NER and join metadata from pickle file.
+    Load all NER and join metadata from our data library.
     """
     try:
-        with open(f"data/ner_metadata.pkl", "rb") as f:
-            column_ner, column_join = pickle.load(f)
-            return column_ner, column_join
-    except FileNotFoundError:
-        print("NER and join metadata not found.")
+        from gen_embeddings import columns_ner, columns_join
+        return columns_ner, columns_join
+    except ModuleNotFoundError:
+        print("Module for NER and join columns not found. Have you installed defog-data?")
         exit(1)
 
 

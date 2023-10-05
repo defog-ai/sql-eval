@@ -1,6 +1,7 @@
 accelerate
 anthropic
 argparse
+defog-data
 func_timeout
 openai
 pandas
