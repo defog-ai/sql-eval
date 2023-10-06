@@ -1,5 +1,4 @@
 data/postgres
-data/ner_metadata.pkl
 data/embeddings.pkl
 
 # pycache

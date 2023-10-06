@@ -1,8 +1,8 @@
+import defog_data.supplementary as sup
 import os
 from typing import Dict, List, Tuple
 from sentence_transformers import SentenceTransformer
 import spacy
-import pickle
 import torch
 import torch.nn.functional as F
 
@@ -11,34 +11,6 @@ if os.getenv("TOKENIZERS_PARALLELISM") is None:
 
 encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
 nlp = spacy.load("en_core_web_sm")
-
-
-def load_all_emb() -> Tuple[Dict[str, torch.tensor], List[str]]:
-    """
-    Load all embeddings from our data library.
-    """
-    try:
-        from gen_embeddings import csv_descriptions, emb
-
-        return emb, csv_descriptions
-    except ModuleNotFoundError:
-        print("Module for embeddings not found. Have you installed defog-data?")
-        exit(1)
-
-
-def load_ner_md() -> Tuple[Dict[str, Dict], Dict[str, Dict], Dict[str, Dict]]:
-    """
-    Load all NER and join metadata from our data library.
-    """
-    try:
-        from gen_embeddings import columns_ner, columns_join
-
-        return columns_ner, columns_join
-    except ModuleNotFoundError:
-        print(
-            "Module for NER and join columns not found. Have you installed defog-data?"
-        )
-        exit(1)
 
 
 def knn(
@@ -192,13 +164,15 @@ def get_md_emb(
 
 
 def prune_metadata_str(question, db_name):
-    emb, csv_descriptions = load_all_emb()
-    columns_ner, columns_join = load_ner_md()
+    # current file dir
+    root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    emb_path = os.path.join(root_dir, "data", "embeddings.pkl")
+    emb, csv_descriptions = sup.load_embeddings(emb_path)
     table_metadata_csv = get_md_emb(
         question,
         emb[db_name],
         csv_descriptions[db_name],
-        columns_ner[db_name],
-        columns_join[db_name],
+        sup.columns_ner[db_name],
+        sup.columns_join[db_name],
     )
     return table_metadata_csv
