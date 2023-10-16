@@ -6,11 +6,12 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-q", "--questions_file", type=str, required=True)
-    parser.add_argument("-o", "--output_file", type=str, required=True)
+    parser.add_argument("-n", "--num_questions", type=int, default=None)
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-f", "--prompt_file", type=str, required=True)
-    parser.add_argument("-n", "--num_questions", type=int, default=None)
+    parser.add_argument("-d", "--use_defog_data", type=bool, default=True)
+    parser.add_argument("-o", "--output_file", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
     parser.add_argument("-u", "--timeout_exec", type=float, default=10.0)
@@ -35,6 +36,7 @@ if __name__ == "__main__":
             questions_file=args.questions_file,
             prompt_file=args.prompt_file,
             num_questions=args.num_questions,
+            public_data=args.use_defog_data,
             model_name=args.model,
             output_file=args.output_file,
         )

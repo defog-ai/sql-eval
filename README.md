@@ -71,6 +71,23 @@ export DBPORT=5432
 ./setup.sh
 ```
 
+### Using Private Data (Optional)
+
+If you have a private dataset that you do not want to make publicly available but would still like to repurpose the code here for evaluations, you can do so by following the steps below.
+- Begin by creating a separate git repository for your private data, that has a `setup.py` file, similar to [defog-data](https://github.com/defog-ai/defog-data).
+- Create the metadata and data files, and import them into your database. This is to allow our evaluation framework to run the generated queries with some actual data. You can refer to `defog-data`'s [metadata objects](https://github.com/defog-ai/defog-data/blob/main/defog_data/metadata.py) for the schema, and [setup.sh](https://github.com/defog-ai/defog-data/blob/main/setup.sh) as an example on how import the data into your database. We do not prescribe any specific folder structure, and leave it to you to decide how you want to organize your data, so long as you can import it into your database easily.
+- To use our metadata pruning utilities, you would need to have the following defined:
+  - A way to load your embeddings. In our case, we call a function [load_embeddings](utils/pruning.py#L173) from `defog-data`'s supplementary module to load a dictionary of database name to a tuple of the 2D embedding matrix (num examples x embedding dimension) and the associated text metadata for each row/example. If you would like to see how we generate this tuple, you may refer to [generate_embeddings](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L11) in the `defog-data` repository.
+  - A way to load columns associated with various named entities. In our case, we call a dictionary [columns_ner](utils/pruning.py#L178) of database name to a nested dictionary that maps each named entity type to a list of column metadata strings that are associated with that named entity type. You can refer to the raw data [here](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L77) for an example of how we generate this dictionary.
+  - A way to define joinable columns between tables. In our case, we call a dictionary [columns_join](utils/pruning.py#L179) of database name to a nested dictionary of table tuples to column name tuples. You can refer to the raw data [here](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L207) for an example of how we generate this dictionary.
+
+Once all of the 3 above steps have completed, you would need to
+- Install your data library as a dependency, by running `pip install -e .` (-e to automatically incorporate edits without reinstalling)
+- Replace the associated function calls and variables in [prune_metadata_str](utils/pruning.py#L165) with your own imported functions and variables. Note that you might not name your package/module `defog_data_private.supplementary`, so do modify accordingly.
+
+Some things to take note of:
+- If you do not populate your database with data (ie only create the tables without inserting data), you would return empty dataframes most of the time (regardless of whether the query generated was what you want), and it would result in results matching all the time and generate a lot of false positives. Hence, you might want to consider populating your database with some meaningful data that would return different results if the queries should be different from what you want.
+- If testing out on your private data, you would also need to change the questions file to point to your own questions file (tailored to your database schema).
 
 ### Query Generator
 
@@ -85,7 +102,8 @@ Having implemented the query generator, the next piece of abstraction would be t
 ## Running the Test
 
 ### OpenAI
-Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test. Instructions [here](https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety). <br> 
+Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test if you plan to call the OpenAI API (or Anthropic/other LLM API's accordingly).
+
 To test it out with just 10 questions (instead of all 175), parallelized across 5 :
 
 ```bash
@@ -116,16 +134,18 @@ python -W ignore main.py \
   -n 10
 ```
 
+
 ### CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
 | CLI Flags     | Description |
 |-------------|-------|
 |  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
-|  -o, --output_file   |  Output CSV file that will store your results.   |
+| -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models and `hf` for Hugging Face models.   |
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
-| -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
+|  -d, --use_defog_data  |  Use this to toggle between using the public data or your own private data.  |
+|  -o, --output_file   |  Output CSV file that will store your results.   |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
