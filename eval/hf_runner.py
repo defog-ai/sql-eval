@@ -17,11 +17,11 @@ import gc
 from peft import PeftModel, PeftConfig
 
 
-def generate_prompt(prompt_file, question, db_name):
+def generate_prompt(prompt_file, question, db_name, public_data):
     with open(prompt_file, "r") as f:
         prompt = f.read()
 
-    pruned_metadata_str = prune_metadata_str(question, db_name)
+    pruned_metadata_str = prune_metadata_str(question, db_name, public_data)
     prompt = prompt.format(
         user_question=question, table_metadata_string=pruned_metadata_str
     )
@@ -68,6 +68,7 @@ def run_hf_eval(
     questions_file: str,
     prompt_file: str,
     num_questions: int = None,
+    public_data: bool = True,
     model_name: str = "defog/starcoder-finetune-v3",
     output_file: str = "results.csv",
 ):
@@ -77,7 +78,9 @@ def run_hf_eval(
 
     # create a prompt for each question
     df["prompt"] = df[["question", "db_name"]].apply(
-        lambda row: generate_prompt(prompt_file, row["question"], row["db_name"]),
+        lambda row: generate_prompt(
+            prompt_file, row["question"], row["db_name"], public_data
+        ),
         axis=1,
     )
 

@@ -1,4 +1,3 @@
-import defog_data.supplementary as sup
 import os
 from typing import Dict, List, Tuple
 from sentence_transformers import SentenceTransformer
@@ -163,10 +162,14 @@ def get_md_emb(
     return md_str
 
 
-def prune_metadata_str(question, db_name):
+def prune_metadata_str(question, db_name, public_data=True):
     # current file dir
     root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     emb_path = os.path.join(root_dir, "data", "embeddings.pkl")
+    if public_data:
+        import defog_data.supplementary as sup
+    else:
+        import defog_data_private.supplementary as sup
     emb, csv_descriptions = sup.load_embeddings(emb_path)
     table_metadata_csv = get_md_emb(
         question,
