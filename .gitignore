@@ -1,5 +1,6 @@
 data/postgres
 data/embeddings.pkl
+results
 
 # pycache
 **/__pycache__/

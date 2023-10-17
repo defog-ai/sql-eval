@@ -167,8 +167,10 @@ def prune_metadata_str(question, db_name, public_data=True):
     root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     emb_path = os.path.join(root_dir, "data", "embeddings.pkl")
     if public_data:
+        print("Loading public data")
         import defog_data.supplementary as sup
     else:
+        print("Loading private data")
         import defog_data_private.supplementary as sup
     emb, csv_descriptions = sup.load_embeddings(emb_path)
     table_metadata_csv = get_md_emb(

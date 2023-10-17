@@ -1,7 +1,8 @@
+from typing import Optional
 import pandas as pd
 
 
-def prepare_questions_df(questions_file, num_questions):
+def prepare_questions_df(questions_file: str, num_questions: Optional[int] = None):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
