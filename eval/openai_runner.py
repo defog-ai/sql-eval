@@ -12,21 +12,6 @@ def run_openai_eval(args):
     print("preparing questions...")
     # get questions
     question_query_df = prepare_questions_df(args.questions_file, args.num_questions)
-    qg_class = OpenAIQueryGenerator
-    # add columns for generated query and metrics
-    question_query_df["generated_query"] = ""
-    question_query_df["reason"] = ""
-    question_query_df["error_msg"] = ""
-    question_query_df["exact_match"] = 0
-    question_query_df["correct"] = 0
-    question_query_df["error_query_gen"] = 0
-    question_query_df["error_db_exec"] = 0
-    question_query_df["timeout"] = 0
-    # add custom metrics below:
-    question_query_df["latency_seconds"] = 0.0  # latency of query generation in seconds
-    question_query_df["tokens_used"] = 0  # number of tokens used in query generation
-
-    question_query_df.reset_index(inplace=True, drop=True)
 
     input_rows = question_query_df.to_dict("records")
     output_rows = []
@@ -44,11 +29,12 @@ def run_openai_eval(args):
                 "database": db_name,
             }
 
-            qg = qg_class(
+            qg = OpenAIQueryGenerator(
                 db_creds=copy.deepcopy(db_creds),
                 model=args.model,
                 prompt_file=args.prompt_file,
                 timeout=args.timeout_gen,
+                use_public_data=not args.use_private_data,
                 verbose=args.verbose,
             )
 

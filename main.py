@@ -9,8 +9,9 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num_questions", type=int, default=None)
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
+    parser.add_argument("-a", "--adapter", type=str)
     parser.add_argument("-f", "--prompt_file", type=str, required=True)
-    parser.add_argument("-d", "--use_defog_data", type=bool, default=True)
+    parser.add_argument("-d", "--use_private_data", action="store_true")
     parser.add_argument("-o", "--output_file", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
@@ -28,18 +29,7 @@ if __name__ == "__main__":
             args.model = "claude-2"
         run_anthropic_eval(args)
     elif args.model_type == "hf":
-        if args.model is None:
-            raise ValueError(
-                "Model must be specified for HF model type. See section on CLI flags in README.md for more details."
-            )
-        run_hf_eval(
-            questions_file=args.questions_file,
-            prompt_file=args.prompt_file,
-            num_questions=args.num_questions,
-            public_data=args.use_defog_data,
-            model_name=args.model,
-            output_file=args.output_file,
-        )
+        run_hf_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf'"

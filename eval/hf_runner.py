@@ -1,3 +1,4 @@
+from typing import Optional
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
@@ -28,29 +29,28 @@ def generate_prompt(prompt_file, question, db_name, public_data):
     return prompt
 
 
-def get_tokenizer_model(model_name):
-    if "llama" not in model_name:
-        # tokenizer = AutoTokenizer.from_pretrained(model_name)
-        # model = AutoModelForCausalLM.from_pretrained(
-        #     model_name,
-        #     trust_remote_code=True,
-        #     torch_dtype=torch.float16,
-        #     device_map="auto",
-        #     use_cache=True
-        # )
-        model_path = "/home/defog/finetuning/starcoder/sqlcoder_npl_cfc_map_600"
-        config = PeftConfig.from_pretrained(model_path)
+def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
+    """
+    Load a HuggingFace tokenizer and model.
+    You may supply either a normal huggingface model name, or a peft adapter path.
+    """
+    if adapter_path is not None:
+        print(f"Loading adapter model {adapter_path}")
+        config = PeftConfig.from_pretrained(adapter_path)
         tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
         model = AutoModelForCausalLM.from_pretrained(
             config.base_model_name_or_path,
-            use_auth_token=True,
-            torch_dtype=torch.bfloat16,
+            torch_dtype=torch.float16,
             trust_remote_code=True,
+            use_cache=True,
             device_map="auto",
         )
-        model = PeftModel.from_pretrained(model, model_path)
+        print(f"Loading adapter {adapter_path}")
+        model = PeftModel.from_pretrained(model, adapter_path)
         model = model.merge_and_unload()
-    else:
+        print(f"Merged adapter {adapter_path}")
+    elif model_name is not None and "llama" in model_name:
+        print(f"Loading Llama-based model {model_name}")
         tokenizer = LlamaTokenizer.from_pretrained(
             model_name, legacy=False, use_fast=True
         )
@@ -61,19 +61,36 @@ def get_tokenizer_model(model_name):
             use_cache=True,
             use_flash_attention_2=True,
         )
+    else:
+        print(f"Loading model {model_name}")
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,
+            trust_remote_code=True,
+            device_map="auto",
+        )
     return tokenizer, model
 
 
-def run_hf_eval(
-    questions_file: str,
-    prompt_file: str,
-    num_questions: int = None,
-    public_data: bool = True,
-    model_name: str = "defog/starcoder-finetune-v3",
-    output_file: str = "results.csv",
-):
+def run_hf_eval(args):
+    # get params from args
+    questions_file = args.questions_file
+    prompt_file = args.prompt_file
+    num_questions = args.num_questions
+    public_data = not args.use_private_data
+    model_name = args.model
+    adapter_path = args.adapter
+    output_file = args.output_file
+
+    if model_name is None and adapter_path is None:
+        raise ValueError(
+            "You must supply either a model name or an adapter path to run an evaluation."
+        )
+
     print("preparing questions...")
     # get questions
+    print(f"Using {num_questions} questions from {questions_file}")
     df = prepare_questions_df(questions_file, num_questions)
 
     # create a prompt for each question
@@ -86,7 +103,7 @@ def run_hf_eval(
 
     print("questions prepared\nnow loading model...")
     # initialize tokenizer and model
-    tokenizer, model = get_tokenizer_model(model_name)
+    tokenizer, model = get_tokenizer_model(model_name, adapter_path)
     model.tie_weights()
 
     print("model loaded\nnow generating and evaluating predictions...")
@@ -99,11 +116,11 @@ def run_hf_eval(
     total_correct = 0
     output_rows = []
 
-    if "llama" not in model_name.lower():
+    if model_name is None or "llama" not in model_name.lower():
         pipeline_config = {
             "max_new_tokens": 300,
             "do_sample": False,
-            "num_beams": 5,
+            "num_beams": 4,
         }
     else:
         pipeline_config = {
@@ -115,12 +132,15 @@ def run_hf_eval(
     with tqdm(total=len(df)) as pbar:
         for row in df.to_dict("records"):
             total_tried += 1
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
             start_time = time()
             generated_query = (
                 pipe(
                     row["prompt"],
                     num_return_sequences=1,
-                    # eos_token_id=eos_token_id,
+                    eos_token_id=tokenizer.eos_token_id,
                     pad_token_id=tokenizer.eos_token_id,
                     **pipeline_config,
                 )[0]["generated_text"]
