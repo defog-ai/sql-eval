@@ -5,13 +5,14 @@ defog-data==0.1.1
 func_timeout
 openai
 pandas
+peft
 psycopg2-binary
 pytest
+pyyaml
+sentence-transformers
 spacy
 sqlalchemy
 tiktoken
-pyyaml
-sentence-transformers
 torch
 tqdm
 transformers

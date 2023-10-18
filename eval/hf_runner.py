@@ -29,6 +29,17 @@ def generate_prompt(prompt_file, question, db_name, public_data):
     return prompt
 
 
+def dynamic_num_beams(prompt: str, tokenizer, max_beams: int = 4) -> int:
+    tokens = len(tokenizer.encode(prompt))
+    print(tokens)
+    if tokens <= 1024:
+        return max_beams
+    elif tokens <= 1536:
+        return max_beams // 2
+    else:
+        return max_beams // 4
+
+
 def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     """
     Load a HuggingFace tokenizer and model.
@@ -116,35 +127,24 @@ def run_hf_eval(args):
     total_correct = 0
     output_rows = []
 
-    if model_name is None or "llama" not in model_name.lower():
-        pipeline_config = {
-            "max_new_tokens": 300,
-            "do_sample": False,
-            "num_beams": 4,
-        }
-    else:
-        pipeline_config = {
-            "max_new_tokens": 300,
-            "do_sample": False,
-            "num_beams": 3,
-        }
-
     with tqdm(total=len(df)) as pbar:
         for row in df.to_dict("records"):
             total_tried += 1
-            gc.collect()
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
             start_time = time()
+            num_beams = dynamic_num_beams(row["prompt"], tokenizer)
+            # we set return_full_text to False so that we don't get the prompt text in the generated text
+            # this simplifies our postprocessing to deal with just the truncation of the end of the query
             generated_query = (
                 pipe(
                     row["prompt"],
+                    max_new_tokens=300,
+                    do_sample=False,
+                    num_beams=num_beams,
                     num_return_sequences=1,
+                    return_full_text=False,
                     eos_token_id=tokenizer.eos_token_id,
                     pad_token_id=tokenizer.eos_token_id,
-                    **pipeline_config,
                 )[0]["generated_text"]
-                .split("```sql")[-1]
                 .split("```")[0]
                 .split(";")[0]
                 .strip()
