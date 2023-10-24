@@ -1,6 +1,6 @@
 question,query,db_name,query_category
 Which conference published the most publications 2 years ago? Give the conference name and publication count.,"SELECT conference.name, count(publication.pid) AS publication_count FROM publication JOIN conference ON publication.cid = conference.cid WHERE publication.year = extract(YEAR FROM CURRENT_DATE) - 2 GROUP BY conference.name ORDER BY publication_count DESC LIMIT 1;",academic,date_functions
-"How many conferences took place between 2019 and 2021?",SELECT count(DISTINCT publication.cid) FROM publication WHERE publication.year BETWEEN 2019 AND 2021;,academic,date_functions
+"How many publications were published between 2019 and 2021?",SELECT count(DISTINCT publication.cid) FROM publication WHERE publication.year BETWEEN 2019 AND 2021;,academic,date_functions
 What is the average number of citations received by publications in the last 5 years?,SELECT avg(publication.citation_num) FROM publication WHERE publication.year >= extract(YEAR FROM CURRENT_DATE) - 5;,academic,date_functions
 Which authors have published papers in journals within the past 3 years?,"SELECT DISTINCT {author.name, author.aid} FROM author JOIN writes ON author.aid = writes.aid JOIN publication ON writes.pid = publication.pid WHERE publication.year >= extract(YEAR FROM CURRENT_DATE) - 3;",academic,date_functions
 What's the difference in time between the first and last paper published?,SELECT max(YEAR) - min(YEAR) AS time_difference FROM publication;,academic,date_functions
