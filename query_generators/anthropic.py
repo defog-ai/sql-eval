@@ -7,7 +7,7 @@ import os
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
 
-anthropic = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+anthropic = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
 
 class AnthropicQueryGenerator(QueryGenerator):
