@@ -25,9 +25,11 @@ We have a comprehensive test suite that ensures the quality and reliability of o
 pytest tests
 ```
 
+Our CI excludes [tests/verify_questions.py](tests/verify_questions.py) as it depends on having a local postgres environment with the data loaded.
+
 Please make sure that all tests pass before submitting your changes.
 
-We also understand that some changes might not be easily testable with unit tests, for example, modifications of the underlying data schema, like column descriptions. In such cases, please provide a detailed description of your changes and how you tested them. We will review your changes and work with you to ensure that they are tested and verified.
+We also understand that some changes might not be easily testable with unit tests. In such cases, please provide a detailed description of your changes and how you tested them. We will review your changes and work with you to ensure that they are tested and verified.
 
 ## Submitting Changes
 

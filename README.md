@@ -112,7 +112,7 @@ python main.py \
   -q data/questions_gen.csv \
   -o results/my_query_generator.csv \
   -g oa \
-  -f prompts/prompt.md \
+  -f prompts/prompt_openai.md \
   -m gpt-3.5-turbo-0613 \
   -n 10 \
   -p 5
