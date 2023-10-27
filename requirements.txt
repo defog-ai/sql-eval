@@ -16,3 +16,4 @@ tiktoken
 torch
 tqdm
 transformers
+vllm
