@@ -1,6 +1,7 @@
 from eval.openai_runner import run_openai_eval
 from eval.hf_runner import run_hf_eval
 from eval.anthropic_runner import run_anthropic_eval
+from eval.vllm_runner import run_vllm_eval
 import argparse
 
 if __name__ == "__main__":
@@ -10,6 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-a", "--adapter", type=str)
+    parser.add_argument("-b", "--num_beams", type=int, default=4)
     parser.add_argument("-f", "--prompt_file", type=str, required=True)
     parser.add_argument("-d", "--use_private_data", action="store_true")
     parser.add_argument("-o", "--output_file", type=str, required=True)
@@ -28,6 +30,8 @@ if __name__ == "__main__":
         if args.model is None:
             args.model = "claude-2"
         run_anthropic_eval(args)
+    elif args.model_type == "vllm":
+        run_vllm_eval(args)
     elif args.model_type == "hf":
         run_hf_eval(args)
     else:
