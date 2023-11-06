@@ -9,6 +9,7 @@ from utils.pruning import prune_metadata_str
 
 openai = OpenAI()
 
+
 class OpenAIQueryGenerator(QueryGenerator):
     """
     Query generator that uses OpenAI's models
@@ -42,7 +43,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         temperature=0,
         stop=[],
         logit_bias={},
-        seed=123
+        seed=123,
     ):
         """Get OpenAI chat completion for a given prompt and model"""
         generated_text = ""
@@ -79,7 +80,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 temperature=temperature,
                 stop=stop,
                 logit_bias=logit_bias,
-                seed=42
+                seed=42,
             )
             generated_text = completion["choices"][0]["text"]
         except Exception as e:
@@ -149,12 +150,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             self.completion = func_timeout(
                 self.timeout,
                 function_to_run,
-                args=(
-                    self.model,
-                    package,
-                    400,
-                    0
-                ),
+                args=(self.model, package, 400, 0),
             )
             results = self.completion
             self.query = results.split("```sql")[-1].split("```")[0]
