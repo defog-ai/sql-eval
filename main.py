@@ -32,6 +32,7 @@ if __name__ == "__main__":
         run_anthropic_eval(args)
     elif args.model_type == "vllm":
         from eval.vllm_runner import run_vllm_eval
+
         run_vllm_eval(args)
     elif args.model_type == "hf":
         from eval.hf_runner import run_hf_eval
