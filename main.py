@@ -8,15 +8,22 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-a", "--adapter", type=str)
     parser.add_argument("-b", "--num_beams", type=int, default=4)
-    parser.add_argument("-f", "--prompt_file", type=str, required=True)
+    # take in a list of prompt files
+    parser.add_argument("-f", "--prompt_file", nargs="+", type=str, required=True)
     parser.add_argument("-d", "--use_private_data", action="store_true")
-    parser.add_argument("-o", "--output_file", type=str, required=True)
+    parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
     parser.add_argument("-u", "--timeout_exec", type=float, default=10.0)
     parser.add_argument("-v", "--verbose", action="store_true")
 
     args = parser.parse_args()
+
+    # check that the list of prompt files has the same length as the list of output files
+    if len(args.prompt_file) != len(args.output_file):
+        raise ValueError(
+            f"Number of prompt files ({len(args.prompt_file)}) must be the same as the number of output files ({len(args.output_file)})"
+        )
 
     if args.model_type == "oa":
         from eval.openai_runner import run_openai_eval
