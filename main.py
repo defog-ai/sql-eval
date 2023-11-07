@@ -1,7 +1,3 @@
-from eval.openai_runner import run_openai_eval
-from eval.hf_runner import run_hf_eval
-from eval.anthropic_runner import run_anthropic_eval
-from eval.vllm_runner import run_vllm_eval
 import argparse
 
 if __name__ == "__main__":
@@ -23,16 +19,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.model_type == "oa":
+        from eval.openai_runner import run_openai_eval
+
         if args.model is None:
             args.model = "gpt-3.5-turbo-0613"
         run_openai_eval(args)
     elif args.model_type == "anthropic":
+        from eval.anthropic_runner import run_anthropic_eval
+
         if args.model is None:
             args.model = "claude-2"
         run_anthropic_eval(args)
     elif args.model_type == "vllm":
+        from eval.vllm_runner import run_vllm_eval
+
         run_vllm_eval(args)
     elif args.model_type == "hf":
+        from eval.hf_runner import run_hf_eval
+
         run_hf_eval(args)
     else:
         raise ValueError(

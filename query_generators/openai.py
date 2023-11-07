@@ -1,17 +1,19 @@
 import time
 from typing import Dict, List
 from func_timeout import FunctionTimedOut, func_timeout
-import openai
+from openai import OpenAI
 import tiktoken
 
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
 
+openai = OpenAI()
+
 
 class OpenAIQueryGenerator(QueryGenerator):
     """
     Query generator that uses OpenAI's models
-    Models available: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003
+    Models available: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003, gpt-4-1106-preview
     """
 
     def __init__(
@@ -39,13 +41,14 @@ class OpenAIQueryGenerator(QueryGenerator):
         messages,
         max_tokens=600,
         temperature=0,
-        stop=["```"],
+        stop=[],
         logit_bias={},
+        seed=123,
     ):
         """Get OpenAI chat completion for a given prompt and model"""
         generated_text = ""
         try:
-            completion = openai.ChatCompletion.create(
+            completion = openai.chat.completions.create(
                 model=model,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -53,24 +56,9 @@ class OpenAIQueryGenerator(QueryGenerator):
                 stop=stop,
                 logit_bias=logit_bias,
             )
-            generated_text = completion["choices"][0]["message"]["content"]
-        except (openai.error.RateLimitError, openai.error.ServiceUnavailableError) as e:
-            if self.verbose:
-                print("Model overloaded. Pausing for 5s before retrying...")
-            time.sleep(5)
-            # Retry the api call after 5s
-            completion = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                stop=stop,
-                logit_bias=logit_bias,
-            )
-            generated_text = completion["choices"][0]["message"]["content"]
+            generated_text = completion.choices[0].message.content
         except Exception as e:
-            if self.verbose:
-                print(type(e), e)
+            print(type(e), e)
         return generated_text
 
     def get_nonchat_completion(
@@ -79,38 +67,24 @@ class OpenAIQueryGenerator(QueryGenerator):
         prompt,
         max_tokens=600,
         temperature=0,
-        stop=["```"],
+        stop=[],
         logit_bias={},
     ):
         """Get OpenAI nonchat completion for a given prompt and model"""
         generated_text = ""
         try:
-            completion = openai.Completion.create(
+            completion = openai.completions.create(
                 model=model,
                 prompt=prompt,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 stop=stop,
                 logit_bias=logit_bias,
-            )
-            generated_text = completion["choices"][0]["text"]
-        except (openai.error.RateLimitError, openai.error.ServiceUnavailableError) as e:
-            if self.verbose:
-                print("Model overloaded. Pausing for 5s before retrying...")
-            time.sleep(5)
-            # Retry the api call after 5s
-            completion = openai.ChatCompletion.create(
-                model=model,
-                prompt=prompt,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                stop=stop,
-                logit_bias=logit_bias,
+                seed=42,
             )
             generated_text = completion["choices"][0]["text"]
         except Exception as e:
-            if self.verbose:
-                print(type(e), e)
+            print(type(e), e)
         return generated_text
 
     @staticmethod
@@ -119,7 +93,7 @@ class OpenAIQueryGenerator(QueryGenerator):
     ) -> int:
         """
         This function counts the number of tokens used in a prompt
-        model: the model used to generate the prompt. can be one of the following: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003
+        model: the model used to generate the prompt. can be one of the following: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003, gpt-4-1106-preview
         messages: (only for OpenAI chat models) a list of messages to be used as a prompt. Each message is a dict with two keys: role and content
         prompt: (only for text-davinci-003 model) a string to be used as a prompt
         """
@@ -176,16 +150,10 @@ class OpenAIQueryGenerator(QueryGenerator):
             self.completion = func_timeout(
                 self.timeout,
                 function_to_run,
-                args=(
-                    self.model,
-                    package,
-                    400,
-                    0,
-                    ["```"],
-                ),
+                args=(self.model, package, 400, 0),
             )
             results = self.completion
-            self.query = results.split("```sql")[-1]
+            self.query = results.split("```sql")[-1].split("```")[0]
             self.reason = "-"
         except FunctionTimedOut:
             if self.verbose:
@@ -196,6 +164,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 print(f"Error while generating query: {type(e)}, {e})")
             self.query = ""
             self.reason = ""
+            print(e)
             if isinstance(e, KeyError):
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}, Completion: {self.completion}"
             else:
