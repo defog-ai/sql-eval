@@ -43,7 +43,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         temperature=0,
         stop=[],
         logit_bias={},
-        seed=123,
+        seed=100,
     ):
         """Get OpenAI chat completion for a given prompt and model"""
         generated_text = ""
@@ -55,6 +55,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 temperature=temperature,
                 stop=stop,
                 logit_bias=logit_bias,
+                seed=seed,
             )
             generated_text = completion.choices[0].message.content
         except Exception as e:
