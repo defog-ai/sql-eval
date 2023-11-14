@@ -7,6 +7,7 @@ from tqdm import tqdm
 from time import time
 import requests
 
+
 def generate_prompt(prompt_file, question, db_name, public_data):
     with open(prompt_file, "r") as f:
         prompt = f.read()
@@ -16,6 +17,7 @@ def generate_prompt(prompt_file, question, db_name, public_data):
         user_question=question, table_metadata_string=pruned_metadata_str
     )
     return prompt
+
 
 def run_api_eval(args):
     # get params from args
@@ -52,17 +54,27 @@ def run_api_eval(args):
             start_time = time()
             # we set return_full_text to False so that we don't get the prompt text in the generated text
             # this simplifies our postprocessing to deal with just the truncation of the end of the query
-            r = requests.post(api_url, json={
-                "prompt": row["prompt"],
-                "use_beam_search": True,
-                "n": 1,
-                "best_of": num_beams,
-                "temperature": 0,
-                "stop": [";", "```"],
-                "max_tokens": 600
-            })
+            r = requests.post(
+                api_url,
+                json={
+                    "prompt": row["prompt"],
+                    "use_beam_search": True,
+                    "n": 1,
+                    "best_of": num_beams,
+                    "temperature": 0,
+                    "stop": [";", "```"],
+                    "max_tokens": 600,
+                },
+            )
             end_time = time()
-            generated_query = r.json()['text'][0].split("```")[-1].split("```")[0].split(";")[0].strip() + ";"
+            generated_query = (
+                r.json()["text"][0]
+                .split("```")[-1]
+                .split("```")[0]
+                .split(";")[0]
+                .strip()
+                + ";"
+            )
 
             row["generated_query"] = generated_query
             row["latency_seconds"] = end_time - start_time
