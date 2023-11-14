@@ -7,6 +7,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-a", "--adapter", type=str)
+    parser.add_argument("--url", type=str)
     parser.add_argument("-b", "--num_beams", type=int, default=4)
     parser.add_argument("-f", "--prompt_file", type=str, required=True)
     parser.add_argument("-d", "--use_private_data", action="store_true")
@@ -38,6 +39,10 @@ if __name__ == "__main__":
         from eval.hf_runner import run_hf_eval
 
         run_hf_eval(args)
+    elif args.model_type == "api":
+        from eval.api_runner import run_api_eval
+
+        run_api_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf'"
