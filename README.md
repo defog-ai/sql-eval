@@ -104,7 +104,7 @@ Having implemented the query generator, the next piece of abstraction would be t
 ### OpenAI / Anthropic
 Remember to have your API key (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) set as an environment variable before running the test if you plan to call the OpenAI or Anthropic/other LLM API's accordingly.
 
-To test it out with just 10 questions (instead of all 175) using the gpt-3.5-turbo model, parallelized across 5 workers:
+To test it out with just 10 questions (instead of all 200), parallelized across 5 :
 
 ```bash
 python main.py \
@@ -128,7 +128,7 @@ python main.py \
 ```
 
 ### Hugging Face
-To test it out with our fine-tuned sql model with just 10 questions (instead of all 175):
+To test it out with our fine-tuned sql model with just 10 questions (instead of all 200):
 
 ```bash
 # use the -W option to ignore warnings about sequential use of transformers pipeline
@@ -165,6 +165,20 @@ python -W ignore main.py \
 ```
 While you can do the same for the other runners, the time savings are most significant when loading a large model locally, vs calling an always-on API.
 
+### API
+To test it out with just 10 questions (instead of all 200), parallelized across 3 calls:
+```bash
+mkdir results
+python main.py \
+  -q data/questions_gen.csv \
+  -o results/results.csv \
+  -g api \
+  -b 5 \
+  -f prompts/prompt.md \
+  --url YOUR_API_URL \
+  -p 3 \
+  -n 10
+```
 
 ### CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
@@ -172,8 +186,9 @@ You can use the following flags in the command line to change the configurations
 |-------------|-------|
 |  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
-|  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models and `hf` for Hugging Face models.   |
+|  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, and `api` for API endpoints.   |
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
+|  --url   |  The URL of the API you want to send the prompt to. Only used when model_type is `api` |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.  |
 |  -d, --use_private_data  |  Use this to read from your own private data library.  |
 |  -o, --output_file   |  Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files |
