@@ -101,13 +101,12 @@ Having implemented the query generator, the next piece of abstraction would be t
 
 ## Running the Test
 
-### OpenAI
-Remember to have your OpenAI API key (`OPENAI_API_KEY="sk-..."`) set as an environment variable before running the test if you plan to call the OpenAI API (or Anthropic/other LLM API's accordingly).
+### OpenAI / Anthropic
+Remember to have your API key (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) set as an environment variable before running the test if you plan to call the OpenAI or Anthropic/other LLM API's accordingly.
 
 To test it out with just 10 questions (instead of all 200), parallelized across 5 :
 
 ```bash
-mkdir results # create directory for storing results
 python main.py \
   -q data/questions_gen.csv \
   -o results/my_query_generator.csv \
@@ -118,21 +117,53 @@ python main.py \
   -p 5
 ```
 
+To test out the full suite of questions for claude-2:
+```bash
+python main.py \
+  -q data/questions_gen.csv \
+  -o results/claude-2.csv \
+  -g anthropic \
+  -f prompts/prompt_anthropic.md \
+  -m claude-2
+```
+
 ### Hugging Face
 To test it out with our fine-tuned sql model with just 10 questions (instead of all 200):
 
 ```bash
-mkdir results #create directory for storing results
-
 # use the -W option to ignore warnings about sequential use of transformers pipeline
 python -W ignore main.py \
   -q data/questions_gen.csv \
   -o results/results.csv \
   -g hf \
   -f prompts/prompt.md \
-  -m defog/starcoder-finetune-v3 \
+  -m defog/sqlcoder2 \
   -n 10
 ```
+We also support loading a peft adapter here as well via the `-a` flag. Note that the loading of the adapter with the model will take slightly longer than usual.
+
+### VLLM
+
+We also have a [vllm](vllm.ai) runner which uses the VLLM engine to run the inference altogether as a single batch. It is much faster to do so especially when `num_beams` > 1. You would have to pass in a single set of merged model weights, and the model architecture needs to be supported by vllm. Here's a sample command:
+```bash
+python -W ignore main.py \
+  -q data/questions_gen.csv \
+  -o "results/results.csv" \
+  -g vllm \
+  -f "prompts/prompt.md" \
+  -m defog/sqlcoder2
+```
+
+If you'd like to test out a few prompts in a single run (to save the few minutes spent loading the model into GPU at the start of each run), you can specify a list of prompt files in `--prompt_file` (e.g. `-f prompts/prompt-1.md prompts/prompt-2.md prompts/prompt-3.md`), as well as a corresponding list of output files in `--output_file` (e.g. `-o results/results-1.csv results/results-2.csv results/results-3.csv`). The number of prompts and output files must be the same. Here's a sample command:
+```bash
+python -W ignore main.py \
+  -q data/questions_gen.csv \
+  -o results/results_1.csv results/results_2.csv \
+  -g vllm \
+  -f prompts/prompt_1.md prompts/prompt_2.md \
+  -m defog/sqlcoder2
+```
+While you can do the same for the other runners, the time savings are most significant when loading a large model locally, vs calling an always-on API.
 
 ### API
 To test it out with just 10 questions (instead of all 200), parallelized across 3 calls:
@@ -158,9 +189,9 @@ You can use the following flags in the command line to change the configurations
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, and `api` for API endpoints.   |
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
 |  --url   |  The URL of the API you want to send the prompt to. Only used when model_type is `api` |
-|  -f, --prompt_file   |  Markdown file with the prompt used for query generation.  |
+|  -f, --prompt_file   |  Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.  |
 |  -d, --use_private_data  |  Use this to read from your own private data library.  |
-|  -o, --output_file   |  Output CSV file that will store your results.   |
+|  -o, --output_file   |  Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
