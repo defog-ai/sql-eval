@@ -20,10 +20,8 @@ def generate_prompt(prompt_file, question, db_name, public_data):
     return prompt
 
 
-def process_row(row, api_url, num_beams, public_data):
+def process_row(row, api_url, num_beams):
     start_time = time()
-    # we set return_full_text to False so that we don't get the prompt text in the generated text
-    # this simplifies our postprocessing to deal with just the truncation of the end of the query
     r = requests.post(
         api_url,
         json={
@@ -109,9 +107,7 @@ def run_api_eval(args):
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         for row in df.to_dict("records"):
-            futures.append(
-                executor.submit(process_row, row, api_url, num_beams, public_data)
-            )
+            futures.append(executor.submit(process_row, row, api_url, num_beams))
 
         with tqdm(as_completed(futures), total=len(futures)) as pbar:
             for f in pbar:
