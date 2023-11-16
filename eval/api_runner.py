@@ -77,11 +77,11 @@ def process_row(row, api_url, num_beams):
 def run_api_eval(args):
     # get params from args
     questions_file = args.questions_file
-    prompt_file = args.prompt_file
+    prompt_file_list = args.prompt_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
     api_url = args.url
-    output_file = args.output_file
+    output_file_list = args.output_file
     num_beams = args.num_beams
     max_workers = args.parallel_threads
 
@@ -90,39 +90,43 @@ def run_api_eval(args):
     print(f"Using {num_questions} questions from {questions_file}")
     df = prepare_questions_df(questions_file, num_questions)
 
-    # create a prompt for each question
-    df["prompt"] = df[["question", "db_name"]].apply(
-        lambda row: generate_prompt(
-            prompt_file, row["question"], row["db_name"], public_data
-        ),
-        axis=1,
-    )
+    for prompt_file, output_file in zip(prompt_file_list, output_file_list):
+        # create a prompt for each question
+        df["prompt"] = df[["question", "db_name"]].apply(
+            lambda row: generate_prompt(
+                prompt_file, row["question"], row["db_name"], public_data
+            ),
+            axis=1,
+        )
 
-    print("questions prepared\nnow loading model...")
-    # initialize tokenizer and model
-    total_tried = 0
-    total_correct = 0
-    output_rows = []
+        print("questions prepared\nnow loading model...")
+        # initialize tokenizer and model
+        total_tried = 0
+        total_correct = 0
+        output_rows = []
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for row in df.to_dict("records"):
-            futures.append(executor.submit(process_row, row, api_url, num_beams))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+            for row in df.to_dict("records"):
+                futures.append(executor.submit(process_row, row, api_url, num_beams))
 
-        with tqdm(as_completed(futures), total=len(futures)) as pbar:
-            for f in pbar:
-                row = f.result()
-                output_rows.append(row)
-                if row["correct"]:
-                    total_correct += 1
-                total_tried += 1
-                pbar.update(1)
-                pbar.set_description(
-                    f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
-                )
+            with tqdm(as_completed(futures), total=len(futures)) as pbar:
+                for f in pbar:
+                    row = f.result()
+                    output_rows.append(row)
+                    if row["correct"]:
+                        total_correct += 1
+                    total_tried += 1
+                    pbar.update(1)
+                    pbar.set_description(
+                        f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
+                    )
 
-    output_df = pd.DataFrame(output_rows)
-    del output_df["prompt"]
-    print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
-    output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-    output_df.to_csv(output_file, index=False, float_format="%.2f")
+        output_df = pd.DataFrame(output_rows)
+        del output_df["prompt"]
+        print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
+        output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
+        try:
+            output_df.to_csv(output_file, index=False, float_format="%.2f")
+        except:
+            output_df.to_pickle(output_file)
