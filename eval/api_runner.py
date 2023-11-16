@@ -104,7 +104,7 @@ def run_api_eval(args):
     total_correct = 0
     output_rows = []
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for row in df.to_dict("records"):
             futures.append(executor.submit(process_row, row, api_url, num_beams))
