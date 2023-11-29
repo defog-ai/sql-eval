@@ -38,7 +38,6 @@ def run_openai_eval(args):
                     model=args.model,
                     prompt_file=prompt_file,
                     timeout=args.timeout_gen,
-                    use_public_data=not args.use_private_data,
                     verbose=args.verbose,
                 )
 

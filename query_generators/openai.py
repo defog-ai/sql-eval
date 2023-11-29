@@ -22,7 +22,6 @@ class OpenAIQueryGenerator(QueryGenerator):
         model: str,
         prompt_file: str,
         timeout: int,
-        use_public_data: bool,
         verbose: bool,
         **kwargs,
     ):
@@ -30,7 +29,6 @@ class OpenAIQueryGenerator(QueryGenerator):
         self.db_name = db_creds["database"]
         self.model = model
         self.prompt_file = prompt_file
-        self.use_public_data = use_public_data
 
         self.timeout = timeout
         self.verbose = verbose
@@ -125,7 +123,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             user_prompt = user_prompt.format(
                 user_question=question,
                 table_metadata_string=prune_metadata_str(
-                    question, self.db_name, self.use_public_data
+                    question, self.db_name
                 ),
             )
 

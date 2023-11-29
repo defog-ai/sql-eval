@@ -9,11 +9,11 @@ from time import time
 import requests
 
 
-def generate_prompt(prompt_file, question, db_name, public_data):
+def generate_prompt(prompt_file, question, db_name):
     with open(prompt_file, "r") as f:
         prompt = f.read()
 
-    pruned_metadata_str = prune_metadata_str(question, db_name, public_data)
+    pruned_metadata_str = prune_metadata_str(question, db_name)
     prompt = prompt.format(
         user_question=question, table_metadata_string=pruned_metadata_str
     )
@@ -79,7 +79,6 @@ def run_api_eval(args):
     questions_file = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
-    public_data = not args.use_private_data
     api_url = args.url
     output_file_list = args.output_file
     num_beams = args.num_beams
@@ -94,7 +93,7 @@ def run_api_eval(args):
         # create a prompt for each question
         df["prompt"] = df[["question", "db_name"]].apply(
             lambda row: generate_prompt(
-                prompt_file, row["question"], row["db_name"], public_data
+                prompt_file, row["question"], row["db_name"]
             ),
             axis=1,
         )

@@ -19,11 +19,11 @@ import gc
 from peft import PeftModel, PeftConfig
 
 
-def generate_prompt(prompt_file, question, db_name, public_data):
+def generate_prompt(prompt_file, question, db_name):
     with open(prompt_file, "r") as f:
         prompt = f.read()
 
-    pruned_metadata_str = prune_metadata_str(question, db_name, public_data)
+    pruned_metadata_str = prune_metadata_str(question, db_name)
     prompt = prompt.format(
         user_question=question, table_metadata_string=pruned_metadata_str
     )
@@ -90,7 +90,6 @@ def run_hf_eval(args):
     questions_file = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
-    public_data = not args.use_private_data
     model_name = args.model
     adapter_path = args.adapter
     output_file_list = args.output_file
@@ -119,7 +118,7 @@ def run_hf_eval(args):
         # create a prompt for each question
         df["prompt"] = df[["question", "db_name"]].apply(
             lambda row: generate_prompt(
-                prompt_file, row["question"], row["db_name"], public_data
+                prompt_file, row["question"], row["db_name"]
             ),
             axis=1,
         )

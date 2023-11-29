@@ -11,7 +11,6 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--num_beams", type=int, default=4)
     # take in a list of prompt files
     parser.add_argument("-f", "--prompt_file", nargs="+", type=str, required=True)
-    parser.add_argument("-d", "--use_private_data", action="store_true")
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
