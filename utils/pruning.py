@@ -1,3 +1,4 @@
+from defog_data.metadata import dbs
 import os
 from typing import Dict, List, Tuple
 from sentence_transformers import SentenceTransformer
@@ -164,10 +165,12 @@ def get_md_emb(
     return md_str
 
 
-def prune_metadata_str(question, db_name, public_data=True):
+def prune_metadata_str(question, db_name):
     # current file dir
     root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    if public_data:
+    # We assume that as long as the db_name is one of our 8 public datasets, it will use the 
+    # public dataset embeddings. Otherwise, it will use the private dataset embeddings.
+    if db_name in dbs:
         import defog_data.supplementary as sup
 
         emb_path = os.path.join(root_dir, "data", "public_embeddings.pkl")
@@ -175,7 +178,10 @@ def prune_metadata_str(question, db_name, public_data=True):
         import defog_data_private.supplementary as sup
 
         emb_path = os.path.join(root_dir, "data", "private_embeddings.pkl")
-    emb, csv_descriptions = sup.load_embeddings(emb_path)
+    # only read first 2 elements of tuple returned, since private method might return more
+    emb_tuple = sup.load_embeddings(emb_path)
+    emb = emb_tuple[0]
+    csv_descriptions = emb_tuple[1]
     table_metadata_csv = get_md_emb(
         question,
         emb[db_name],
