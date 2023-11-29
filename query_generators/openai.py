@@ -122,9 +122,7 @@ class OpenAIQueryGenerator(QueryGenerator):
 
             user_prompt = user_prompt.format(
                 user_question=question,
-                table_metadata_string=prune_metadata_str(
-                    question, self.db_name
-                ),
+                table_metadata_string=prune_metadata_str(question, self.db_name),
             )
 
             messages = []

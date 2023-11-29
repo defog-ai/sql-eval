@@ -50,9 +50,7 @@ def run_vllm_eval(args):
         # get questions and create a prompt for each question
         df = prepare_questions_df(questions_file, num_questions)
         df["prompt"] = df[["question", "db_name"]].apply(
-            lambda row: generate_prompt(
-                prompt_file, row["question"], row["db_name"]
-            ),
+            lambda row: generate_prompt(prompt_file, row["question"], row["db_name"]),
             axis=1,
         )
         print(f"Prepared {len(df)} questions from {questions_file}")

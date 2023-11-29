@@ -117,9 +117,7 @@ def run_hf_eval(args):
         df = prepare_questions_df(questions_file, num_questions)
         # create a prompt for each question
         df["prompt"] = df[["question", "db_name"]].apply(
-            lambda row: generate_prompt(
-                prompt_file, row["question"], row["db_name"]
-            ),
+            lambda row: generate_prompt(prompt_file, row["question"], row["db_name"]),
             axis=1,
         )
 

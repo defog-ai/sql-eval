@@ -92,9 +92,7 @@ def run_api_eval(args):
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
         # create a prompt for each question
         df["prompt"] = df[["question", "db_name"]].apply(
-            lambda row: generate_prompt(
-                prompt_file, row["question"], row["db_name"]
-            ),
+            lambda row: generate_prompt(prompt_file, row["question"], row["db_name"]),
             axis=1,
         )
 

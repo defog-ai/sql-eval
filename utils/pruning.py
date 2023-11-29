@@ -168,7 +168,7 @@ def get_md_emb(
 def prune_metadata_str(question, db_name):
     # current file dir
     root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    # We assume that as long as the db_name is one of our 8 public datasets, it will use the 
+    # We assume that as long as the db_name is one of our 8 public datasets, it will use the
     # public dataset embeddings. Otherwise, it will use the private dataset embeddings.
     if db_name in dbs:
         import defog_data.supplementary as sup
