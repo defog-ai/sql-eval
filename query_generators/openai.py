@@ -126,6 +126,10 @@ class OpenAIQueryGenerator(QueryGenerator):
                 table_metadata_string=prune_metadata_str(question, self.db_name),
             )
 
+            assistant_prompt = assistant_prompt.format(
+                user_question=question,
+            )
+
             messages = []
             messages.append({"role": "system", "content": sys_prompt})
             messages.append({"role": "user", "content": user_prompt})
