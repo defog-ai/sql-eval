@@ -40,9 +40,10 @@ def run_openai_eval(args):
                     timeout=args.timeout_gen,
                     verbose=args.verbose,
                 )
-
                 generated_query_fut = executor.submit(
-                    qg.generate_query, question=row["question"]
+                    qg.generate_query,
+                    question=row["question"],
+                    instructions=row["instructions"],
                 )
                 futures.append(generated_query_fut)
 

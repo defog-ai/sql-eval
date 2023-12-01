@@ -106,7 +106,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             num_tokens = len(tokenizer.encode(prompt))
         return num_tokens
 
-    def generate_query(self, question: str) -> dict:
+    def generate_query(self, question: str, instructions: str) -> dict:
         start_time = time.time()
         self.err = ""
         self.query = ""
@@ -122,6 +122,7 @@ class OpenAIQueryGenerator(QueryGenerator):
 
             user_prompt = user_prompt.format(
                 user_question=question,
+                instructions=instructions,
                 table_metadata_string=prune_metadata_str(question, self.db_name),
             )
 
