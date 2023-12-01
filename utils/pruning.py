@@ -1,3 +1,4 @@
+import re
 from defog_data.metadata import dbs
 import os
 from typing import Dict, List, Tuple
@@ -190,3 +191,21 @@ def prune_metadata_str(question, db_name):
         sup.columns_join[db_name],
     )
     return table_metadata_csv
+
+
+def generate_prompt(prompt_file, question, db_name, instructions=None):
+    """
+    Given prompt template file path, question, and db_name, generate prompt.
+    We will run the pruning algorithm to get the metadata string for the db_name.
+    Instructions are optional, and if present, will have a section heading
+    appended for clarity in the prompt.
+    """
+    with open(prompt_file, "r") as f:
+        prompt = f.read()
+    pruned_metadata_str = prune_metadata_str(question, db_name)
+    prompt = prompt.format(
+        user_question=question,
+        table_metadata_string=pruned_metadata_str,
+        instructions=instructions,
+    )
+    return prompt

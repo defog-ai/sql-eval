@@ -1,17 +1,21 @@
 # Defining your prompt
-You can define your prompt using the following structure.
+You can define your prompt template by using the following variables:
+- `user_question`: The question that we want to generate sql for
+- `table_metadata_string`: The metadata of the table that we want to query. This is a string that contains the table names, column names and column types. This allows the model to know which columns/tables are available for getting information from. For the sqlcoder model that we released, you would need to represent your table metadata as a [SQL DDL](https://en.wikipedia.org/wiki/Data_definition_language) statement.
+- `instructions`: This is an optional field that allows you to customize specific instructions for each question, if needed. For example, if you want to ask the model to format your dates a particular way, define keywords, or adapt the SQL to a different database, you can do so here. If you don't need to customize the instructions, you can omit this in your prompt.
 
-```
-### Instructions:
-YOUR INSTRUCTIONS FOR THE MODEL
-
-### Input:
-Generate a SQL query that answers the question `{user_question}`.
-This query will run on a database whose schema is represented in this string:
+Here is how a sample might look like with the above variables:
+```markdown
+### Task
+Generate a SQL query to answer the following question:
+`{user_question}`
+`{instructions}`
+### Database Schema
+The query will run on a database with the following schema:
 {table_metadata_string}
 
-### Response:
-THE RESPONSE TEXT FOR THE MODEL
+### Answer
+Given the database schema, here is the SQL query that answers `{user_question}`:
 ```sql
 ```
 

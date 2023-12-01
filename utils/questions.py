@@ -4,6 +4,12 @@ import pandas as pd
 
 def prepare_questions_df(questions_file: str, num_questions: Optional[int] = None):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
+    # optional instructions:
+    if "instructions" in question_query_df.columns:
+        question_query_df["instructions"] = question_query_df["instructions"].fillna("")
+    else:
+        question_query_df["instructions"] = ""
+    # add columns for standard metrics
     question_query_df["generated_query"] = ""
     question_query_df["reason"] = ""
     question_query_df["error_msg"] = ""

@@ -3,23 +3,12 @@ import sqlparse
 from vllm import LLM, SamplingParams
 from eval.eval import compare_query_results
 import pandas as pd
-from utils.pruning import prune_metadata_str
+from utils.pruning import generate_prompt
 from utils.questions import prepare_questions_df
 import time
 import torch
 from transformers import AutoTokenizer
 from tqdm import tqdm
-
-
-def generate_prompt(prompt_file, question, db_name):
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
-
-    pruned_metadata_str = prune_metadata_str(question, db_name)
-    prompt = prompt.format(
-        user_question=question, table_metadata_string=pruned_metadata_str
-    )
-    return prompt
 
 
 def run_vllm_eval(args):
@@ -49,8 +38,10 @@ def run_vllm_eval(args):
         print(f"Using prompt file {prompt_file}")
         # get questions and create a prompt for each question
         df = prepare_questions_df(questions_file, num_questions)
-        df["prompt"] = df[["question", "db_name"]].apply(
-            lambda row: generate_prompt(prompt_file, row["question"], row["db_name"]),
+        df["prompt"] = df[["question", "db_name", "instructions"]].apply(
+            lambda row: generate_prompt(
+                prompt_file, row["question"], row["db_name"], row["instructions"]
+            ),
             axis=1,
         )
         print(f"Prepared {len(df)} questions from {questions_file}")
