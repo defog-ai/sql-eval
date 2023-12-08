@@ -75,7 +75,10 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
         )
     else:
         print(f"Loading model {model_name}")
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+        except:
+            tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-34b-hf")
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
