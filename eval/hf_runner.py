@@ -61,18 +61,6 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
         model = PeftModel.from_pretrained(model, adapter_path)
         model = model.merge_and_unload()
         print(f"Merged adapter {adapter_path}")
-    elif model_name is not None and "llama" in model_name:
-        print(f"Loading Llama-based model {model_name}")
-        tokenizer = LlamaTokenizer.from_pretrained(
-            model_name, legacy=False, use_fast=True
-        )
-        model = LlamaForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            use_cache=True,
-            use_flash_attention_2=True,
-        )
     else:
         print(f"Loading model {model_name}")
         try:
