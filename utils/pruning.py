@@ -95,7 +95,10 @@ def get_md_emb(
     3. Generate the metadata string using the column info so far.
     4. Get joinable columns between tables in topk_table_columns and add to final metadata string.
     """
-    column_emb = column_emb.to("cuda")
+    if torch.cuda.is_available():
+        column_emb = column_emb.to("cuda")
+    else:
+        column_emb = column_emb.to("cpu")
     # 1) get top k columns
     top_k_scores, top_k_indices = knn(question, column_emb, k, threshold)
     topk_table_columns = {}
