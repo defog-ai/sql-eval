@@ -38,6 +38,13 @@ if __name__ == "__main__":
             args.model = "claude-2"
         run_anthropic_eval(args)
     elif args.model_type == "vllm":
+        import platform
+
+        if platform.system() == "Darwin":
+            raise ValueError(
+                "VLLM is not supported on macOS. Please run on a other OS supporting CUDA."
+            )
+
         from eval.vllm_runner import run_vllm_eval
 
         run_vllm_eval(args)
@@ -51,5 +58,5 @@ if __name__ == "__main__":
         run_api_eval(args)
     else:
         raise ValueError(
-            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf'"
+            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'api', 'anthropic', 'vllm'"
         )

@@ -18,6 +18,8 @@ from time import time
 import gc
 from peft import PeftModel, PeftConfig
 
+device_map = "mps" if torch.backends.mps.is_available() else "auto"
+
 
 def generate_prompt(prompt_file, question, db_name):
     with open(prompt_file, "r") as f:
@@ -32,7 +34,6 @@ def generate_prompt(prompt_file, question, db_name):
 
 def dynamic_num_beams(prompt: str, tokenizer, max_beams: int = 4) -> int:
     tokens = len(tokenizer.encode(prompt))
-    print(tokens)
     if tokens <= 1024:
         return max_beams
     elif tokens <= 1536:
@@ -55,7 +56,7 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
             torch_dtype=torch.float16,
             trust_remote_code=True,
             use_cache=True,
-            device_map="auto",
+            device_map=device_map,
         )
         print(f"Loading adapter {adapter_path}")
         model = PeftModel.from_pretrained(model, adapter_path)
@@ -69,7 +70,7 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
         model = LlamaForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
-            device_map="auto",
+            device_map=device_map,
             use_cache=True,
             use_flash_attention_2=True,
         )
@@ -80,7 +81,7 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
             model_name,
             torch_dtype=torch.float16,
             trust_remote_code=True,
-            device_map="auto",
+            device_map=device_map,
         )
     return tokenizer, model
 
@@ -149,8 +150,10 @@ def run_hf_eval(args):
                     + ";"
                 )
                 gc.collect()
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
+
                 end_time = time()
 
                 row["generated_query"] = generated_query
