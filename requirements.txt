@@ -16,4 +16,4 @@ tiktoken
 torch
 tqdm
 transformers
-vllm
+vllm; sys_platform != 'darwin'
