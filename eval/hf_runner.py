@@ -3,6 +3,7 @@ from typing import Optional
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
+import traceback
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -111,6 +112,21 @@ def run_hf_eval(args):
     # eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
+    support_beam_search = True
+    try:
+        pipe("Hi", num_beams=2, do_sample=False)
+    except AttributeError as e:
+        error_trace = traceback.format_exception(type(e), e, e.__traceback__)
+        support_beam_search = (
+            len([line for line in error_trace if "self.beam_search" in line]) == 0
+        )
+        if not support_beam_search:
+            print(
+                "WARNING: This model does not support beam search. will use num_beams=1"
+            )
+        else:
+            raise e
+
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
         print("preparing questions...")
         # get questions
@@ -130,7 +146,11 @@ def run_hf_eval(args):
             for row in df.to_dict("records"):
                 total_tried += 1
                 start_time = time()
-                num_beams = dynamic_num_beams(row["prompt"], tokenizer)
+
+                num_beams = 1
+                if support_beam_search:
+                    num_beams = dynamic_num_beams(row["prompt"], tokenizer)
+
                 # we set return_full_text to False so that we don't get the prompt text in the generated text
                 # this simplifies our postprocessing to deal with just the truncation of the end of the query
                 generated_query = (
