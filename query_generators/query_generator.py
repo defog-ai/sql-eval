@@ -15,8 +15,10 @@ class QueryGenerator:
     def __init__(self, **kwargs):
         pass
 
-    def generate_query(self, question: str) -> dict:
-        # generate a query given a question
+    def generate_query(
+        self, question: str, instructions: str, k_shot_prompt: str
+    ) -> dict:
+        # generate a query given a question, instructions and k-shot prompt
         # any hard-coded logic, prompt-engineering, table-pruning, api calls etc
         # should be completely contained within this function
         # do add try-except blocks to catch any errors and return an empty string

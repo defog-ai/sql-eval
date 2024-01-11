@@ -5,6 +5,7 @@ from eval.eval import (
     normalize_table,
     compare_df,
     query_postgres_db,
+    query_snowflake_db,
     subset_df,
 )
 import pandas as pd
@@ -149,6 +150,60 @@ def test_query_postgres_db(mock_pd_read_sql_query):
     assert_frame_equal(results_df, df)
 
 
+# test date/datetime type conversion to dateframe
+@mock.patch("snowflake.connector.connect")
+def test_query_snowflake_db(mock_connect):
+    db_name = "test_db"
+    db_creds = {
+        "user": "test_user",
+        "password": "test_password",
+        "account": "test_account",
+        "warehouse": "test_warehouse",
+    }
+    timeout = 10
+    query = "SELECT * FROM table_name;"
+
+    expected_df = pd.DataFrame(
+        {
+            "A": [1, 2, 3],
+            "B": [4, 5, 6],
+            "Date": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03"]).date,
+            "DateTime": pd.to_datetime(
+                ["2023-01-01 10:00", "2023-01-02 11:00", "2023-01-03 12:00"]
+            ),
+        }
+    )
+
+    mock_cursor = mock.Mock()
+    mock_connection = mock.Mock()
+
+    mock_cursor.execute.return_value = None
+    import datetime
+
+    mock_cursor.fetchall.return_value = [
+        [1, 4, datetime.date(2023, 1, 1), datetime.datetime(2023, 1, 1, 10, 0)],
+        [2, 5, datetime.date(2023, 1, 2), datetime.datetime(2023, 1, 2, 11, 0)],
+        [3, 6, datetime.date(2023, 1, 3), datetime.datetime(2023, 1, 3, 12, 0)],
+    ]
+    mock_cursor.description = [("A",), ("B",), ("Date",), ("DateTime",)]
+
+    mock_connection.cursor.return_value = mock_cursor
+
+    mock_connect.return_value = mock_connection
+
+    results_df = query_snowflake_db(query, db_name, db_creds, timeout)
+
+    assert mock_connect.call_count == 1
+    mock_cursor.execute.assert_has_calls(
+        [
+            mock.call(f"USE WAREHOUSE {db_creds['warehouse']}"),
+            mock.call(f"USE DATABASE {db_name}"),
+            mock.call(query),
+        ]
+    )
+    assert_frame_equal(results_df, expected_df)
+
+
 def test_compare_df(test_dataframes):
     # Assigning the test_dataframes fixture to individual variables
     (
@@ -272,6 +327,7 @@ def test_compare_query_results(mock_query_postgres_db):
 
     query_gold = "SELECT {id,name} FROM users WHERE age < 18;"
     db_name = "test_db"
+    db_type = "postgres"
     db_creds = {
         "host": "localhost",
         "port": 5432,
@@ -327,6 +383,7 @@ def test_compare_query_results(mock_query_postgres_db):
             query_gold,
             query_gen,
             db_name,
+            db_type,
             db_creds,
             question,
             query_category,

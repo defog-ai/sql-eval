@@ -8,7 +8,7 @@ This repository contains the code that Defog uses for the evaluation of generate
 
 Our testing procedure comprises the following steps. For each question/query pair:
 1. We generate a SQL query (possibly from an LLM).
-2. We run both the "gold" query and the generated query on their respective Postgres database to obtain 2 dataframes with the results.
+2. We run both the "gold" query and the generated query on their respective database to obtain 2 dataframes with the results.
 3. We compare the 2 dataframes using an "exact" and a "subset" match. TODO add link to blogpost.
 4. We log these alongside other metrics of interest (e.g. tokens used, latency) and aggregate the results for reporting.
 
@@ -71,15 +71,28 @@ export DBPORT=5432
 ./setup.sh
 ```
 
+### Import Data into Snowflake
+
+Should you wish to import the data into Snowflake, the setup instructions are also in the `defog-data` repository. After installing the [Snowflake CLI](https://docs.snowflake.com/en/user-guide/snowsql-install-config), configure your credentials as per the [docs](https://docs.snowflake.com/en/user-guide/snowsql-config) and set them as environment variables like below, then run the setup command.
+```sh
+export SFDBPASSWORD="your_password"
+export SFDBUSER="your_username"
+export SFDBACCOUNT="your_account"
+export SFDBWAREHOUSE="your_warehouse"
+./setup_snowflake.sh
+```
+
+Note that during evaluation you'll have to use the `_snowflake` question files in `/data`. The queries been modified to be valid on Snowflake databases.
+
 ### Using Private Data (Optional)
 
 If you have a private dataset that you do not want to make publicly available but would still like to repurpose the code here for evaluations, you can do so by following the steps below.
 - Begin by creating a separate git repository for your private data, that has a `setup.py` file, similar to [defog-data](https://github.com/defog-ai/defog-data).
 - Create the metadata and data files, and import them into your database. This is to allow our evaluation framework to run the generated queries with some actual data. You can refer to `defog-data`'s [metadata objects](https://github.com/defog-ai/defog-data/blob/main/defog_data/metadata.py) for the schema, and [setup.sh](https://github.com/defog-ai/defog-data/blob/main/setup.sh) as an example on how import the data into your database. We do not prescribe any specific folder structure, and leave it to you to decide how you want to organize your data, so long as you can import it into your database easily.
 - To use our metadata pruning utilities, you would need to have the following defined:
-  - A way to load your embeddings. In our case, we call a function [load_embeddings](utils/pruning.py#L173) from `defog-data`'s supplementary module to load a dictionary of database name to a tuple of the 2D embedding matrix (num examples x embedding dimension) and the associated text metadata for each row/example. If you would like to see how we generate this tuple, you may refer to [generate_embeddings](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L11) in the `defog-data` repository.
-  - A way to load columns associated with various named entities. In our case, we call a dictionary [columns_ner](utils/pruning.py#L178) of database name to a nested dictionary that maps each named entity type to a list of column metadata strings that are associated with that named entity type. You can refer to the raw data [here](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L77) for an example of how we generate this dictionary.
-  - A way to define joinable columns between tables. In our case, we call a dictionary [columns_join](utils/pruning.py#L179) of database name to a nested dictionary of table tuples to column name tuples. You can refer to the raw data [here](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L207) for an example of how we generate this dictionary.
+  - A way to load your embeddings. In our case, we call a function [load_embeddings](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L85) from `defog-data`'s supplementary module to load a dictionary of database name to a tuple of the 2D embedding matrix (num examples x embedding dimension) and the associated text metadata for each row/example. If you would like to see how we generate this tuple, you may refer to [generate_embeddings](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L11) in the `defog-data` repository.
+  - A way to load columns associated with various named entities. In our case, we call a dictionary [columns_ner](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L106) of database name to a nested dictionary that maps each named entity type to a list of column metadata strings that are associated with that named entity type. You can refer to the raw data for an example of how we generate this dictionary.
+  - A way to define joinable columns between tables. In our case, we call a dictionary [columns_join](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L233) of database name to a nested dictionary of table tuples to column name tuples. You can refer to the raw data for an example of how we generate this dictionary.
 
 Once all of the 3 above steps have completed, you would need to
 - Install your data library as a dependency, by running `pip install -e .` (-e to automatically incorporate edits without reinstalling)
@@ -97,7 +110,11 @@ If there are functions that are generally useful for all query generators, they 
 
 ### Runner
 
-Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) to the query generator for each question/query pair. We have provided 2 most common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support) and `eval/hf_runner.py` for calling a local Hugging Face model. When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
+Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) to the query generator for each question/query pair. 
+
+We have provided a few common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support), `eval/anthropic_runner` for calling Anthropic's API, `eval/hf_runner.py` for calling a local Hugging Face model and finally, `eval/api_runner.py` makes it possible to use a custom API for evaluation.
+
+When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
 
 ## Running the Test
 
@@ -108,7 +125,7 @@ To test it out with just 10 questions (instead of all 200), parallelized across 
 
 ```bash
 python main.py \
-  -q data/questions_gen.csv \
+  -db postgres \
   -o results/my_query_generator.csv \
   -g oa \
   -f prompts/prompt_openai.md \
@@ -120,7 +137,7 @@ python main.py \
 To test out the full suite of questions for claude-2:
 ```bash
 python main.py \
-  -q data/questions_gen.csv \
+  -db postgres \
   -o results/claude-2.csv \
   -g anthropic \
   -f prompts/prompt_anthropic.md \
@@ -133,7 +150,7 @@ To test it out with our fine-tuned sql model with just 10 questions (instead of 
 ```bash
 # use the -W option to ignore warnings about sequential use of transformers pipeline
 python -W ignore main.py \
-  -q data/questions_gen.csv \
+  -db postgres \
   -o results/results.csv \
   -g hf \
   -f prompts/prompt.md \
@@ -142,12 +159,12 @@ python -W ignore main.py \
 ```
 We also support loading a peft adapter here as well via the `-a` flag. Note that the loading of the adapter with the model will take slightly longer than usual.
 
-### VLLM
+### vLLM
 
-We also have a [vllm](vllm.ai) runner which uses the VLLM engine to run the inference altogether as a single batch. It is much faster to do so especially when `num_beams` > 1. You would have to pass in a single set of merged model weights, and the model architecture needs to be supported by vllm. Here's a sample command:
+We also have a [vllm](https://blog.vllm.ai/) runner which uses the vLLM engine to run the inference altogether as a single batch. It is much faster to do so especially when `num_beams` > 1. You would have to pass in a single set of merged model weights, and the model architecture needs to be supported by vLLM. Here's a sample command:
 ```bash
 python -W ignore main.py \
-  -q data/questions_gen.csv \
+  -db postgres \
   -o "results/results.csv" \
   -g vllm \
   -f "prompts/prompt.md" \
@@ -157,7 +174,7 @@ python -W ignore main.py \
 If you'd like to test out a few prompts in a single run (to save the few minutes spent loading the model into GPU at the start of each run), you can specify a list of prompt files in `--prompt_file` (e.g. `-f prompts/prompt-1.md prompts/prompt-2.md prompts/prompt-3.md`), as well as a corresponding list of output files in `--output_file` (e.g. `-o results/results-1.csv results/results-2.csv results/results-3.csv`). The number of prompts and output files must be the same. Here's a sample command:
 ```bash
 python -W ignore main.py \
-  -q data/questions_gen.csv \
+  -db postgres \
   -o results/results_1.csv results/results_2.csv \
   -g vllm \
   -f prompts/prompt_1.md prompts/prompt_2.md \
@@ -170,7 +187,7 @@ To test it out with just 10 questions (instead of all 200), parallelized across 
 ```bash
 mkdir results
 python main.py \
-  -q data/questions_gen.csv \
+  -db postgres \
   -o results/results.csv \
   -g api \
   -b 5 \
@@ -184,14 +201,19 @@ python main.py \
 You can use the following flags in the command line to change the configurations of your evaluation runs.
 | CLI Flags     | Description |
 |-------------|-------|
-|  -q, --questions_file   |  CSV file that contains the test questions and true queries.   |
+|  -db, --db_type   |  Database type to run your queries on. Currently supported types are `postgres` and `snowflake`.   |
+|  -q, --questions_file   |  CSV file that contains the test questions and true queries. If this is not set, it will default to the relevant `questions_gen_<db_type>.csv` file. It may be helpful to always end your questions_file name with `_<db_type>.csv` to ensure compatibility between the queries and selected db_type.   |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, and `api` for API endpoints.   |
-|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
-|  --url   |  The URL of the API you want to send the prompt to. Only used when model_type is `api` |
+|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. Options for Anthropic are `claude-2` and `claude-instant-1`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
+|  -a, --adapter   |  Path to the relevant adapter model you're using. Only available for the `hf_runner` |
+|  --url   |  The URL of the custom API you want to send the prompt to. Only used when model_type is `api` |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.  |
+|  -k, --k_shot   |  Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.  |
 |  -d, --use_private_data  |  Use this to read from your own private data library.  |
 |  -o, --output_file   |  Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files |
+|  -bq, --bq_table   |  Name of BigQuery table to save to (e.g. eval.results). Remember to save your project_id as an environment variable BQ_PROJECT. |
+|  -b, --num_beams   |  Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner` and `api_runner`. |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |

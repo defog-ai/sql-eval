@@ -2,8 +2,9 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-q", "--questions_file", type=str, required=True)
+    parser.add_argument("-q", "--questions_file", type=str)
     parser.add_argument("-n", "--num_questions", type=int, default=None)
+    parser.add_argument("-db", "--db_type", type=str, required=True)
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-a", "--adapter", type=str)
@@ -11,13 +12,26 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--num_beams", type=int, default=4)
     # take in a list of prompt files
     parser.add_argument("-f", "--prompt_file", nargs="+", type=str, required=True)
+    parser.add_argument("-d", "--use_private_data", action="store_true")
+    parser.add_argument("-k", "--k_shot", action="store_true")
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
+    parser.add_argument("-bq", "--bq_table", type=str, default=None)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
     parser.add_argument("-u", "--timeout_exec", type=float, default=10.0)
     parser.add_argument("-v", "--verbose", action="store_true")
 
     args = parser.parse_args()
+
+    # if questions_file is None, set it to the default questions file for the given db_type
+    if args.questions_file is None:
+        args.questions_file = f"data/questions_gen_{args.db_type}.csv"
+
+    # check that questions_file matches db_type
+    if args.db_type not in args.questions_file:
+        print(
+            f"WARNING: Check that questions_file {args.questions_file} is compatible with db_type {args.db_type}"
+        )
 
     # check that the list of prompt files has the same length as the list of output files
     if len(args.prompt_file) != len(args.output_file):
@@ -42,9 +56,8 @@ if __name__ == "__main__":
 
         if platform.system() == "Darwin":
             raise ValueError(
-                "VLLM is not supported on macOS. Please run on a other OS supporting CUDA."
+                "vLLM is not supported on macOS. Please run on another OS supporting CUDA."
             )
-
         from eval.vllm_runner import run_vllm_eval
 
         run_vllm_eval(args)
@@ -58,5 +71,5 @@ if __name__ == "__main__":
         run_api_eval(args)
     else:
         raise ValueError(
-            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'api', 'anthropic', 'vllm'"
+            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api'"
         )

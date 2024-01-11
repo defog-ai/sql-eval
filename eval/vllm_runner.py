@@ -1,14 +1,35 @@
+import json
 import os
 import sqlparse
 from vllm import LLM, SamplingParams
 from eval.eval import compare_query_results
 import pandas as pd
-from utils.pruning import generate_prompt
+from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
+from utils.creds import db_creds_all, bq_project
 import time
 import torch
 from transformers import AutoTokenizer
 from tqdm import tqdm
+
+
+def generate_prompt(
+    prompt_file, question, db_name, instructions="", k_shot_prompt="", public_data=True
+):
+    with open(prompt_file, "r") as f:
+        prompt = f.read()
+    question_instructions = question + " " + instructions
+
+    pruned_metadata_str = prune_metadata_str(
+        question_instructions, db_name, public_data
+    )
+    prompt = prompt.format(
+        user_question=question,
+        instructions=instructions,
+        table_metadata_string=pruned_metadata_str,
+        k_shot_prompt=k_shot_prompt,
+    )
+    return prompt
 
 
 def run_vllm_eval(args):
@@ -16,9 +37,12 @@ def run_vllm_eval(args):
     questions_file = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
+    public_data = not args.use_private_data
     model_name = args.model
     output_file_list = args.output_file
     num_beams = args.num_beams
+    k_shot = args.k_shot
+    db_type = args.db_type
 
     # initialize model only once as it takes a while
     print(f"Preparing {model_name}")
@@ -33,18 +57,30 @@ def run_vllm_eval(args):
         max_tokens=300,
         temperature=0,
     )
+    # get questions
+    print("Preparing questions...")
+    print(
+        f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
+    )
+    df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
 
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
         print(f"Using prompt file {prompt_file}")
-        # get questions and create a prompt for each question
-        df = prepare_questions_df(questions_file, num_questions)
-        df["prompt"] = df[["question", "db_name", "instructions"]].apply(
+        # create a prompt for each question
+        df["prompt"] = df[
+            ["question", "db_name", "instructions", "k_shot_prompt"]
+        ].apply(
             lambda row: generate_prompt(
-                prompt_file, row["question"], row["db_name"], row["instructions"]
+                prompt_file,
+                row["question"],
+                row["db_name"],
+                row["instructions"],
+                row["k_shot_prompt"],
+                public_data,
             ),
             axis=1,
         )
-        print(f"Prepared {len(df)} questions from {questions_file}")
+        print(f"Prepared {len(df)} question(s) from {questions_file}")
         print(f"Generating completions")
         start_time = time.time()
         # we pass the full list of prompts at once to the vllm engine
@@ -74,21 +110,17 @@ def run_vllm_eval(args):
                 row = df.iloc[i]
                 golden_query = row["query"]
                 db_name = row["db_name"]
+                db_type = row["db_type"]
                 question = row["question"]
                 query_category = row["query_category"]
                 exact_match = correct = 0
-                db_creds = {
-                    "host": "localhost",
-                    "port": 5432,
-                    "user": "postgres",
-                    "password": "postgres",
-                    "database": db_name,
-                }
+                db_creds = db_creds_all[db_type]
                 try:
                     exact_match, correct = compare_query_results(
                         query_gold=golden_query,
                         query_gen=generated_query,
                         db_name=db_name,
+                        db_type=db_type,
                         db_creds=db_creds,
                         question=question,
                         query_category=query_category,
@@ -115,3 +147,23 @@ def run_vllm_eval(args):
             os.makedirs(output_dir)
         df.to_csv(output_file, index=False, float_format="%.2f")
         print(f"Saved results to {output_file}")
+
+        # save to BQ
+        if args.bq_table is not None:
+            run_name = output_file.split("/")[-1].split(".")[0]
+            df["run_name"] = run_name
+            df["run_time"] = pd.Timestamp.now()
+            df["run_params"] = json.dumps(vars(args))
+            print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
+            try:
+                if bq_project is not None and bq_project != "":
+                    df.to_gbq(
+                        destination_table=args.bq_table,
+                        project_id=bq_project,
+                        if_exists="append",
+                        progress_bar=False,
+                    )
+                else:
+                    print("No BQ project id specified, skipping save to BQ")
+            except Exception as e:
+                print(f"Error saving to BQ: {e}")

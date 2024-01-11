@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import copy
 import os
@@ -7,16 +8,19 @@ from psycopg2.extensions import QueryCanceledError
 from query_generators.openai import OpenAIQueryGenerator
 from tqdm import tqdm
 from utils.questions import prepare_questions_df
+from utils.creds import db_creds_all, bq_project
 
 
 def run_openai_eval(args):
+    # get questions
+    print("Preparing questions...")
+    print(
+        f"Using {'all' if args.num_questions is None else args.num_questions} questions from {args.questions_file}"
+    )
+    question_query_df = prepare_questions_df(
+        args.questions_file, args.db_type, args.num_questions, args.k_shot
+    )
     for prompt_file, output_file in zip(args.prompt_file, args.output_file):
-        print("preparing questions...")
-        # get questions
-        question_query_df = prepare_questions_df(
-            args.questions_file, args.num_questions
-        )
-
         input_rows = question_query_df.to_dict("records")
         output_rows = []
         with ThreadPoolExecutor(args.parallel_threads) as executor:
@@ -25,25 +29,25 @@ def run_openai_eval(args):
             for row in input_rows:
                 # get db creds for each row's db_name
                 db_name = row["db_name"]
-                db_creds = {
-                    "host": "localhost",
-                    "port": 5432,
-                    "user": "postgres",
-                    "password": "postgres",
-                    "database": db_name,
-                }
+                db_creds = db_creds_all[row["db_type"]]
 
                 qg = OpenAIQueryGenerator(
                     db_creds=copy.deepcopy(db_creds),
+                    db_name=db_name,
                     model=args.model,
                     prompt_file=prompt_file,
                     timeout=args.timeout_gen,
+                    use_public_data=not args.use_private_data,
                     verbose=args.verbose,
+                    instructions=row["instructions"],
+                    k_shot_prompt=row["k_shot_prompt"],
                 )
+
                 generated_query_fut = executor.submit(
                     qg.generate_query,
                     question=row["question"],
                     instructions=row["instructions"],
+                    k_shot_prompt=row["k_shot_prompt"],
                 )
                 futures.append(generated_query_fut)
 
@@ -75,22 +79,18 @@ def run_openai_eval(args):
                 else:
                     expected_query = row["query"]
                     db_name = row["db_name"]
+                    db_type = row["db_type"]
                     question = row["question"]
                     query_category = row["query_category"]
                     exact_match = correct = 0
-                    db_creds = {
-                        "host": "localhost",
-                        "port": 5432,
-                        "user": "postgres",
-                        "password": "postgres",
-                        "database": db_name,
-                    }
+                    db_creds = db_creds_all[db_type]
                     # try executing the queries and compare the results if they succeed
                     try:
                         exact_match, correct = compare_query_results(
                             query_gold=expected_query,
                             query_gen=query_gen,
                             db_name=db_name,
+                            db_type=db_type,
                             db_creds=db_creds,
                             timeout=args.timeout_exec,
                             question=question,
@@ -125,3 +125,23 @@ def run_openai_eval(args):
         # get average rate of correct results
         avg_subset = output_df["correct"].sum() / len(output_df)
         print(f"Average correct rate: {avg_subset:.2f}")
+
+        # save to BQ
+        if args.bq_table is not None:
+            run_name = output_file.split("/")[-1].split(".")[0]
+            output_df["run_name"] = run_name
+            output_df["run_time"] = pd.Timestamp.now()
+            output_df["run_params"] = json.dumps(vars(args))
+            print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
+            try:
+                if bq_project is not None and bq_project != "":
+                    output_df.to_gbq(
+                        destination_table=args.bq_table,
+                        project_id=bq_project,
+                        if_exists="append",
+                        progress_bar=False,
+                    )
+                else:
+                    print("No BQ project id specified, skipping save to BQ")
+            except Exception as e:
+                print(f"Error saving to BQ: {e}")

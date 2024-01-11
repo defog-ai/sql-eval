@@ -19,16 +19,19 @@ class OpenAIQueryGenerator(QueryGenerator):
     def __init__(
         self,
         db_creds: Dict[str, str],
+        db_name: str,
         model: str,
         prompt_file: str,
         timeout: int,
+        use_public_data: bool,
         verbose: bool,
         **kwargs,
     ):
         self.db_creds = db_creds
-        self.db_name = db_creds["database"]
+        self.db_name = db_name
         self.model = model
         self.prompt_file = prompt_file
+        self.use_public_data = use_public_data
 
         self.timeout = timeout
         self.verbose = verbose
@@ -106,7 +109,9 @@ class OpenAIQueryGenerator(QueryGenerator):
             num_tokens = len(tokenizer.encode(prompt))
         return num_tokens
 
-    def generate_query(self, question: str, instructions: str) -> dict:
+    def generate_query(
+        self, question: str, instructions: str, k_shot_prompt: str
+    ) -> dict:
         start_time = time.time()
         self.err = ""
         self.query = ""
@@ -114,20 +119,24 @@ class OpenAIQueryGenerator(QueryGenerator):
 
         with open(self.prompt_file) as file:
             chat_prompt = file.read()
-
+        question_instructions = question + " " + instructions
         if self.model != "text-davinci-003":
-            sys_prompt = chat_prompt.split("### Input:")[0]
-            user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[0]
-            assistant_prompt = chat_prompt.split("### Response:")[1]
+            try:
+                sys_prompt = chat_prompt.split("### Input:")[0]
+                user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[
+                    0
+                ]
+                assistant_prompt = chat_prompt.split("### Response:")[1]
+            except:
+                raise ValueError("Invalid prompt file. Please use prompt_openai.md")
 
             user_prompt = user_prompt.format(
                 user_question=question,
+                table_metadata_string=prune_metadata_str(
+                    question_instructions, self.db_name, self.use_public_data
+                ),
                 instructions=instructions,
-                table_metadata_string=prune_metadata_str(question, self.db_name),
-            )
-
-            assistant_prompt = assistant_prompt.format(
-                user_question=question,
+                k_shot_prompt=k_shot_prompt,
             )
 
             messages = []
@@ -137,7 +146,11 @@ class OpenAIQueryGenerator(QueryGenerator):
         else:
             prompt = chat_prompt.format(
                 user_question=question,
-                table_metadata_string=prune_metadata_str(question, self.db_name),
+                table_metadata_string=prune_metadata_str(
+                    question_instructions, self.db_name, self.use_public_data
+                ),
+                instructions=instructions,
+                k_shot_prompt=k_shot_prompt,
             )
         function_to_run = None
         package = None
