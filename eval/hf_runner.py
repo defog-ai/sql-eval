@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Optional
 from eval.eval import compare_query_results
@@ -7,12 +8,11 @@ import traceback
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    LlamaTokenizer,
-    LlamaForCausalLM,
     pipeline,
 )
 from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
+from utils.creds import db_creds_all, bq_project
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
@@ -22,13 +22,21 @@ from peft import PeftModel, PeftConfig
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
 
 
-def generate_prompt(prompt_file, question, db_name):
+def generate_prompt(
+    prompt_file, question, db_name, instructions="", k_shot_prompt="", public_data=True
+):
     with open(prompt_file, "r") as f:
         prompt = f.read()
+    question_instructions = question + " " + instructions
 
-    pruned_metadata_str = prune_metadata_str(question, db_name)
+    pruned_metadata_str = prune_metadata_str(
+        question_instructions, db_name, public_data
+    )
     prompt = prompt.format(
-        user_question=question, table_metadata_string=pruned_metadata_str
+        user_question=question,
+        instructions=instructions,
+        table_metadata_string=pruned_metadata_str,
+        k_shot_prompt=k_shot_prompt,
     )
     return prompt
 
@@ -63,21 +71,12 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
         model = PeftModel.from_pretrained(model, adapter_path)
         model = model.merge_and_unload()
         print(f"Merged adapter {adapter_path}")
-    elif model_name is not None and "llama" in model_name:
-        print(f"Loading Llama-based model {model_name}")
-        tokenizer = LlamaTokenizer.from_pretrained(
-            model_name, legacy=False, use_fast=True
-        )
-        model = LlamaForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float16,
-            device_map=device_map,
-            use_cache=True,
-            use_flash_attention_2=True,
-        )
     else:
         print(f"Loading model {model_name}")
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+        except:
+            tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-34b-hf")
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
@@ -92,16 +91,19 @@ def run_hf_eval(args):
     questions_file = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
+    public_data = not args.use_private_data
     model_name = args.model
     adapter_path = args.adapter
     output_file_list = args.output_file
+    k_shot = args.k_shot
+    db_type = args.db_type
 
     if model_name is None and adapter_path is None:
         raise ValueError(
             "You must supply either a model name or an adapter path to run an evaluation."
         )
 
-    print("questions prepared\nnow loading model...")
+    print(f"Questions prepared\nNow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name, adapter_path)
     model.tie_weights()
@@ -127,14 +129,26 @@ def run_hf_eval(args):
         else:
             raise e
 
+    # get questions
+    print("Preparing questions...")
+    print(
+        f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
+    )
+    df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
+
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
-        print("preparing questions...")
-        # get questions
-        print(f"Using {num_questions} questions from {questions_file}")
-        df = prepare_questions_df(questions_file, num_questions)
         # create a prompt for each question
-        df["prompt"] = df[["question", "db_name"]].apply(
-            lambda row: generate_prompt(prompt_file, row["question"], row["db_name"]),
+        df["prompt"] = df[
+            ["question", "db_name", "instructions", "k_shot_prompt"]
+        ].apply(
+            lambda row: generate_prompt(
+                prompt_file,
+                row["question"],
+                row["db_name"],
+                row["instructions"],
+                row["k_shot_prompt"],
+                public_data,
+            ),
             axis=1,
         )
 
@@ -173,29 +187,24 @@ def run_hf_eval(args):
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
                     torch.cuda.synchronize()
-
                 end_time = time()
 
                 row["generated_query"] = generated_query
                 row["latency_seconds"] = end_time - start_time
                 golden_query = row["query"]
                 db_name = row["db_name"]
+                db_type = row["db_type"]
                 question = row["question"]
                 query_category = row["query_category"]
                 exact_match = correct = 0
-                db_creds = {
-                    "host": "localhost",
-                    "port": 5432,
-                    "user": "postgres",
-                    "password": "postgres",
-                    "database": db_name,
-                }
+                db_creds = db_creds_all[db_type]
 
                 try:
                     exact_match, correct = compare_query_results(
                         query_gold=golden_query,
                         query_gen=generated_query,
                         db_name=db_name,
+                        db_type=db_type,
                         db_creds=db_creds,
                         question=question,
                         query_category=query_category,
@@ -227,3 +236,23 @@ def run_hf_eval(args):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         output_df.to_csv(output_file, index=False, float_format="%.2f")
+
+        # save to BQ
+        if args.bq_table is not None:
+            run_name = output_file.split("/")[-1].split(".")[0]
+            output_df["run_name"] = run_name
+            output_df["run_time"] = pd.Timestamp.now()
+            output_df["run_params"] = json.dumps(vars(args))
+            print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
+            try:
+                if bq_project is not None and bq_project != "":
+                    output_df.to_gbq(
+                        destination_table=args.bq_table,
+                        project_id=bq_project,
+                        if_exists="append",
+                        progress_bar=False,
+                    )
+                else:
+                    print("No BQ project id specified, skipping save to BQ")
+            except Exception as e:
+                print(f"Error saving to BQ: {e}")

@@ -4,8 +4,8 @@ from eval.eval import get_all_minimal_queries, query_postgres_db
 
 
 def test_questions_non_null():
-    # read in questions_gen.csv
-    df = pd.read_csv("data/questions_gen.csv")
+    # read in questions_gen_postgres.csv
+    df = pd.read_csv("data/questions_gen_postgres.csv")
     # for each row, run the query with eval.query_postgres_db
     # check that the result is not null
     for i, row in df.iterrows():

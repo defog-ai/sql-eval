@@ -1,5 +1,3 @@
-import re
-from defog_data.metadata import dbs
 import os
 from typing import Dict, List, Tuple
 from sentence_transformers import SentenceTransformer
@@ -166,46 +164,30 @@ def get_md_emb(
     return md_str
 
 
-def prune_metadata_str(question, db_name):
+def prune_metadata_str(question, db_name, public_data=True):
     # current file dir
     root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    # We assume that as long as the db_name is one of our 8 public datasets, it will use the
-    # public dataset embeddings. Otherwise, it will use the private dataset embeddings.
-    if db_name in dbs:
+    if public_data:
         import defog_data.supplementary as sup
 
         emb_path = os.path.join(root_dir, "data", "public_embeddings.pkl")
     else:
-        import defog_data_private.supplementary as sup
-
-        emb_path = os.path.join(root_dir, "data", "private_embeddings.pkl")
+        raise Exception("Include path to private embeddings here")
     # only read first 2 elements of tuple returned, since private method might return more
     emb_tuple = sup.load_embeddings(emb_path)
     emb = emb_tuple[0]
     csv_descriptions = emb_tuple[1]
-    table_metadata_csv = get_md_emb(
-        question,
-        emb[db_name],
-        csv_descriptions[db_name],
-        sup.columns_ner[db_name],
-        sup.columns_join[db_name],
-    )
+    try:
+        table_metadata_csv = get_md_emb(
+            question,
+            emb[db_name],
+            csv_descriptions[db_name],
+            sup.columns_ner[db_name],
+            sup.columns_join[db_name],
+        )
+    except KeyError:
+        if public_data:
+            raise ValueError(f"DB name `{db_name}` not found in public data")
+        else:
+            raise ValueError(f"DB name `{db_name}` not found in private data")
     return table_metadata_csv
-
-
-def generate_prompt(prompt_file, question, db_name, instructions=None):
-    """
-    Given prompt template file path, question, and db_name, generate prompt.
-    We will run the pruning algorithm to get the metadata string for the db_name.
-    Instructions are optional, and if present, will have a section heading
-    appended for clarity in the prompt.
-    """
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
-    pruned_metadata_str = prune_metadata_str(question, db_name)
-    prompt = prompt.format(
-        user_question=question,
-        table_metadata_string=pruned_metadata_str,
-        instructions=instructions,
-    )
-    return prompt

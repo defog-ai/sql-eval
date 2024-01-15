@@ -6,8 +6,9 @@ from func_timeout import func_timeout
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 from sqlalchemy import create_engine
+import snowflake.connector
+from utils.creds import db_creds_all
 
-# like_pattern = r"LIKE\s+'[^']*'"
 LIKE_PATTERN = r"LIKE[\s\S]*'"
 
 
@@ -112,18 +113,12 @@ def query_postgres_db(
     """
     Runs query on postgres db and returns results as a dataframe.
     This assumes that you have the evaluation database running locally.
-    If you don't, you can following the instructions in the README (Restoring to Postgres) to set it up.
+    If you don't, you can following the instructions in the README (Start Postgres Instance) to set it up.
 
     timeout: time in seconds to wait for query to finish before timing out
     """
     if db_creds is None:
-        db_creds = {
-            "host": "localhost",
-            "port": 5432,
-            "user": "postgres",
-            "password": "postgres",
-            "database": db_name,
-        }
+        db_creds = db_creds_all["postgres"]
     try:
         db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
         engine = create_engine(db_url)
@@ -138,6 +133,41 @@ def query_postgres_db(
     except Exception as e:
         if engine:
             engine.dispose()  # close connection if query fails/timeouts
+        raise e
+
+
+def query_snowflake_db(
+    query: str, db_name: str, db_creds: dict = None, timeout: float = 10.0
+) -> pd.DataFrame:
+    """
+    Runs query on snowflake db and returns results as a dataframe.
+    This assumes that you have the evaluation database set up on Snowflake.
+    If you don't, you can following the instructions in the README (Snowflake Setup) to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    """
+
+    if db_creds is None:
+        db_creds = db_creds_all["snowflake"]
+
+    try:
+        conn = snowflake.connector.connect(
+            user=db_creds["user"],
+            password=db_creds["password"],
+            account=db_creds["account"],
+        )
+        cur = conn.cursor()
+        cur.execute(f"USE WAREHOUSE {db_creds['warehouse']}")  # set the warehouse
+        cur.execute(f"USE DATABASE {db_name}")  # set the database
+        cur.execute(query)
+        colnames = [desc[0] for desc in cur.description]
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        # make into a dataframe
+        df = pd.DataFrame(results, columns=colnames)
+        return df
+    except Exception as e:
         raise e
 
 
@@ -217,6 +247,7 @@ def compare_query_results(
     query_gold: str,
     query_gen: str,
     db_name: str,
+    db_type: str,
     db_creds: dict,
     question: str,
     query_category: str,
@@ -229,10 +260,24 @@ def compare_query_results(
     We bubble up exceptions (mostly from query_postgres_db) to be handled in the runner.
     """
     queries_gold = get_all_minimal_queries(query_gold)
-    results_gen = query_postgres_db(query_gen, db_name, db_creds, timeout)
+    if db_type == "postgres":
+        results_gen = query_postgres_db(query_gen, db_name, db_creds, timeout)
+    elif db_type == "snowflake":
+        results_gen = query_snowflake_db(query_gen, db_name, db_creds, timeout)
+    else:
+        raise ValueError(
+            f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
+        )
     correct = False
     for q in queries_gold:
-        results_gold = query_postgres_db(q, db_name, db_creds, timeout)
+        if db_type == "postgres":
+            results_gold = query_postgres_db(q, db_name, db_creds, timeout)
+        elif db_type == "snowflake":
+            results_gold = query_snowflake_db(q, db_name, db_creds, timeout)
+        else:
+            raise ValueError(
+                f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
+            )
         if compare_df(results_gold, results_gen, query_category, question):
             return (True, True)
         elif subset_df(results_gold, results_gen, query_category, question):

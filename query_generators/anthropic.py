@@ -1,7 +1,7 @@
 import time
 from typing import Dict, List
 from func_timeout import FunctionTimedOut, func_timeout
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
+from anthropic import Anthropic
 import os
 
 from query_generators.query_generator import QueryGenerator
@@ -19,16 +19,19 @@ class AnthropicQueryGenerator(QueryGenerator):
     def __init__(
         self,
         db_creds: Dict[str, str],
+        db_name: str,
         model: str,
         prompt_file: str,
         timeout: int,
+        use_public_data: bool,
         verbose: bool,
         **kwargs,
     ):
         self.db_creds = db_creds
-        self.db_name = db_creds["database"]
+        self.db_name = db_name
         self.model = model
         self.prompt_file = prompt_file
+        self.use_public_data = use_public_data
 
         self.timeout = timeout
         self.verbose = verbose
@@ -69,7 +72,9 @@ class AnthropicQueryGenerator(QueryGenerator):
         num_tokens = anthropic.count_tokens(prompt)
         return num_tokens
 
-    def generate_query(self, question: str) -> dict:
+    def generate_query(
+        self, question: str, instructions: str, k_shot_prompt: str
+    ) -> dict:
         start_time = time.time()
         self.err = ""
         self.query = ""
@@ -77,10 +82,17 @@ class AnthropicQueryGenerator(QueryGenerator):
 
         with open(self.prompt_file) as file:
             model_prompt = file.read()
-
+            # Check that Human and Assistant prompts are in the prompt file
+            if "Human:" not in model_prompt:
+                raise ValueError("Invalid prompt file. Please use prompt_anthropic.md")
+        question_instructions = question + " " + instructions
         prompt = model_prompt.format(
             user_question=question,
-            table_metadata_string=prune_metadata_str(question, self.db_name),
+            table_metadata_string=prune_metadata_str(
+                question_instructions, self.db_name, self.use_public_data
+            ),
+            instructions=instructions,
+            k_shot_prompt=k_shot_prompt,
         )
         function_to_run = self.get_completion
         package = prompt
