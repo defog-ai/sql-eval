@@ -115,8 +115,10 @@ def run_hf_eval(args):
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
     support_beam_search = True
+
+    # check that the model supports beam search with a try except statement
     try:
-        pipe("Hi", num_beams=2, do_sample=False)
+        pipe("Hi", num_beams=2, do_sample=False, max_new_tokens=5)
     except AttributeError as e:
         error_trace = traceback.format_exception(type(e), e, e.__traceback__)
         support_beam_search = (
