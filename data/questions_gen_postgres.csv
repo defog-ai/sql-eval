@@ -209,7 +209,7 @@ EXAMPLE QUESTION 2: Which organizations have authors who have written publicatio
 EXAMPLE QUERY 2: SELECT DISTINCT organization.name FROM organization JOIN author ON organization.oid = author.oid JOIN writes ON author.aid = writes.aid JOIN domain_publication ON writes.pid = domain_publication.pid JOIN DOMAIN ON domain_publication.did = domain.did WHERE domain.name ILIKE '%Machine Learning%'
 
 "
-What month were most students admitted?,"SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How long has it been since the last admitted student?
+What month were most students admitted?,"SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How long has it been in days since the last admitted student?
 EXAMPLE QUERY 1: SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student
 
 EXAMPLE QUESTION 2: How many students were predicted to graduate in the last 10 years?
@@ -230,7 +230,7 @@ EXAMPLE QUESTION 2: What month were most students admitted?
 EXAMPLE QUERY 2: SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1
 
 "
-How long has it been since the last admitted student?,SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: What month were most students admitted?
+How long has it been in days since the last admitted student?,SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: What month were most students admitted?
 EXAMPLE QUERY 1: SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1
 
 EXAMPLE QUESTION 2: What's the average predicted time to graduation since admission in no. of days?
@@ -741,7 +741,7 @@ EXAMPLE QUESTION 2: How many rivers flow through each country?
 EXAMPLE QUERY 2: SELECT river.country_name, COUNT(DISTINCT river.river_name) AS number_of_rivers FROM river GROUP BY river.country_name ORDER BY number_of_rivers DESC
 
 "
-Which states border the state where lake ontario is?,SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%' ORDER BY border_info.border NULLS LAST;,geography,table_join,"EXAMPLE QUESTION 1: Which states have fewer than a hundred thousand people?
+Which states border the state where lake ontario is?,SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%';,geography,table_join,"EXAMPLE QUESTION 1: Which states have fewer than a hundred thousand people?
 EXAMPLE QUERY 1: SELECT state_name FROM state WHERE population < 100000
 
 EXAMPLE QUESTION 2: What is the highest point in each state and what is the population density of that state?
@@ -770,7 +770,7 @@ EXAMPLE QUERY 2: SELECT DISTINCT lake.country_name FROM public.lake JOIN public.
 
 "
 Which states have fewer than a hundred thousand people?,SELECT state_name FROM state WHERE population < 100000;,geography,where,"EXAMPLE QUESTION 1: Which states border the state where lake ontario is?
-EXAMPLE QUERY 1: SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%' ORDER BY border_info.border NULLS LAST
+EXAMPLE QUERY 1: SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%'
 
 EXAMPLE QUESTION 2: What are the top 5 cities with the highest population? Give both city names and the population.
 EXAMPLE QUERY 2: SELECT city.city_name, city.population FROM city ORDER BY city.population DESC NULLS LAST LIMIT 5
@@ -1225,7 +1225,7 @@ EXAMPLE QUERY 2: SELECT count(*) AS review_count FROM review WHERE (cast(review.
 
 "
 "Which neighbourhoods have the highest number of businesses, and how many businesses are located in each neighbourhood?","SELECT {neighbourhood.neighbourhood_name, neighbourhood.id}, COUNT(DISTINCT neighbourhood.business_id) AS business_count FROM neighbourhood GROUP BY {} ORDER BY business_count DESC NULLS LAST;",yelp,group_by,"EXAMPLE QUESTION 1: What is the average rating of businesses in the city of San Francisco?
-EXAMPLE QUERY 1: SELECT AVG(business.rating) FROM business WHERE LOWER(business.city) ILIKE '%san francisco%'
+EXAMPLE QUERY 1: SELECT AVG(sf.average_rating) AS sf_average_rating FROM (SELECT business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE LOWER(business.city) ILIKE '%san francisco%' GROUP BY business.business_id) AS sf
 
 EXAMPLE QUESTION 2: What is the ratio of open businesses to closed businesses in the city of San Francisco?
 EXAMPLE QUERY 2: SELECT CAST(SUM(CASE WHEN business.is_open = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN business.is_open = 0 THEN 1 ELSE 0 END), 0) AS ratio FROM business WHERE LOWER(business.city) ILIKE '%san francisco%'
@@ -1245,8 +1245,8 @@ EXAMPLE QUESTION 2: What is the total number of check-ins for each day of the we
 EXAMPLE QUERY 2: SELECT checkin.day, SUM(checkin.count) AS total_checkins FROM checkin WHERE checkin.business_id = 'abc123' GROUP BY checkin.day ORDER BY total_checkins DESC NULLS LAST
 
 "
-Return the name and average rating for each business in new york,"SELECT business.name, AVG(business.rating) AS average_rating FROM business WHERE business.city ILIKE '%NEW YORK%' GROUP BY business.name;",yelp,group_by,"EXAMPLE QUESTION 1: Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.
-EXAMPLE QUERY 1: SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST
+Return the name and average rating for each business in new york,"SELECT business.name, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE business.city ILIKE '%NEW YORK%' GROUP BY business.name;",yelp,group_by,"EXAMPLE QUESTION 1: Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.
+EXAMPLE QUERY 1: SELECT business.name, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE business.city ILIKE '%New York%' GROUP BY business.name ORDER BY average_rating DESC NULLS LAST
 
 EXAMPLE QUESTION 2: How does the average rating of businesses in ""New York"" change year on year from 2019 to 2022? Give all years with generate_series even if there are no ratings in a year. Present the ave rating and the year on year change. Replace nulls with 0 in the YoY change column.
 EXAMPLE QUERY 2: WITH yearly_ratings AS (SELECT review.year, AVG(review.rating) AS avg_rating FROM review JOIN business ON business.business_id = review.business_id WHERE business.city ilike '%New%York%' AND review.year BETWEEN 2019 AND 2022 GROUP BY review.year), yearly_ratings_with_series AS (SELECT generate_series AS YEAR, coalesce(yearly_ratings.avg_rating, 0) AS avg_rating FROM generate_series(2019, 2022, 1) LEFT JOIN yearly_ratings ON yearly_ratings.year = generate_series) SELECT YEAR, avg_rating, avg_rating - coalesce(lag(avg_rating, 1) OVER (ORDER BY YEAR), 0) AS year_on_year_change FROM yearly_ratings_with_series ORDER BY YEAR NULLS LAST
@@ -1259,29 +1259,29 @@ EXAMPLE QUESTION 2: How many check-ins occurred on Mondays at businesses in the 
 EXAMPLE QUERY 2: SELECT SUM(checkin.count) AS total_checkins FROM business JOIN checkin ON business.business_id = checkin.business_id WHERE business.state = 'CA' AND checkin.day ILIKE '%Monday%'
 
 "
-Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.,"SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST;",yelp,order_by,"EXAMPLE QUESTION 1: What are the top 2 categories of businesses with the highest average rating?
-EXAMPLE QUERY 1: SELECT category.category_name, AVG(business.rating) AS average_rating FROM category JOIN business ON category.business_id = business.business_id GROUP BY category.category_name ORDER BY average_rating DESC NULLS LAST LIMIT 2
+Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.,"SELECT business.name, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE business.city ILIKE '%New York%' GROUP BY business.name ORDER BY average_rating DESC NULLS LAST;",yelp,order_by,"EXAMPLE QUESTION 1: What are the top 2 categories of businesses with the highest average rating?
+EXAMPLE QUERY 1: SELECT category.category_name FROM (SELECT business.name, business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id GROUP BY business.name, business.business_id) AS business_rating JOIN category ON business_rating.business_id = category.business_id GROUP BY category.category_name ORDER BY AVG(business_rating.average_rating) DESC NULLS LAST LIMIT 2
 
 EXAMPLE QUESTION 2: What are the top 3 businesses in terms of review count?
 EXAMPLE QUERY 2: SELECT business.name, business.review_count FROM business ORDER BY business.review_count DESC NULLS LAST LIMIT 3
 
 "
-What is the latitude and longitude of the business with the highest rating?,"SELECT business.latitude, business.longitude FROM business ORDER BY business.rating DESC NULLS LAST LIMIT 1;",yelp,order_by,"EXAMPLE QUESTION 1: What is the average rating of businesses in the city of San Francisco?
-EXAMPLE QUERY 1: SELECT AVG(business.rating) FROM business WHERE LOWER(business.city) ILIKE '%san francisco%'
+What is the latitude and longitude of the business with the highest rating?,"SELECT business.latitude, business.longitude FROM business JOIN review ON business.business_id = review.business_id GROUP BY review.rating, business.latitude, business.longitude ORDER BY AVG(review.rating) DESC NULLS LAST LIMIT 1;",yelp,order_by,"EXAMPLE QUESTION 1: What is the average rating of businesses in the city of San Francisco?
+EXAMPLE QUERY 1: SELECT AVG(sf.average_rating) AS sf_average_rating FROM (SELECT business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE LOWER(business.city) ILIKE '%san francisco%' GROUP BY business.business_id) AS sf
 
 EXAMPLE QUESTION 2: What are the top 2 categories of businesses with the highest average rating?
-EXAMPLE QUERY 2: SELECT category.category_name, AVG(business.rating) AS average_rating FROM category JOIN business ON category.business_id = business.business_id GROUP BY category.category_name ORDER BY average_rating DESC NULLS LAST LIMIT 2
+EXAMPLE QUERY 2: SELECT category.category_name FROM (SELECT business.name, business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id GROUP BY business.name, business.business_id) AS business_rating JOIN category ON business_rating.business_id = category.business_id GROUP BY category.category_name ORDER BY AVG(business_rating.average_rating) DESC NULLS LAST LIMIT 2
 
 "
 What are the top 3 businesses in terms of review count?,"SELECT {business.name, business.business_id, business.bid}, business.review_count FROM business ORDER BY business.review_count DESC NULLS LAST LIMIT 3;",yelp,order_by,"EXAMPLE QUESTION 1: What are the top 2 categories of businesses with the highest average rating?
-EXAMPLE QUERY 1: SELECT category.category_name, AVG(business.rating) AS average_rating FROM category JOIN business ON category.business_id = business.business_id GROUP BY category.category_name ORDER BY average_rating DESC NULLS LAST LIMIT 2
+EXAMPLE QUERY 1: SELECT category.category_name FROM (SELECT business.name, business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id GROUP BY business.name, business.business_id) AS business_rating JOIN category ON business_rating.business_id = category.business_id GROUP BY category.category_name ORDER BY AVG(business_rating.average_rating) DESC NULLS LAST LIMIT 2
 
 EXAMPLE QUESTION 2: Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.
-EXAMPLE QUERY 2: SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST
+EXAMPLE QUERY 2: SELECT business.name, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE business.city ILIKE '%New York%' GROUP BY business.name ORDER BY average_rating DESC NULLS LAST
 
 "
 "What are the names of the businesses in the database, ordered alphabetically?",SELECT business.name FROM business ORDER BY business.name ASC NULLS LAST;,yelp,order_by,"EXAMPLE QUESTION 1: Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.
-EXAMPLE QUERY 1: SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST
+EXAMPLE QUERY 1: SELECT business.name, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE business.city ILIKE '%New York%' GROUP BY business.name ORDER BY average_rating DESC NULLS LAST
 
 EXAMPLE QUESTION 2: What is the ratio of the number of businesses in each state to the total number of businesses in the database?
 EXAMPLE QUERY 2: SELECT business.state, COUNT(business.business_id) / NULLIF(CAST((SELECT COUNT(*) FROM business) AS FLOAT), 0) AS ratio FROM business GROUP BY business.state
@@ -1302,7 +1302,7 @@ EXAMPLE QUERY 2: SELECT CAST(SUM(CASE WHEN business.is_open = 1 THEN 1 ELSE 0 EN
 
 "
 What is the ratio of open businesses to closed businesses in the city of San Francisco?,"SELECT CAST(SUM(CASE WHEN business.is_open = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN business.is_open = 0 THEN 1 ELSE 0 END), 0) AS ratio FROM business WHERE LOWER(business.city) ILIKE '%san francisco%';",yelp,ratio,"EXAMPLE QUESTION 1: What is the average rating of businesses in the city of San Francisco?
-EXAMPLE QUERY 1: SELECT AVG(business.rating) FROM business WHERE LOWER(business.city) ILIKE '%san francisco%'
+EXAMPLE QUERY 1: SELECT AVG(sf.average_rating) AS sf_average_rating FROM (SELECT business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE LOWER(business.city) ILIKE '%san francisco%' GROUP BY business.business_id) AS sf
 
 EXAMPLE QUESTION 2: What is the ratio of businesses in the state of California to businesses in the state of New York?
 EXAMPLE QUERY 2: SELECT CAST(COUNT(CASE WHEN business.state = 'CA' THEN 1 END) AS FLOAT) / NULLIF(COUNT(CASE WHEN business.state = 'NY' THEN 1 END), 0) AS ratio FROM business
@@ -1326,7 +1326,7 @@ EXAMPLE QUERY 2: SELECT CAST(SUM(CASE WHEN business.is_open = 1 THEN 1 ELSE 0 EN
 EXAMPLE QUERY 1: SELECT category.category_name, SUM(business.review_count) AS total_reviews FROM business JOIN category ON business.business_id = category.business_id GROUP BY category.category_name ORDER BY total_reviews DESC NULLS LAST
 
 EXAMPLE QUESTION 2: What are the top 2 categories of businesses with the highest average rating?
-EXAMPLE QUERY 2: SELECT category.category_name, AVG(business.rating) AS average_rating FROM category JOIN business ON category.business_id = business.business_id GROUP BY category.category_name ORDER BY average_rating DESC NULLS LAST LIMIT 2
+EXAMPLE QUERY 2: SELECT category.category_name FROM (SELECT business.name, business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id GROUP BY business.name, business.business_id) AS business_rating JOIN category ON business_rating.business_id = category.business_id GROUP BY category.category_name ORDER BY AVG(business_rating.average_rating) DESC NULLS LAST LIMIT 2
 
 "
 "Which users have posted reviews for businesses located in the neighbourhood of ""Downtown"" and how many reviews have they posted?","SELECT {users.name, users.user_id}, COUNT(review.rid) AS review_count FROM review JOIN neighbourhood ON review.business_id = neighbourhood.business_id JOIN users ON review.user_id = users.user_id WHERE neighbourhood.neighbourhood_name ILIKE '%Downtown%' GROUP BY {} ORDER BY review_count DESC NULLS LAST;",yelp,table_join,"EXAMPLE QUESTION 1: How many reviews were written for businesses located in California in the last 1000 months?
@@ -1357,8 +1357,8 @@ EXAMPLE QUESTION 2: How many check-ins occurred on Mondays at businesses in the 
 EXAMPLE QUERY 2: SELECT SUM(checkin.count) AS total_checkins FROM business JOIN checkin ON business.business_id = checkin.business_id WHERE business.state = 'CA' AND checkin.day ILIKE '%Monday%'
 
 "
-What are the top 2 categories of businesses with the highest average rating?,"SELECT {category.category_name, category.id}, AVG(business.rating) AS average_rating FROM category JOIN business ON category.business_id = business.business_id GROUP BY {} ORDER BY average_rating DESC NULLS LAST LIMIT 2;",yelp,table_join,"EXAMPLE QUESTION 1: Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.
-EXAMPLE QUERY 1: SELECT business.name, business.rating FROM business WHERE business.city ILIKE '%New York%' ORDER BY business.rating DESC NULLS LAST
+What are the top 2 categories of businesses with the highest average rating?,"SELECT {category.category_name, category.id} FROM (SELECT business.name, business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id GROUP BY business.name, business.business_id) AS business_rating JOIN category ON business_rating.business_id = category.business_id GROUP BY {} ORDER BY AVG(business_rating.average_rating) DESC NULLS LAST LIMIT 2;",yelp,table_join,"EXAMPLE QUESTION 1: Please provide a list of business names in New York and their average ratings ordered by the highest average rating first.
+EXAMPLE QUERY 1: SELECT business.name, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE business.city ILIKE '%New York%' GROUP BY business.name ORDER BY average_rating DESC NULLS LAST
 
 EXAMPLE QUESTION 2: What are the top 3 businesses in terms of review count?
 EXAMPLE QUERY 2: SELECT business.name, business.review_count FROM business ORDER BY business.review_count DESC NULLS LAST LIMIT 3
@@ -1371,11 +1371,11 @@ EXAMPLE QUESTION 2: How many reviews were posted for each business id in the yea
 EXAMPLE QUERY 2: SELECT review.business_id, COUNT(*) AS review_count FROM review WHERE review.year = 2021 GROUP BY review.business_id ORDER BY review_count DESC NULLS LAST
 
 "
-What is the average rating of businesses in the city of San Francisco?,SELECT AVG(business.rating) FROM business WHERE LOWER(business.city) ILIKE '%san francisco%';,yelp,where,"EXAMPLE QUESTION 1: What is the ratio of open businesses to closed businesses in the city of San Francisco?
+What is the average rating of businesses in the city of San Francisco?,"SELECT AVG(sf.average_rating) AS sf_average_rating FROM (SELECT business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE LOWER(business.city) ILIKE '%san francisco%' GROUP BY business.business_id) AS sf;",yelp,where,"EXAMPLE QUESTION 1: What is the ratio of open businesses to closed businesses in the city of San Francisco?
 EXAMPLE QUERY 1: SELECT CAST(SUM(CASE WHEN business.is_open = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN business.is_open = 0 THEN 1 ELSE 0 END), 0) AS ratio FROM business WHERE LOWER(business.city) ILIKE '%san francisco%'
 
 EXAMPLE QUESTION 2: What are the top 2 categories of businesses with the highest average rating?
-EXAMPLE QUERY 2: SELECT category.category_name, AVG(business.rating) AS average_rating FROM category JOIN business ON category.business_id = business.business_id GROUP BY category.category_name ORDER BY average_rating DESC NULLS LAST LIMIT 2
+EXAMPLE QUERY 2: SELECT category.category_name FROM (SELECT business.name, business.business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id GROUP BY business.name, business.business_id) AS business_rating JOIN category ON business_rating.business_id = category.business_id GROUP BY category.category_name ORDER BY AVG(business_rating.average_rating) DESC NULLS LAST LIMIT 2
 
 "
 How many reviews were posted for each business id in the year 2021?,"SELECT review.business_id, COUNT(*) AS review_count FROM review WHERE review.year = 2021 GROUP BY review.business_id ORDER BY review_count DESC NULLS LAST;",yelp,where,"EXAMPLE QUESTION 1: How many reviews were there 2 months before the review with id 3?

@@ -30,7 +30,7 @@ def normalize_table(
 
     # check if query_category is 'order_by' and if question asks for ordering
     has_order_by = False
-    pattern = re.compile(r"(order|sort|arrange)", re.IGNORECASE)
+    pattern = re.compile(r"\b(order|sort|arrange)\b", re.IGNORECASE)
     in_question = re.search(pattern, question.lower())  # true if contains
     if query_category == "order_by" or in_question:
         has_order_by = True
