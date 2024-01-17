@@ -1,4 +1,5 @@
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 from eval.eval import compare_query_results
@@ -141,6 +142,10 @@ def run_api_eval(args):
         del output_df["prompt"]
         print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
+        # get directory of output_file and create if not exist
+        output_dir = os.path.dirname(output_file)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
