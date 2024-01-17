@@ -209,7 +209,7 @@ EXAMPLE QUESTION 2: Which organizations have authors who have written publicatio
 EXAMPLE QUERY 2: SELECT DISTINCT {organization.name, organization.oid} FROM organization JOIN author ON organization.oid = author.oid JOIN writes ON author.aid = writes.aid JOIN domain_publication ON writes.pid = domain_publication.pid JOIN DOMAIN ON domain_publication.did = domain.did WHERE domain.name ILIKE '%Machine Learning%';
 
 "
-What month were most students admitted? Return a Snowflake executable query.,"SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How long has it been since the last admitted student? This query will run on a SnowflakeDB.
+What month were most students admitted? Return a Snowflake executable query.,"SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How long has it been in days since the last admitted student? This query will run on a SnowflakeDB.
 EXAMPLE QUERY 1: SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;
 
 EXAMPLE QUESTION 2: How many students were predicted to graduate in the last 10 years? Only use Snowflake-compatible syntax.
@@ -230,7 +230,7 @@ EXAMPLE QUESTION 2: What month were most students admitted? Return a Snowflake e
 EXAMPLE QUERY 2: SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;
 
 "
-How long has it been since the last admitted student? This query will run on a SnowflakeDB.,SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: What month were most students admitted? Return a Snowflake executable query.
+How long has it been in days since the last admitted student? This query will run on a SnowflakeDB.,SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: What month were most students admitted? Return a Snowflake executable query.
 EXAMPLE QUERY 1: SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;
 
 EXAMPLE QUESTION 2: What's the average predicted time to graduation since admission in no. of days? This query must work on Snowflake.
@@ -741,7 +741,7 @@ EXAMPLE QUESTION 2: How many rivers flow through each country? Return a Snowflak
 EXAMPLE QUERY 2: SELECT river.country_name, COUNT(DISTINCT river.river_name) AS number_of_rivers FROM river GROUP BY river.country_name ORDER BY number_of_rivers DESC;
 
 "
-Which states border the state where lake ontario is? Generated query must execute on SnowflakeDB.,SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%' ORDER BY border_info.border NULLS LAST;,geography,table_join,"EXAMPLE QUESTION 1: Which states have fewer than a hundred thousand people? Must be a SnowflakeDB compatible query.
+Which states border the state where lake ontario is? Generated query must execute on SnowflakeDB.,SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%';,geography,table_join,"EXAMPLE QUESTION 1: Which states have fewer than a hundred thousand people? Must be a SnowflakeDB compatible query.
 EXAMPLE QUERY 1: SELECT state_name FROM state WHERE population < 100000;
 
 EXAMPLE QUESTION 2: What is the highest point in each state and what is the population density of that state? Return a Snowflake executable query.
@@ -770,7 +770,7 @@ EXAMPLE QUERY 2: SELECT DISTINCT lake.country_name FROM public.lake JOIN public.
 
 "
 Which states have fewer than a hundred thousand people? Must be a SnowflakeDB compatible query.,SELECT state_name FROM state WHERE population < 100000;,geography,where,"EXAMPLE QUESTION 1: Which states border the state where lake ontario is? Generated query must execute on SnowflakeDB.
-EXAMPLE QUERY 1: SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%' ORDER BY border_info.border NULLS LAST;
+EXAMPLE QUERY 1: SELECT border_info.border FROM border_info JOIN lake ON border_info.state_name = lake.state_name WHERE lake.lake_name ilike '%Ontario%';
 
 EXAMPLE QUESTION 2: What are the top 5 cities with the highest population? Give both city names and the population. Generated query must execute on SnowflakeDB.
 EXAMPLE QUERY 2: SELECT city.city_name, city.population FROM city ORDER BY city.population DESC NULLS LAST LIMIT 5;
