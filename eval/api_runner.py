@@ -38,7 +38,7 @@ def process_row(row, api_url, num_beams):
         json={
             "prompt": row["prompt"],
             "n": 1,
-            "use_beam_search": True,
+            "use_beam_search": num_beams > 1,
             "best_of": num_beams,
             "temperature": 0,
             "stop": [";", "```"],
