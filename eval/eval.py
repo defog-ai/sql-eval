@@ -33,16 +33,17 @@ def normalize_table(
     in_question = re.search(pattern, question.lower())  # true if contains
     if query_category == "order_by" or in_question:
         has_order_by = True
-        
+
         if sql:
             # determine which columns are in the ORDER BY clause of the sql generated, using regex
             pattern = re.compile(r"ORDER BY[\s\S]*", re.IGNORECASE)
             order_by_clause = re.search(pattern, sql)
             if order_by_clause:
                 order_by_clause = order_by_clause.group(0)
-                # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
-                pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\))", re.IGNORECASE)
+                # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or non-closing parenthesis
+                pattern = re.compile(r"ORDER BY[\s\S]*?(?=;|,|\))", re.IGNORECASE)
                 order_by_columns = re.findall(pattern, order_by_clause)[0].split()
+                order_by_columns = [col.split(".")[-1] for col in order_by_columns]
 
                 ascending = False
                 # if there is a DESC or ASC in the ORDER BY clause, set the ascending to that
@@ -50,21 +51,30 @@ def normalize_table(
                     ascending = False
                 elif "ASC" in [i.upper() for i in order_by_columns]:
                     ascending = True
-                
+
                 # remove whitespace and commas
                 order_by_columns = [col.strip() for col in order_by_columns]
                 order_by_columns = [col.replace(",", "") for col in order_by_columns]
-                order_by_columns = [i for i in order_by_columns if i.lower() not in ["desc", "asc", "nulls", "last", "first"]]
-                
-                # get all columns in sorted_df that are not in order_by_columns
-                other_columns = [i for i in sorted_df.columns.tolist() if i not in order_by_columns]
+                order_by_columns = [
+                    i
+                    for i in order_by_columns
+                    if i.lower()
+                    not in ["desc", "asc", "nulls", "last", "first", "limit"]
+                ]
 
-                sorted_df = sorted_df.sort_values(by=order_by_columns+other_columns, ascending=ascending)
-    
+                # get all columns in sorted_df that are not in order_by_columns
+                other_columns = [
+                    i for i in sorted_df.columns.tolist() if i not in order_by_columns
+                ]
+
+                sorted_df = sorted_df.sort_values(
+                    by=order_by_columns + other_columns, ascending=ascending
+                )
+
     if not has_order_by:
         # sort rows using values from first column to last
         sorted_df = sorted_df.sort_values(by=list(sorted_df.columns))
-    
+
     # reset index
     sorted_df = sorted_df.reset_index(drop=True)
     return sorted_df
@@ -202,8 +212,12 @@ def query_snowflake_db(
 
 
 def compare_df(
-    df1: pd.DataFrame, df2: pd.DataFrame, query_category: str, question: str,
-    query_gold: str, query_gen: str
+    df1: pd.DataFrame,
+    df2: pd.DataFrame,
+    query_category: str,
+    question: str,
+    query_gold: str,
+    query_gen: str,
 ) -> bool:
     """
     Compares two dataframes and returns True if they are the same, else False.
@@ -309,7 +323,9 @@ def compare_query_results(
             raise ValueError(
                 f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
             )
-        if compare_df(results_gold, results_gen, query_category, question, query_gold, query_gen):
+        if compare_df(
+            results_gold, results_gen, query_category, question, query_gold, query_gen
+        ):
             return (True, True)
         elif subset_df(results_gold, results_gen, query_category, question):
             correct = True
