@@ -40,18 +40,22 @@ def normalize_table(
     else:
         # extract unsorted/pre-sorted columns by checking each series under each column
         unsorted_cols = []
-        presorted_cols = [] # likely the ORDER BY column(s) pre-sorted by the query
+        presorted_cols = []  # likely the ORDER BY column(s) pre-sorted by the query
         for col in sorted_df.columns:
             if not sorted_df[col].equals(sorted_df[col].sort_values()):
                 unsorted_cols.append(col)
             else:
                 presorted_cols.append(col)
-        
-        sorting_order = presorted_cols + unsorted_cols # prioritize sorting by pre-sorted columns first
+
+        sorting_order = (
+            presorted_cols + unsorted_cols
+        )  # prioritize sorting by pre-sorted columns first
         # pre-sorted columns should be non-zero if has_order_by is True
-        if len(presorted_cols) > 0: 
-            sorted_df = sorted_df.sort_values(by=sorting_order) # sort rows using sorting_order
-        
+        if len(presorted_cols) > 0:
+            sorted_df = sorted_df.sort_values(
+                by=sorting_order
+            )  # sort rows using sorting_order
+
     # reset index
     sorted_df = sorted_df.reset_index(drop=True)
     return sorted_df
