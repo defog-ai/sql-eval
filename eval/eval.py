@@ -164,7 +164,9 @@ def query_snowflake_db(
 
     timeout: time in seconds to wait for query to finish before timing out
     """
+    
     import snowflake.connector
+    
     if db_creds is None:
         db_creds = db_creds_all["snowflake"]
 
