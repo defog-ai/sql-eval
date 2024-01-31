@@ -40,10 +40,12 @@ def normalize_table(
             order_by_clause = re.search(pattern, sql)
             if order_by_clause:
                 order_by_clause = order_by_clause.group(0)
-                # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or non-closing parenthesis
-                pattern = re.compile(r"ORDER BY[\s\S]*?(?=;|,|\))", re.IGNORECASE)
+                # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
+                pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\))", re.IGNORECASE)
                 order_by_columns = re.findall(pattern, order_by_clause)[0].split()
-                order_by_columns = [col.split(".")[-1] for col in order_by_columns]
+                order_by_columns = [
+                    col.strip().split(".")[-1] for col in order_by_columns
+                ]
 
                 ascending = False
                 # if there is a DESC or ASC in the ORDER BY clause, set the ascending to that
@@ -52,9 +54,11 @@ def normalize_table(
                 elif "ASC" in [i.upper() for i in order_by_columns]:
                     ascending = True
 
-                # remove whitespace and commas
+                # remove whitespace, commas, and parantheses
                 order_by_columns = [col.strip() for col in order_by_columns]
-                order_by_columns = [col.replace(",", "") for col in order_by_columns]
+                order_by_columns = [
+                    col.replace(",", "").replace("(", "") for col in order_by_columns
+                ]
                 order_by_columns = [
                     i
                     for i in order_by_columns
@@ -67,6 +71,10 @@ def normalize_table(
                     i for i in sorted_df.columns.tolist() if i not in order_by_columns
                 ]
 
+                # only choose order_by_columns that are in sorted_df
+                order_by_columns = [
+                    i for i in order_by_columns if i in sorted_df.columns.tolist()
+                ]
                 sorted_df = sorted_df.sort_values(
                     by=order_by_columns + other_columns, ascending=ascending
                 )
