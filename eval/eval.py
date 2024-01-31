@@ -12,7 +12,7 @@ LIKE_PATTERN = r"LIKE[\s\S]*'"
 
 
 def normalize_table(
-    df: pd.DataFrame, query_category: str, question: str
+    df: pd.DataFrame, query_category: str, question: str, sql: str = None
 ) -> pd.DataFrame:
     """
     Normalizes a dataframe by:
@@ -33,28 +33,36 @@ def normalize_table(
     in_question = re.search(pattern, question.lower())  # true if contains
     if query_category == "order_by" or in_question:
         has_order_by = True
+        # determine which columns are in the ORDER BY clause of the sql generated, using regex
+        pattern = re.compile(r"ORDER BY[\s\S]*", re.IGNORECASE)
+        order_by_clause = re.search(pattern, sql)
+        if order_by_clause:
+            order_by_clause = order_by_clause.group(0)
+            # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
+            pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\))", re.IGNORECASE)
+            order_by_columns = re.findall(pattern, order_by_clause)[0].split()
+
+            ascending = False
+            # if there is a DESC or ASC in the ORDER BY clause, set the ascending to that
+            if "DESC" in [i.upper() for i in order_by_columns]:
+                ascending = False
+            elif "ASC" in [i.upper() for i in order_by_columns]:
+                ascending = True
+            
+            # remove whitespace and commas
+            order_by_columns = [col.strip() for col in order_by_columns]
+            order_by_columns = [col.replace(",", "") for col in order_by_columns]
+            order_by_columns = [i for i in order_by_columns if i.lower() not in ["desc", "asc", "nulls", "last", "first"]]
+            
+            # get all columns in sorted_df that are not in order_by_columns
+            other_columns = [i for i in sorted_df.columns.tolist() if i not in order_by_columns]
+
+            sorted_df = sorted_df.sort_values(by=order_by_columns+other_columns, ascending=ascending)
+    
     if not has_order_by:
         # sort rows using values from first column to last
         sorted_df = sorted_df.sort_values(by=list(sorted_df.columns))
-    else:
-        # extract unsorted/pre-sorted columns by checking each series under each column
-        unsorted_cols = []
-        presorted_cols = []  # likely the ORDER BY column(s) pre-sorted by the query
-        for col in sorted_df.columns:
-            if not sorted_df[col].equals(sorted_df[col].sort_values()):
-                unsorted_cols.append(col)
-            else:
-                presorted_cols.append(col)
-
-        sorting_order = (
-            presorted_cols + unsorted_cols
-        )  # prioritize sorting by pre-sorted columns first
-        # pre-sorted columns should be non-zero if has_order_by is True
-        if len(presorted_cols) > 0:
-            sorted_df = sorted_df.sort_values(
-                by=sorting_order
-            )  # sort rows using sorting_order
-
+    
     # reset index
     sorted_df = sorted_df.reset_index(drop=True)
     return sorted_df
@@ -192,7 +200,8 @@ def query_snowflake_db(
 
 
 def compare_df(
-    df1: pd.DataFrame, df2: pd.DataFrame, query_category: str, question: str
+    df1: pd.DataFrame, df2: pd.DataFrame, query_category: str, question: str,
+    query_gold: str, query_gen: str
 ) -> bool:
     """
     Compares two dataframes and returns True if they are the same, else False.
@@ -201,8 +210,8 @@ def compare_df(
     if df1.shape == df2.shape and (df1.values == df2.values).all():
         return True
 
-    df1 = normalize_table(df1, query_category, question)
-    df2 = normalize_table(df2, query_category, question)
+    df1 = normalize_table(df1, query_category, question, query_gold)
+    df2 = normalize_table(df2, query_category, question, query_gen)
 
     if df1.shape == df2.shape and (df1.values == df2.values).all():
         return True
@@ -298,7 +307,7 @@ def compare_query_results(
             raise ValueError(
                 f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
             )
-        if compare_df(results_gold, results_gen, query_category, question):
+        if compare_df(results_gold, results_gen, query_category, question, query_gold, query_gen):
             return (True, True)
         elif subset_df(results_gold, results_gen, query_category, question):
             correct = True
