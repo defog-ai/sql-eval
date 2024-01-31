@@ -566,7 +566,7 @@ EXAMPLE QUESTION 2: Which flights operate on Mondays and Wednesdays? Give me the
 EXAMPLE QUERY 2: SELECT flight.flight_number FROM flight WHERE LOWER(flight.flight_days) LIKE '%mon%' AND LOWER(flight.flight_days) LIKE '%wed%'
 
 "
-Which airlines offer flights with a stopover in Dallas?,"SELECT DISTINCT {airline.airline_name, airline.airline_code} FROM flight_stop JOIN airport ON flight_stop.stop_airport = airport.airport_code JOIN flight ON flight_stop.flight_id = flight.flight_id JOIN airline ON flight.airline_code = airline.airline_code WHERE airport.airport_location ILIKE '%Dallas%';",atis,table_join,"EXAMPLE QUESTION 1: Which airlines do not have any flights that depart or arrive at JFK or do not have stopovers?
+Which airlines offer flights with a stopover in Dallas?,"SELECT DISTINCT {airline.airline_name, airline.airline_code} FROM flight_stop JOIN airport ON flight_stop.stop_airport = airport.airport_code JOIN flight ON flight_stop.flight_id = flight.flight_id JOIN airline ON flight.airline_code = airline.airline_code WHERE airport.airport_location ILIKE '%Dallas%';",atis,table_join,"EXAMPLE QUESTION 1: Which airlines do not have any flights that either depart from/arrive at JFK, or have one or more stops?
 EXAMPLE QUERY 1: SELECT DISTINCT airline.airline_name FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0)
 
 EXAMPLE QUESTION 2: Which airlines offer flights from LAX to ORD?
@@ -583,11 +583,11 @@ EXAMPLE QUERY 2: SELECT airline.airline_name, flight.stops FROM flight JOIN airl
 "Which airlines offer flights from Chicago (ORD) to New York (JFK), and how many stops do they have, sorted by number of stops in ascending order?","SELECT {airline.airline_name, airline.airline_code}, flight.stops FROM flight JOIN airline ON flight.airline_code = airline.airline_code WHERE flight.from_airport = 'ORD' AND flight.to_airport = 'JFK' GROUP BY {}, flight.stops ORDER BY flight.stops NULLS LAST;",atis,table_join,"EXAMPLE QUESTION 1: Which airlines offer flights from LAX to ORD?
 EXAMPLE QUERY 1: SELECT DISTINCT airline.airline_name FROM flight JOIN airline ON flight.airline_code = airline.airline_code WHERE flight.from_airport = 'LAX' AND flight.to_airport = 'ORD'
 
-EXAMPLE QUESTION 2: Which airlines do not have any flights that depart or arrive at JFK or do not have stopovers?
+EXAMPLE QUESTION 2: Which airlines do not have any flights that either depart from/arrive at JFK, or have one or more stops?
 EXAMPLE QUERY 2: SELECT DISTINCT airline.airline_name FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0)
 
 "
-Which airlines do not have any flights that depart or arrive at JFK or do not have stopovers?,"SELECT DISTINCT {airline.airline_name, airline.airline_code} FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0);",atis,table_join,"EXAMPLE QUESTION 1: Which airlines offer flights with a stopover in Dallas?
+Which airlines do not have any flights that either depart from/arrive at JFK, or have one or more stops?,"SELECT DISTINCT {airline.airline_name, airline.airline_code} FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0);",atis,table_join,"EXAMPLE QUESTION 1: Which airlines offer flights with a stopover in Dallas?
 EXAMPLE QUERY 1: SELECT DISTINCT airline.airline_name FROM flight_stop JOIN airport ON flight_stop.stop_airport = airport.airport_code JOIN flight ON flight_stop.flight_id = flight.flight_id JOIN airline ON flight.airline_code = airline.airline_code WHERE airport.airport_location ILIKE '%Dallas%'
 
 EXAMPLE QUESTION 2: Which airlines offer flights from LAX to ORD?
