@@ -224,8 +224,8 @@ def compare_df(
     df2: pd.DataFrame,
     query_category: str,
     question: str,
-    query_gold: str,
-    query_gen: str,
+    query_gold: str = None,
+    query_gen: str = None,
 ) -> bool:
     """
     Compares two dataframes and returns True if they are the same, else False.
