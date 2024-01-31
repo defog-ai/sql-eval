@@ -6,7 +6,6 @@ from func_timeout import func_timeout
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 from sqlalchemy import create_engine
-import snowflake.connector
 from utils.creds import db_creds_all
 
 LIKE_PATTERN = r"LIKE[\s\S]*'"
@@ -165,7 +164,7 @@ def query_snowflake_db(
 
     timeout: time in seconds to wait for query to finish before timing out
     """
-
+    import snowflake.connector
     if db_creds is None:
         db_creds = db_creds_all["snowflake"]
 
