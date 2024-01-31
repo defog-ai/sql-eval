@@ -587,7 +587,7 @@ EXAMPLE QUESTION 2: Which airlines do not have any flights that either depart fr
 EXAMPLE QUERY 2: SELECT DISTINCT airline.airline_name FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0)
 
 "
-Which airlines do not have any flights that either depart from/arrive at JFK, or have one or more stops?,"SELECT DISTINCT {airline.airline_name, airline.airline_code} FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0);",atis,table_join,"EXAMPLE QUESTION 1: Which airlines offer flights with a stopover in Dallas?
+"Which airlines do not have any flights that either depart from/arrive at JFK, or have one or more stops?","SELECT DISTINCT {airline.airline_name, airline.airline_code} FROM airline WHERE airline.airline_code NOT IN (SELECT flight.airline_code FROM flight WHERE flight.from_airport = 'JFK' OR flight.to_airport = 'JFK' OR flight.stops > 0);",atis,table_join,"EXAMPLE QUESTION 1: Which airlines offer flights with a stopover in Dallas?
 EXAMPLE QUERY 1: SELECT DISTINCT airline.airline_name FROM flight_stop JOIN airport ON flight_stop.stop_airport = airport.airport_code JOIN flight ON flight_stop.flight_id = flight.flight_id JOIN airline ON flight.airline_code = airline.airline_code WHERE airport.airport_location ILIKE '%Dallas%'
 
 EXAMPLE QUESTION 2: Which airlines offer flights from LAX to ORD?
