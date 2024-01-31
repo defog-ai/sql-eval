@@ -1,5 +1,6 @@
 data/postgres
 data/*embeddings.pkl
+data/*ner_metadata.pkl
 results
 
 # pycache
