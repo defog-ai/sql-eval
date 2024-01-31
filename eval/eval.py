@@ -33,31 +33,33 @@ def normalize_table(
     in_question = re.search(pattern, question.lower())  # true if contains
     if query_category == "order_by" or in_question:
         has_order_by = True
-        # determine which columns are in the ORDER BY clause of the sql generated, using regex
-        pattern = re.compile(r"ORDER BY[\s\S]*", re.IGNORECASE)
-        order_by_clause = re.search(pattern, sql)
-        if order_by_clause:
-            order_by_clause = order_by_clause.group(0)
-            # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
-            pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\))", re.IGNORECASE)
-            order_by_columns = re.findall(pattern, order_by_clause)[0].split()
+        
+        if sql:
+            # determine which columns are in the ORDER BY clause of the sql generated, using regex
+            pattern = re.compile(r"ORDER BY[\s\S]*", re.IGNORECASE)
+            order_by_clause = re.search(pattern, sql)
+            if order_by_clause:
+                order_by_clause = order_by_clause.group(0)
+                # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
+                pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\))", re.IGNORECASE)
+                order_by_columns = re.findall(pattern, order_by_clause)[0].split()
 
-            ascending = False
-            # if there is a DESC or ASC in the ORDER BY clause, set the ascending to that
-            if "DESC" in [i.upper() for i in order_by_columns]:
                 ascending = False
-            elif "ASC" in [i.upper() for i in order_by_columns]:
-                ascending = True
-            
-            # remove whitespace and commas
-            order_by_columns = [col.strip() for col in order_by_columns]
-            order_by_columns = [col.replace(",", "") for col in order_by_columns]
-            order_by_columns = [i for i in order_by_columns if i.lower() not in ["desc", "asc", "nulls", "last", "first"]]
-            
-            # get all columns in sorted_df that are not in order_by_columns
-            other_columns = [i for i in sorted_df.columns.tolist() if i not in order_by_columns]
+                # if there is a DESC or ASC in the ORDER BY clause, set the ascending to that
+                if "DESC" in [i.upper() for i in order_by_columns]:
+                    ascending = False
+                elif "ASC" in [i.upper() for i in order_by_columns]:
+                    ascending = True
+                
+                # remove whitespace and commas
+                order_by_columns = [col.strip() for col in order_by_columns]
+                order_by_columns = [col.replace(",", "") for col in order_by_columns]
+                order_by_columns = [i for i in order_by_columns if i.lower() not in ["desc", "asc", "nulls", "last", "first"]]
+                
+                # get all columns in sorted_df that are not in order_by_columns
+                other_columns = [i for i in sorted_df.columns.tolist() if i not in order_by_columns]
 
-            sorted_df = sorted_df.sort_values(by=order_by_columns+other_columns, ascending=ascending)
+                sorted_df = sorted_df.sort_values(by=order_by_columns+other_columns, ascending=ascending)
     
     if not has_order_by:
         # sort rows using values from first column to last
@@ -257,13 +259,13 @@ def subset_df(
             if verbose:
                 print(f"no match for {col_sub_name}")
             return False
-    df_sub_normalized = normalize_table(df_sub, query_category, question)
+    df_sub_normalized = normalize_table(df_sub, query_category, question, "")
 
     # get matched columns from df_super, and rename them with columns from df_sub, then normalize
     df_super_matched = df_super[matched_columns].rename(
         columns=dict(zip(matched_columns, df_sub.columns))
     )
-    df_super_matched = normalize_table(df_super_matched, query_category, question)
+    df_super_matched = normalize_table(df_super_matched, query_category, question, "")
 
     try:
         assert_frame_equal(df_sub_normalized, df_super_matched, check_dtype=False)
