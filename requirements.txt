@@ -17,4 +17,5 @@ tiktoken
 torch
 tqdm
 transformers
+sqlparse
 vllm; sys_platform != 'darwin'
