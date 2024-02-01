@@ -21,9 +21,9 @@ query_order_by = "SELECT * FROM table_name ORDER BY name DESC"
 def unordered_dataframe():
     # Create a sample DataFrame for testing
     data = {
-        "name": ["John", "Jane", "Alice"],
-        "age": [25, 30, 35],
-        "city": ["New York", "London", "Paris"],
+        "name": ["John", "Alice", "Jane"],
+        "age": [25, 35, 30],
+        "city": ["New York", "Paris", "London"],
     }
     return pd.DataFrame(data)
 
@@ -73,8 +73,8 @@ def test_dataframes():
     )
 
 
-def test_normalize_table_no_order_by(unordered_dataframe):
-    # Test normalization without an order by clause
+def test_normalize_table(unordered_dataframe):
+    # Test normalization without an order by clause: should sort columns and rows
     expected_df = pd.DataFrame(
         {
             "age": [25, 30, 35],
@@ -83,22 +83,38 @@ def test_normalize_table_no_order_by(unordered_dataframe):
         }
     )
     question = "What are the ages of the people in the table?"
-    normalized_df = normalize_table(unordered_dataframe, query, question)
+    sql_query = "SELECT * FROM table_name"
+    normalized_df = normalize_table(unordered_dataframe, query, question, sql_query)
     assert_frame_equal(expected_df, normalized_df)
 
+    # Test normalization with an asc order by clause: should sort columns and rows (names ascending)
+    expected_df = pd.DataFrame(
+        {
+            "age": [35, 30, 25],
+            "city": ["Paris", "London", "New York"],
+            "name": ["Alice", "Jane", "John"],  # names ascending
+        }
+    )
+    question_sort_asc = "What are the ages of the people in the table? Sort by name."
+    sql_query_sort_asc = "SELECT * FROM table_name ORDER BY name ASC"
+    normalized_df = normalize_table(
+        unordered_dataframe, "order_by", question_sort_asc, sql_query_sort_asc
+    )
+    assert_frame_equal(expected_df, normalized_df)
 
-def test_normalize_table_with_order_by(unordered_dataframe):
-    # Test normalization with an order by clause
+    # Test normalization with a desc order by clause: should sort columns and rows (names descending)
     expected_df = pd.DataFrame(
         {
             "age": [25, 30, 35],
             "city": ["New York", "London", "Paris"],
-            "name": ["John", "Jane", "Alice"],
+            "name": ["John", "Jane", "Alice"],  # names descending
         }
     )
-    question_sort = "What are the ages of the people in the table? Sort by age."
-    normalized_df = normalize_table(unordered_dataframe, query_order_by, question_sort)
-
+    question_sort_desc = "What are the ages of the people in the table? Arrange by name starting from the largest."
+    sql_query_sort_desc = "SELECT * FROM table_name ORDER BY name DESC"
+    normalized_df = normalize_table(
+        unordered_dataframe, "order_by", question_sort_desc, sql_query_sort_desc
+    )
     assert_frame_equal(expected_df, normalized_df)
 
 
@@ -242,6 +258,7 @@ def test_compare_df(test_dataframes):
 
     question = "Here is a random question"
     question_sort = "Here is a random question that has a sort by instruction."
+    sql_sort_b = "SELECT * FROM table_name ORDER BY B DESC"
 
     # Test case 1: Empty DataFrames, expect True
     assert compare_df(df0, df0_same, query, question) == True
@@ -265,7 +282,7 @@ def test_compare_df(test_dataframes):
     assert compare_df(df1, df1_rows_reordered, query, question) == True
 
     # Test case 8: Reordered Rows with specific ordering, expect False
-    assert compare_df(df1, df1_rows_reordered, query_order_by, question_sort) == False
+    assert compare_df(df1, df1_rows_reordered, "order_by", question_sort) == False
 
     # Test case 9: Reordered Rows with specific ordering and renamed columns, expect True
     assert (
@@ -279,24 +296,37 @@ def test_compare_df(test_dataframes):
     assert compare_df(df2, df2_rows_reordered, query, question) == True
 
     # Test case 12: Reordered rows with specific ordering, expect False
-    assert compare_df(df2, df2_rows_reordered, query_order_by, question_sort) == False
+    assert compare_df(df2, df2_rows_reordered, "order_by", question_sort) == False
 
     # Test case 13: Reordered rows with specific asc ordering in col B, expect True
     assert (
-        compare_df(df2, df2_rows_reordered_sortb, query_order_by, question_sort) == True
+        compare_df(
+            df2,
+            df2_rows_reordered_sortb,
+            "order_by",
+            question_sort,
+            sql_sort_b,
+            sql_sort_b,
+        )
+        == True
     )
 
     # Test case 14: Reordered rows with specific asc ordering in col B and renamed columns, expect True
     assert (
-        compare_df(df2, df2_rows_reordered_sortb_renamed, query_order_by, question_sort)
+        compare_df(
+            df2,
+            df2_rows_reordered_sortb_renamed,
+            "order_by",
+            question_sort,
+            sql_sort_b,
+            sql_sort_b,
+        )
         == True
     )
 
     # Test case 15: Reordered rows with specific asc ordering in col B and renamed and additional columns, expect False
     assert (
-        compare_df(
-            df2, df2_rows_reordered_sortb_more_cols, query_order_by, question_sort
-        )
+        compare_df(df2, df2_rows_reordered_sortb_more_cols, "order_by", question_sort)
         == False
     )
 
@@ -324,6 +354,7 @@ def test_subset_df(test_dataframes):
 
     question = "Here is a random question"
     question_sort = "Here is a random question that has a sort by instruction."
+    sql_sort_b = "SELECT * FROM table_name ORDER BY B ASC"
 
     # Test case 1: Empty DataFrames, expect False
     assert subset_df(df0, df0_same, query, question) == False
@@ -347,7 +378,7 @@ def test_subset_df(test_dataframes):
     assert subset_df(df1, df1_rows_reordered, query, question) == True
 
     # Test case 8: Reordered Rows with specific ordering, expect False
-    assert subset_df(df1, df1_rows_reordered, query_order_by, question_sort) == False
+    assert subset_df(df1, df1_rows_reordered, "order_by", question_sort) == False
 
     # Test case 9: Reordered Rows with specific ordering and renamed columns, expect True
     assert (subset_df(df1, df1_rows_reordered_columns_renamed, query, question)) == True
@@ -359,23 +390,36 @@ def test_subset_df(test_dataframes):
     assert subset_df(df2, df2_rows_reordered, query, question) == True
 
     # Test case 12: Reordered rows with specific ordering, expect False
-    assert subset_df(df2, df2_rows_reordered, query_order_by, question_sort) == False
+    assert subset_df(df2, df2_rows_reordered, "order_by", question_sort) == False
 
     # Test case 13: Reordered rows with specific asc ordering in col B, expect True
-    assert (
-        subset_df(df2, df2_rows_reordered_sortb, query_order_by, question_sort) == True
+    result = subset_df(
+        df2, df2_rows_reordered_sortb, "order_by", question_sort, sql_sort_b, sql_sort_b
     )
+    assert result == True
 
     # Test case 14: Reordered rows with specific asc ordering in col B and renamed columns, expect True
     assert (
-        subset_df(df2, df2_rows_reordered_sortb_renamed, query_order_by, question_sort)
+        subset_df(
+            df2,
+            df2_rows_reordered_sortb_renamed,
+            "order_by",
+            question_sort,
+            sql_sort_b,
+            sql_sort_b,
+        )
         == True
     )
 
     # Test case 15: Reordered rows with specific asc ordering in col B and renamed and additional columns, expect True
     assert (
         subset_df(
-            df2, df2_rows_reordered_sortb_more_cols, query_order_by, question_sort
+            df2,
+            df2_rows_reordered_sortb_more_cols,
+            "order_by",
+            question_sort,
+            sql_sort_b,
+            sql_sort_b,
         )
         == True
     )

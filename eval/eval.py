@@ -41,10 +41,11 @@ def normalize_table(
             if order_by_clause:
                 order_by_clause = order_by_clause.group(0)
                 # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
-                pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\))", re.IGNORECASE)
-                order_by_columns = re.findall(pattern, order_by_clause)[0].split()
+                pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\)|$)", re.IGNORECASE)
+                order_by_columns = re.findall(pattern, order_by_clause)
+                order_by_columns = order_by_columns[0].split()
                 order_by_columns = [
-                    col.strip().split(".")[-1] for col in order_by_columns
+                    col.strip().rsplit(".", 1)[-1] for col in order_by_columns
                 ]
 
                 ascending = False
@@ -220,8 +221,8 @@ def query_snowflake_db(
 
 
 def compare_df(
-    df1: pd.DataFrame,
-    df2: pd.DataFrame,
+    df_gold: pd.DataFrame,
+    df_gen: pd.DataFrame,
     query_category: str,
     question: str,
     query_gold: str = None,
@@ -229,15 +230,16 @@ def compare_df(
 ) -> bool:
     """
     Compares two dataframes and returns True if they are the same, else False.
+    query_gold and query_gen are the original queries that generated the respective dataframes.
     """
     # drop duplicates to ensure equivalence
-    if df1.shape == df2.shape and (df1.values == df2.values).all():
+    if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
         return True
 
-    df1 = normalize_table(df1, query_category, question, query_gold)
-    df2 = normalize_table(df2, query_category, question, query_gen)
+    df_gold = normalize_table(df_gold, query_category, question, query_gold)
+    df_gen = normalize_table(df_gen, query_category, question, query_gen)
 
-    if df1.shape == df2.shape and (df1.values == df2.values).all():
+    if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
         return True
     else:
         return False
@@ -248,6 +250,8 @@ def subset_df(
     df_super: pd.DataFrame,
     query_category: str,
     question: str,
+    query_super: str = None,
+    query_sub: str = None,
     verbose: bool = False,
 ) -> bool:
     """
@@ -281,13 +285,15 @@ def subset_df(
             if verbose:
                 print(f"no match for {col_sub_name}")
             return False
-    df_sub_normalized = normalize_table(df_sub, query_category, question, "")
+    df_sub_normalized = normalize_table(df_sub, query_category, question, query_sub)
 
     # get matched columns from df_super, and rename them with columns from df_sub, then normalize
     df_super_matched = df_super[matched_columns].rename(
         columns=dict(zip(matched_columns, df_sub.columns))
     )
-    df_super_matched = normalize_table(df_super_matched, query_category, question, "")
+    df_super_matched = normalize_table(
+        df_super_matched, query_category, question, query_super
+    )
 
     try:
         assert_frame_equal(df_sub_normalized, df_super_matched, check_dtype=False)
