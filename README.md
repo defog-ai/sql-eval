@@ -171,6 +171,28 @@ python -W ignore main.py \
   -m defog/sqlcoder2
 ```
 
+If running with different settings, you can setup an api server to avoid reloading for each test setting and then run the tests subsequently. To setup the api server:
+```bash
+# to set up a vllm server
+python -m vllm.entrypoints.api_server \
+    --model defog/sqlcoder-70b-alpha \
+    --tensor-parallel-size 4 \
+    --dtype float16
+
+# to run sql-eval using the api runner - depending on how much your GPUs can tahan, can increase p to higher values
+python main.py \
+  -db postgres \
+  -o results/results.csv \
+  -g api \
+  -b 1 \
+  -f prompts/prompt.md \
+  --url localhost:8000/generate \
+  -p 5 \
+  -n 10
+```
+
+### Multiple Prompts
+
 If you'd like to test out a few prompts in a single run (to save the few minutes spent loading the model into GPU at the start of each run), you can specify a list of prompt files in `--prompt_file` (e.g. `-f prompts/prompt-1.md prompts/prompt-2.md prompts/prompt-3.md`), as well as a corresponding list of output files in `--output_file` (e.g. `-o results/results-1.csv results/results-2.csv results/results-3.csv`). The number of prompts and output files must be the same. Here's a sample command:
 ```bash
 python -W ignore main.py \
