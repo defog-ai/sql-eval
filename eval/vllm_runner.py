@@ -50,7 +50,11 @@ def run_vllm_eval(args):
     if not args.quantized:
         llm = LLM(model=model_name, tensor_parallel_size=torch.cuda.device_count())
     else:
-        llm = LLM(model=model_name, tensor_parallel_size=torch.cuda.device_count(), quantization="AWQ")
+        llm = LLM(
+            model=model_name,
+            tensor_parallel_size=torch.cuda.device_count(),
+            quantization="AWQ",
+        )
 
     sampling_params = SamplingParams(
         n=1,
