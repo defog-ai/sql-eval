@@ -43,7 +43,9 @@ def normalize_table(
                 # get all columns in the ORDER BY clause, by looking at the text between ORDER BY and the next semicolon, comma, or parantheses
                 pattern = re.compile(r"(?<=ORDER BY)(.*?)(?=;|,|\)|$)", re.IGNORECASE)
                 order_by_columns = re.findall(pattern, order_by_clause)
-                order_by_columns = order_by_columns[0].split()
+                order_by_columns = (
+                    order_by_columns[0].split() if order_by_columns else []
+                )
                 order_by_columns = [
                     col.strip().rsplit(".", 1)[-1] for col in order_by_columns
                 ]
