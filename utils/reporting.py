@@ -78,7 +78,7 @@ def upload_results(
     Uploads results to a server.
     """
     # Create a unique id for the request
-    run_id = uuid4()
+    run_id = uuid4().hex
 
     # Create a unique id for the prompt, based on a hash of the prompt
     prompt_id = hashlib.md5(prompt.encode()).hexdigest()
