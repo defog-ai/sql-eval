@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS eval (
   num_beams INT,
   db_type VARCHAR(255),
   gpu_name VARCHAR(255),
-  gpu_memory INT,
+  gpu_memory VARCHAR(255),
   gpu_driver_version VARCHAR(255),
   gpu_cuda_version VARCHAR(255),
-  num_gpus INT,
+  num_gpus VARCHAR(255),
 
   -- then, data about actual questions
   question TEXT,
