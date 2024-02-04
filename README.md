@@ -214,7 +214,7 @@ python main.py \
   -g api \
   -b 5 \
   -f prompts/prompt.md \
-  --url YOUR_API_URL \
+  --api_url YOUR_API_URL \
   -p 3 \
   -n 10
 ```
@@ -229,7 +229,7 @@ You can use the following flags in the command line to change the configurations
 |  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, and `api` for API endpoints.   |
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. Options for Anthropic are `claude-2` and `claude-instant-1`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
 |  -a, --adapter   |  Path to the relevant adapter model you're using. Only available for the `hf_runner` |
-|  --url   |  The URL of the custom API you want to send the prompt to. Only used when model_type is `api` |
+|  --api_url   |  The URL of the custom API you want to send the prompt to. Only used when model_type is `api` |
 |  -f, --prompt_file   |  Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.  |
 |  -k, --k_shot   |  Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.  |
 |  -d, --use_private_data  |  Use this to read from your own private data library.  |
@@ -240,6 +240,7 @@ You can use the following flags in the command line to change the configurations
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
 | -v, --verbose  |  Prints details in command line. |
+| --upload_url | (optional) the URL that you want to report the results to. The server that serves this URL must have functionality that is similar to the sample server in `utils/webserver.py` |
 
 ## Checking the Results
 To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about. Happy iterating!

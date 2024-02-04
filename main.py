@@ -8,7 +8,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-a", "--adapter", type=str)
-    parser.add_argument("--url", type=str)
+    parser.add_argument("--api_url", type=str)
     parser.add_argument("-b", "--num_beams", type=int, default=4)
     # take in a list of prompt files
     parser.add_argument("-f", "--prompt_file", nargs="+", type=str, required=True)
@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
     parser.add_argument("-u", "--timeout_exec", type=float, default=10.0)
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--upload_url", type=str)
 
     args = parser.parse_args()
 

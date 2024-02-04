@@ -85,7 +85,7 @@ def run_api_eval(args):
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
-    api_url = args.url
+    api_url = args.api_url
     output_file_list = args.output_file
     k_shot = args.k_shot
     num_beams = args.num_beams
