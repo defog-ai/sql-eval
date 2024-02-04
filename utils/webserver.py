@@ -31,9 +31,9 @@ def hello_http(request):
     cur = conn.cursor()
 
     # add prompt to the prompts table if it doesn't exist
-    cur.execute("SELECT * FROM prompts WHERE prompt_id = %s", (prompt_id,))
+    cur.execute("SELECT * FROM prompt WHERE prompt_id = %s", (prompt_id,))
     if cur.fetchone() is None:
-        cur.execute("INSERT INTO prompts (prompt_id, prompt) VALUES (%s, %s)", (prompt_id, prompt))
+        cur.execute("INSERT INTO prompt (prompt_id, prompt) VALUES (%s, %s)", (prompt_id, prompt))
 
     for result in results:
         question = result['question']
