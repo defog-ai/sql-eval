@@ -18,6 +18,7 @@ from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
 from peft import PeftModel, PeftConfig
+from utils.reporting import upload_results
 
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
 
@@ -258,3 +259,18 @@ def run_hf_eval(args):
                     print("No BQ project id specified, skipping save to BQ")
             except Exception as e:
                 print(f"Error saving to BQ: {e}")
+        
+        results = output_df.to_dict("records")
+        # upload results
+        with open(prompt_file, "r") as f:
+            prompt = f.read()
+        if args.upload_url is not None:
+            upload_results(
+                results=results,
+                url=args.upload_url,
+                runner_type="hf_runner",
+                prompt=prompt,
+                num_beams=num_beams,
+                model=args.model,
+                db_type=args.db_type,
+            )
