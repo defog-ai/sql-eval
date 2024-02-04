@@ -42,13 +42,13 @@ def hello_http(request):
         query_category = result['query_category']
         generated_query = result['generated_query']
         error_msg = result['error_msg']
-        exact_match = result['exact_match']
-        correct = result['correct']
-        error_db_exec = result['error_db_exec']
+        exact_match = bool(result['exact_match'])
+        correct = bool(result['correct'])
+        error_db_exec = bool(result['error_db_exec'])
         latency_seconds = result['latency_seconds']
         tokens_used = result['tokens_used']
 
-        cur.execute("INSERT INTO eval (run_id, question, golden_query, db_name, query_category, generated_query, error_msg, exact_match, correct, error_db_exec, latency_seconds, tokens_used, created_at, runner_type, prompt_id, model, num_beams, db_type, gpu_name, gpu_memory, gpu_driver_version, gpu_cuda_version, num_gpus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (run_id, question, golden_query, db_name, query_category, generated_query, error_msg, exact_match, correct, error_db_exec, latency_seconds, tokens_used, timestamp, runner_type, prompt_id, model, num_beams, db_type, gpu_name, gpu_memory, gpu_driver_version, gpu_cuda_version, num_gpus))
+        cur.execute("INSERT INTO eval (run_id, question, golden_query, db_name, query_category, generated_query, error_msg, exact_match, correct, error_db_exec, latency_seconds, tokens_used, created_at, runner_type, prompt_id, model, num_beams, db_type, gpu_name, gpu_memory, gpu_driver_version, gpu_cuda_version, num_gpus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (run_id, question, golden_query, db_name, query_category, generated_query, error_msg, exact_match, correct, error_db_exec, latency_seconds, tokens_used, timestamp, runner_type, prompt_id, model, num_beams, db_type, gpu_name, gpu_memory, gpu_driver_version, gpu_cuda_version, num_gpus))
     conn.commit()
     cur.close()
     conn.close()

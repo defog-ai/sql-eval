@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS eval (
   gpu_memory INT,
   gpu_driver_version VARCHAR(255),
   gpu_cuda_version VARCHAR(255),
+  num_gpus INT,
 
   -- then, data about actual questions
   question TEXT,
