@@ -11,6 +11,7 @@ from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all, bq_project
 from utils.reporting import upload_results
 
+
 def run_anthropic_eval(args):
     # get questions
     print("Preparing questions...")
@@ -147,7 +148,7 @@ def run_anthropic_eval(args):
                     print("No BQ project id specified, skipping save to BQ")
             except Exception as e:
                 print(f"Error saving to BQ: {e}")
-        
+
         results = output_df.to_dict("records")
         # upload results
         with open(prompt_file, "r") as f:

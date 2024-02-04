@@ -12,6 +12,7 @@ from time import time
 import requests
 from utils.reporting import upload_results
 
+
 def generate_prompt(
     prompt_file, question, db_name, instructions="", k_shot_prompt="", public_data=True
 ):
@@ -168,7 +169,7 @@ def run_api_eval(args):
                     print("No BQ project id specified, skipping save to BQ")
             except Exception as e:
                 print(f"Error saving to BQ: {e}")
-        
+
         results = output_df.to_dict("records")
         # upload results
         with open(prompt_file, "r") as f:
@@ -183,4 +184,3 @@ def run_api_eval(args):
                 model=args.api_url,
                 db_type=args.db_type,
             )
-

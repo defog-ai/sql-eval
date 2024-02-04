@@ -259,7 +259,7 @@ def run_hf_eval(args):
                     print("No BQ project id specified, skipping save to BQ")
             except Exception as e:
                 print(f"Error saving to BQ: {e}")
-        
+
         results = output_df.to_dict("records")
         # upload results
         with open(prompt_file, "r") as f:
