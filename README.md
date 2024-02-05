@@ -246,7 +246,64 @@ You can use the following flags in the command line to change the configurations
 | --upload_url | (optional) the URL that you want to report the results to. The server that serves this URL must have functionality that is similar to the sample server in `utils/webserver.py` |
 
 ## Checking the Results
-To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about. Happy iterating!
+To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about. 
+
+### Upload URL
+If you would like to start a google cloud function to receive the results, you can use the `--upload_url` flag to specify the URL that you want to report the results to. Before running the evaluation code with this flag, you would need to create a server that serves at the provided URL. We have provided 2 sample cloud function endpoints for writing either to bigquery or postgres, in the `results_fn_bigquery` and `results_fn_postgres` folders. You may also implement your own server to take in similar arguments. Before deploying either cloud functions, you would need to set up the environment variables by making a copy of .env.yaml.template and renaming it to .env.yaml, and then filling in the relevant fields. For the bigquery cloud function, you would also need to put your service account's key.json file in the same folder, and put the file name in the `CREDENTIALS_PATH` field in the .env.yaml file.
+
+After doing so, you can deploy the google cloud function:
+```bash
+# for uploading to bigquery
+gcloud functions deploy results_bigquery \
+  --source results_fn_bigquery \
+  --entry-point bigquery \
+  --env-vars-file results_fn_bigquery/.env.yaml \
+  --runtime python311 \
+  --memory 512MB \
+  --trigger-http \
+  --allow-unauthenticated \
+  --gen2
+
+# for uploading to postgres
+gcloud functions deploy results_postgres \
+  --source results_fn_postgres \
+  --entry-point postgres \
+  --env-vars-file results_fn_postgres/.env.yaml \
+  --runtime python311 \
+  --memory 512MB \
+  --trigger-http \
+  --allow-unauthenticated \
+  --gen2
+```
+
+The cloud function's name is whatever comes after `gcloud functions deploy` (in this case, `results_bigquery`), and you can use it to check the logs of the function by running `gcloud functions logs read results_bigquery`.
+
+You can then run the evaluation code with the `--upload_url` flag to report the results to the cloud function. The cloud function will then write the results to the relevant database.
+```bash
+python main.py \
+  -db postgres \
+  -o results/test.csv \
+  -g oa \
+  -f prompts/prompt_openai.md \
+  -m gpt-3.5-turbo-0613 \
+  -n 1 \
+  --upload_url <your cloud function url>
+```
+
+#### Testing the function locally
+If you'd like to modify the functions and test it out locally, you can run these sample commands to deploy the function locally and then trigger the openai runner:
+```bash
+functions-framework --target bigquery --source results_fn_bigquery --debug
+python main.py \
+  -db postgres \
+  -o results/test.csv \
+  -g oa \
+  -f prompts/prompt_openai.md \
+  -m gpt-3.5-turbo-0613 \
+  -n 1 \
+  --upload_url http://127.0.0.1:8080/
+```
+
 
 ## Misc
 

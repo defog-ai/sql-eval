@@ -1,6 +1,8 @@
 import json
 import os
 from typing import Optional
+
+import pandas_gbq
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
@@ -249,7 +251,8 @@ def run_hf_eval(args):
             print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
             try:
                 if bq_project is not None and bq_project != "":
-                    output_df.to_gbq(
+                    pandas_gbq.to_gbq(
+                        dataframe=output_df,
                         destination_table=args.bq_table,
                         project_id=bq_project,
                         if_exists="append",
@@ -270,7 +273,5 @@ def run_hf_eval(args):
                 url=args.upload_url,
                 runner_type="hf_runner",
                 prompt=prompt,
-                num_beams=num_beams,
-                model=args.model,
-                db_type=args.db_type,
+                args=args,
             )

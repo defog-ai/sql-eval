@@ -1,12 +1,18 @@
-# this is a Google cloud function for receiving the data from the web app and storing it in the database
+# this is a Google cloud function for receiving the data from the web app and storing it in Postgres
 
 import functions_framework
 import psycopg2
 import os
 
+POSTGRES_DB = os.environ.get("POSTGRES_DB")
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT")
+POSTGRES_USER = os.environ.get("POSTGRES_USER")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+
 
 @functions_framework.http
-def hello_http(request):
+def postgres(request):
     request_json = request.get_json(force=True)
     results = request_json["results"]
     run_id = request_json["run_id"]
@@ -22,13 +28,18 @@ def hello_http(request):
     gpu_driver_version = request_json["gpu_driver_version"]
     gpu_cuda_version = request_json["gpu_cuda_version"]
     num_gpus = request_json["num_gpus"]
-    conn = psycopg2.connect(
-        dbname="sql_eval",
-        user=os.environ.get("DB_USER"),
-        password=os.environ.get("DB_PASSWORD"),
-        host=os.environ.get("DB_HOST"),
-        port=os.environ.get("DB_PORT"),
+    db_type = request_json.get("db_type", "bigquery")
+    print(
+        f"Received {len(results)} rows for run {run_id} at {timestamp} from {runner_type}"
     )
+    conn = psycopg2.connect(
+        dbname=POSTGRES_DB,
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+    )
+    print(f"Connected to the postgres db {POSTGRES_DB}")
     cur = conn.cursor()
 
     # add prompt to the prompts table if it doesn't exist
@@ -38,6 +49,7 @@ def hello_http(request):
             "INSERT INTO prompt (prompt_id, prompt) VALUES (%s, %s)",
             (prompt_id, prompt),
         )
+        print(f"Inserted prompt {prompt_id} into the prompts table")
 
     for result in results:
         question = result["question"]
@@ -80,6 +92,7 @@ def hello_http(request):
                 num_gpus,
             ),
         )
+    print(f"Inserted {len(results)} rows into the postgres db {POSTGRES_DB}")
     conn.commit()
     cur.close()
     conn.close()

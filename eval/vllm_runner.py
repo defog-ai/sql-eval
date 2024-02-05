@@ -1,5 +1,6 @@
 import json
 import os
+import pandas_gbq
 import sqlparse
 from vllm import LLM, SamplingParams
 from eval.eval import compare_query_results
@@ -167,7 +168,8 @@ def run_vllm_eval(args):
             print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
             try:
                 if bq_project is not None and bq_project != "":
-                    df.to_gbq(
+                    pandas_gbq.to_gbq(
+                        dataframe=df,
                         destination_table=args.bq_table,
                         project_id=bq_project,
                         if_exists="append",
@@ -188,7 +190,5 @@ def run_vllm_eval(args):
                 url=args.upload_url,
                 runner_type="vllm_runner",
                 prompt=prompt,
-                num_beams=num_beams,
-                model=args.model,
-                db_type=args.db_type,
+                args=args,
             )

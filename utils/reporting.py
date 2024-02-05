@@ -1,3 +1,4 @@
+import json
 import requests
 from uuid import uuid4
 from datetime import datetime
@@ -82,12 +83,13 @@ def upload_results(
     url: str,
     runner_type: str,
     prompt: str,
-    model: str,
-    num_beams: int = None,
-    db_type: str = "postgres",
+    args: dict,
 ):
     """
     Uploads results to a server.
+    Customize where the results are stored by changing the url.
+    The db_type in the args below refers to the db_type of the queries we evaluated,
+    not the db_type of where we are storing our results.
     """
     # Create a unique id for the request
     run_id = uuid4().hex
@@ -103,16 +105,19 @@ def upload_results(
         "runner_type": runner_type,
         "prompt": prompt,
         "prompt_id": prompt_id,
-        "model": model,
-        "num_beams": num_beams,
-        "db_type": db_type,
+        "model": args.model,
+        "num_beams": args.num_beams,
+        "db_type": args.db_type,
         "gpu_name": get_gpu_name(),
         "gpu_memory": get_gpu_memory(),
         "gpu_driver_version": get_gpu_driver_version(),
         "gpu_cuda_version": get_gpu_cuda_version(),
         "num_gpus": num_gpus(),
+        "run_args": vars(args),
     }
     # Send the data to the server
     response = requests.post(url, json=data)
+    if response.status_code != 200:
+        print(f"Error uploading results:\n{response.text}")
     # Return the response
     return response

@@ -4,6 +4,7 @@ import copy
 import os
 from eval.eval import compare_query_results
 import pandas as pd
+import pandas_gbq
 from psycopg2.extensions import QueryCanceledError
 from query_generators.anthropic import AnthropicQueryGenerator
 from tqdm import tqdm
@@ -138,12 +139,14 @@ def run_anthropic_eval(args):
             print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
             try:
                 if bq_project is not None and bq_project != "":
-                    output_df.to_gbq(
+                    pandas_gbq.to_gbq(
+                        dataframe=output_df,
                         destination_table=args.bq_table,
                         project_id=bq_project,
                         if_exists="append",
                         progress_bar=False,
                     )
+                    print(f"Saved to BQ table {args.bq_table} with run_name {run_name}")
                 else:
                     print("No BQ project id specified, skipping save to BQ")
             except Exception as e:
@@ -159,6 +162,5 @@ def run_anthropic_eval(args):
                 url=args.upload_url,
                 runner_type="anthropic",
                 prompt=prompt,
-                model=args.model,
-                db_type=args.db_type,
+                args=args,
             )
