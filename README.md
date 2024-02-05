@@ -236,7 +236,6 @@ You can use the following flags in the command line to change the configurations
 |  -k, --k_shot   |  Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.  |
 |  -d, --use_private_data  |  Use this to read from your own private data library.  |
 |  -o, --output_file   |  Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files |
-|  -bq, --bq_table   |  Name of BigQuery table to save to (e.g. eval.results). Remember to save your project_id as an environment variable BQ_PROJECT. |
 |  -b, --num_beams   |  Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner` and `api_runner`. |
 |  -qz, --quantized   |  Indicate whether the model is an AWQ quantized model. Only available for `vllm_runner`. |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
