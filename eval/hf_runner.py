@@ -2,7 +2,6 @@ import json
 import os
 from typing import Optional
 
-import pandas_gbq
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
@@ -14,7 +13,7 @@ from transformers import (
 )
 from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
-from utils.creds import db_creds_all, bq_project
+from utils.creds import db_creds_all
 from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
@@ -241,27 +240,6 @@ def run_hf_eval(args):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         output_df.to_csv(output_file, index=False, float_format="%.2f")
-
-        # save to BQ
-        if args.bq_table is not None:
-            run_name = output_file.split("/")[-1].split(".")[0]
-            output_df["run_name"] = run_name
-            output_df["run_time"] = pd.Timestamp.now()
-            output_df["run_params"] = json.dumps(vars(args))
-            print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
-            try:
-                if bq_project is not None and bq_project != "":
-                    pandas_gbq.to_gbq(
-                        dataframe=output_df,
-                        destination_table=args.bq_table,
-                        project_id=bq_project,
-                        if_exists="append",
-                        progress_bar=False,
-                    )
-                else:
-                    print("No BQ project id specified, skipping save to BQ")
-            except Exception as e:
-                print(f"Error saving to BQ: {e}")
 
         results = output_df.to_dict("records")
         # upload results
