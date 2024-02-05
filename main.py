@@ -20,6 +20,9 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
     parser.add_argument("-u", "--timeout_exec", type=float, default=10.0)
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument(
+        "-qz", "--quantized", default=False, action=argparse.BooleanOptionalAction
+    )
 
     args = parser.parse_args()
 

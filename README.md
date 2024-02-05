@@ -171,6 +171,8 @@ python -W ignore main.py \
   -m defog/sqlcoder2
 ```
 
+Optionally, if you're running evals on a model that is quantized with AWQ, add the `-qz` or `--quantized` parameter. Only applicable for the vllm runner.
+
 If running with different settings, you can setup an api server to avoid reloading for each test setting and then run the tests subsequently. To setup the api server:
 ```bash
 # to set up a vllm server
@@ -236,6 +238,7 @@ You can use the following flags in the command line to change the configurations
 |  -o, --output_file   |  Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files |
 |  -bq, --bq_table   |  Name of BigQuery table to save to (e.g. eval.results). Remember to save your project_id as an environment variable BQ_PROJECT. |
 |  -b, --num_beams   |  Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner` and `api_runner`. |
+|  -qz, --quantized   |  Indicate whether the model is an AWQ quantized model. Only available for `vllm_runner`. |
 | -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
 | -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
 | -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |

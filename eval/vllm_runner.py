@@ -47,7 +47,14 @@ def run_vllm_eval(args):
     # initialize model only once as it takes a while
     print(f"Preparing {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    llm = LLM(model=model_name, tensor_parallel_size=torch.cuda.device_count())
+    if not args.quantized:
+        llm = LLM(model=model_name, tensor_parallel_size=torch.cuda.device_count())
+    else:
+        llm = LLM(
+            model=model_name,
+            tensor_parallel_size=torch.cuda.device_count(),
+            quantization="AWQ",
+        )
 
     sampling_params = SamplingParams(
         n=1,
