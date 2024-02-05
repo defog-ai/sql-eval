@@ -8,7 +8,8 @@ from psycopg2.extensions import QueryCanceledError
 from query_generators.anthropic import AnthropicQueryGenerator
 from tqdm import tqdm
 from utils.questions import prepare_questions_df
-from utils.creds import db_creds_all, bq_project
+from utils.creds import db_creds_all
+from utils.reporting import upload_results
 
 
 def run_anthropic_eval(args):
@@ -128,22 +129,15 @@ def run_anthropic_eval(args):
         avg_subset = output_df["correct"].sum() / len(output_df)
         print(f"Average correct rate: {avg_subset:.2f}")
 
-        # save to BQ
-        if args.bq_table is not None:
-            run_name = output_file.split("/")[-1].split(".")[0]
-            output_df["run_name"] = run_name
-            output_df["run_time"] = pd.Timestamp.now()
-            output_df["run_params"] = json.dumps(vars(args))
-            print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
-            try:
-                if bq_project is not None and bq_project != "":
-                    output_df.to_gbq(
-                        destination_table=args.bq_table,
-                        project_id=bq_project,
-                        if_exists="append",
-                        progress_bar=False,
-                    )
-                else:
-                    print("No BQ project id specified, skipping save to BQ")
-            except Exception as e:
-                print(f"Error saving to BQ: {e}")
+        results = output_df.to_dict("records")
+        # upload results
+        with open(prompt_file, "r") as f:
+            prompt = f.read()
+        if args.upload_url is not None:
+            upload_results(
+                results=results,
+                url=args.upload_url,
+                runner_type="anthropic",
+                prompt=prompt,
+                args=args,
+            )

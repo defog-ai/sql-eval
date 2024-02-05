@@ -1,0 +1,4 @@
+functions_framework
+google-cloud-bigquery[bqstorage,pandas]
+pandas
+pandas-gbq

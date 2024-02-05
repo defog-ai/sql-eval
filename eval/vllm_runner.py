@@ -6,11 +6,12 @@ from eval.eval import compare_query_results
 import pandas as pd
 from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
-from utils.creds import db_creds_all, bq_project
+from utils.creds import db_creds_all
 import time
 import torch
 from transformers import AutoTokenizer
 from tqdm import tqdm
+from utils.reporting import upload_results
 
 
 def generate_prompt(
@@ -157,22 +158,15 @@ def run_vllm_eval(args):
         df.to_csv(output_file, index=False, float_format="%.2f")
         print(f"Saved results to {output_file}")
 
-        # save to BQ
-        if args.bq_table is not None:
-            run_name = output_file.split("/")[-1].split(".")[0]
-            df["run_name"] = run_name
-            df["run_time"] = pd.Timestamp.now()
-            df["run_params"] = json.dumps(vars(args))
-            print(f"Saving to BQ table {args.bq_table} with run_name {run_name}")
-            try:
-                if bq_project is not None and bq_project != "":
-                    df.to_gbq(
-                        destination_table=args.bq_table,
-                        project_id=bq_project,
-                        if_exists="append",
-                        progress_bar=False,
-                    )
-                else:
-                    print("No BQ project id specified, skipping save to BQ")
-            except Exception as e:
-                print(f"Error saving to BQ: {e}")
+        results = df.to_dict("records")
+        # upload results
+        with open(prompt_file, "r") as f:
+            prompt = f.read()
+        if args.upload_url is not None:
+            upload_results(
+                results=results,
+                url=args.upload_url,
+                runner_type="vllm_runner",
+                prompt=prompt,
+                args=args,
+            )

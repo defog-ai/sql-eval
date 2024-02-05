@@ -3,6 +3,13 @@ data/*embeddings.pkl
 data/*ner_metadata.pkl
 results
 
+# credentials
+**/.env.yaml
+results_fn_bigquery/*.json
+results_fn_postgres/*.json
+
 # pycache
 **/__pycache__/
 .pytest_cache
+
+.vscode
