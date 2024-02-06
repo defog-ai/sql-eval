@@ -16,7 +16,7 @@ class QueryGenerator:
         pass
 
     def generate_query(
-        self, question: str, instructions: str, k_shot_prompt: str, glossary: str
+        self, question: str, instructions: str, k_shot_prompt: str, glossary: str, table_metadata_string: str
     ) -> dict:
         # generate a query given a question, instructions and k-shot prompt
         # any hard-coded logic, prompt-engineering, table-pruning, api calls etc

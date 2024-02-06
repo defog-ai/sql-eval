@@ -44,6 +44,7 @@ def run_openai_eval(args):
                     instructions=row["instructions"],
                     k_shot_prompt=row["k_shot_prompt"],
                     glossary=row["glossary"],
+                    table_metadata_string=row["table_metadata_string"],
                 )
 
                 generated_query_fut = executor.submit(
@@ -52,6 +53,7 @@ def run_openai_eval(args):
                     instructions=row["instructions"],
                     k_shot_prompt=row["k_shot_prompt"],
                     glossary=row["glossary"],
+                    table_metadata_string=row["table_metadata_string"],
                 )
                 futures.append(generated_query_fut)
 

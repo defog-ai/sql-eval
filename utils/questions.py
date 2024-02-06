@@ -65,4 +65,13 @@ def prepare_questions_df(
         question_query_df["glossary"] = ""
 
     question_query_df.reset_index(inplace=True, drop=True)
+
+    # get table_metadata_string if applicable
+    if "table_metadata_string" in question_query_df.columns:
+        question_query_df["table_metadata_string"] = question_query_df[
+            "table_metadata_string"
+        ].fillna("")
+    else:
+        question_query_df["table_metadata_string"] = ""
+        
     return question_query_df
