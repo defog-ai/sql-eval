@@ -15,7 +15,14 @@ from utils.reporting import upload_results
 
 
 def generate_prompt(
-    prompt_file, question, db_name, instructions="", k_shot_prompt="", glossary="", table_metadata_string="", public_data=True
+    prompt_file,
+    question,
+    db_name,
+    instructions="",
+    k_shot_prompt="",
+    glossary="",
+    table_metadata_string="",
+    public_data=True,
 ):
     with open(prompt_file, "r") as f:
         prompt = f.read()
@@ -81,7 +88,14 @@ def run_vllm_eval(args):
         print(f"Using prompt file {prompt_file}")
         # create a prompt for each question
         df["prompt"] = df[
-            ["question", "db_name", "instructions", "k_shot_prompt", "glossary", "table_metadata_string"]
+            [
+                "question",
+                "db_name",
+                "instructions",
+                "k_shot_prompt",
+                "glossary",
+                "table_metadata_string",
+            ]
         ].apply(
             lambda row: generate_prompt(
                 prompt_file,
