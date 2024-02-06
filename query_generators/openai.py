@@ -110,7 +110,12 @@ class OpenAIQueryGenerator(QueryGenerator):
         return num_tokens
 
     def generate_query(
-        self, question: str, instructions: str, k_shot_prompt: str, glossary: str, table_metadata_string: str
+        self,
+        question: str,
+        instructions: str,
+        k_shot_prompt: str,
+        glossary: str,
+        table_metadata_string: str,
     ) -> dict:
         start_time = time.time()
         self.err = ""
@@ -121,7 +126,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             chat_prompt = file.read()
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
-                pruned_metadata_str = prune_metadata_str(
+            pruned_metadata_str = prune_metadata_str(
                 question_instructions, self.db_name, self.use_public_data
             )
         else:

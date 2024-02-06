@@ -73,5 +73,5 @@ def prepare_questions_df(
         ].fillna("")
     else:
         question_query_df["table_metadata_string"] = ""
-        
+
     return question_query_df

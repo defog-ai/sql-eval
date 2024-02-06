@@ -73,7 +73,12 @@ class AnthropicQueryGenerator(QueryGenerator):
         return num_tokens
 
     def generate_query(
-        self, question: str, instructions: str, k_shot_prompt: str, glossary: str, table_metadata_string: str
+        self,
+        question: str,
+        instructions: str,
+        k_shot_prompt: str,
+        glossary: str,
+        table_metadata_string: str,
     ) -> dict:
         start_time = time.time()
         self.err = ""
