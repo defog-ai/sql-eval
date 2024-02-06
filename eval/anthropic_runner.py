@@ -44,6 +44,7 @@ def run_anthropic_eval(args):
                     verbose=args.verbose,
                     instructions=row["instructions"],
                     k_shot_prompt=row["k_shot_prompt"],
+                    glossary=row["glossary"],
                 )
 
                 generated_query_fut = executor.submit(
@@ -51,6 +52,7 @@ def run_anthropic_eval(args):
                     question=row["question"],
                     instructions=row["instructions"],
                     k_shot_prompt=row["k_shot_prompt"],
+                    glossary=row["glossary"],
                 )
                 futures.append(generated_query_fut)
 

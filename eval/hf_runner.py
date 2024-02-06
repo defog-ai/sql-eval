@@ -25,7 +25,7 @@ device_map = "mps" if torch.backends.mps.is_available() else "auto"
 
 
 def generate_prompt(
-    prompt_file, question, db_name, instructions="", k_shot_prompt="", public_data=True
+    prompt_file, question, db_name, instructions="", k_shot_prompt="", glossary="", public_data=True
 ):
     with open(prompt_file, "r") as f:
         prompt = f.read()
@@ -39,6 +39,7 @@ def generate_prompt(
         instructions=instructions,
         table_metadata_string=pruned_metadata_str,
         k_shot_prompt=k_shot_prompt,
+        glossary=glossary,
     )
     return prompt
 
@@ -143,7 +144,7 @@ def run_hf_eval(args):
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
         # create a prompt for each question
         df["prompt"] = df[
-            ["question", "db_name", "instructions", "k_shot_prompt"]
+            ["question", "db_name", "instructions", "k_shot_prompt", "glossary"]
         ].apply(
             lambda row: generate_prompt(
                 prompt_file,
@@ -151,6 +152,7 @@ def run_hf_eval(args):
                 row["db_name"],
                 row["instructions"],
                 row["k_shot_prompt"],
+                row["glossary"],
                 public_data,
             ),
             axis=1,

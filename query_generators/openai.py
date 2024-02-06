@@ -110,7 +110,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         return num_tokens
 
     def generate_query(
-        self, question: str, instructions: str, k_shot_prompt: str
+        self, question: str, instructions: str, k_shot_prompt: str, glossary: str
     ) -> dict:
         start_time = time.time()
         self.err = ""
@@ -137,6 +137,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 ),
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
+                glossary=glossary,
             )
 
             messages = []
@@ -151,6 +152,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 ),
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
+                glossary=glossary,
             )
         function_to_run = None
         package = None
