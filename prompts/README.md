@@ -4,6 +4,7 @@ You can define your prompt template by using the following variables:
 - `table_metadata_string`: The metadata of the table that we want to query. This is a string that contains the table names, column names and column types. This allows the model to know which columns/tables are available for getting information from. For the sqlcoder model that we released, you would need to represent your table metadata as a [SQL DDL](https://en.wikipedia.org/wiki/Data_definition_language) statement.
 - `instructions`: This is an optional field that allows you to customize specific instructions for each question, if needed. For example, if you want to ask the model to format your dates a particular way, define keywords, or adapt the SQL to a different database, you can do so here. If you don't need to customize the instructions, you can omit this in your prompt.
 - `k_shot_prompt`: This is another optional field that allows you to provide example SQL queries and their corresponding questions. These examples serve as a context for the model, helping it understand the type of SQL query you're expecting for a given question. Including a few examples in the k_shot_prompt field can significantly improve the model's accuracy in generating relevant SQL queries, especially for complex or less straightforward questions.
+- `glossary`: This is an optional field that allows you to define special terminology or rules for creating the SQL queries.
 
 Here is how a sample might look like with the above variables:
 ```markdown
@@ -11,6 +12,7 @@ Here is how a sample might look like with the above variables:
 Generate a SQL query to answer the following question:
 `{user_question}`
 `{instructions}`
+`{glossary}`
 ### Database Schema
 The query will run on a database with the following schema:
 {table_metadata_string}

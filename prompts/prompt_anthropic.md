@@ -3,7 +3,7 @@
 Human: Your task is to convert a question into a SQL query, given a Postgres database schema.
 
 Generate a SQL query that answers the question `{user_question}`.
-{instructions}
+{instructions}{glossary}
 This query will run on a database whose schema is represented in this string:
 {table_metadata_string}
 
