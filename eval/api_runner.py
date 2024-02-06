@@ -15,15 +15,19 @@ from utils.reporting import upload_results
 
 
 def generate_prompt(
-    prompt_file, question, db_name, instructions="", k_shot_prompt="", glossary="", public_data=True
+    prompt_file, question, db_name, instructions="", k_shot_prompt="", glossary="", table_metadata_string="", public_data=True
 ):
     with open(prompt_file, "r") as f:
         prompt = f.read()
     question_instructions = question + " " + instructions
 
-    pruned_metadata_str = prune_metadata_str(
-        question_instructions, db_name, public_data
-    )
+    if table_metadata_string == "":
+        pruned_metadata_str = prune_metadata_str(
+            question_instructions, db_name, public_data
+        )
+    else:
+        pruned_metadata_str = table_metadata_string
+
     prompt = prompt.format(
         user_question=question,
         instructions=instructions,
@@ -105,7 +109,7 @@ def run_api_eval(args):
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
         # create a prompt for each question
         df["prompt"] = df[
-            ["question", "db_name", "instructions", "k_shot_prompt", "glossary"]
+            ["question", "db_name", "instructions", "k_shot_prompt", "glossary", "table_metadata_string"]
         ].apply(
             lambda row: generate_prompt(
                 prompt_file,
@@ -114,6 +118,7 @@ def run_api_eval(args):
                 row["instructions"],
                 row["k_shot_prompt"],
                 row["glossary"],
+                row["table_metadata_string"],
                 public_data,
             ),
             axis=1,

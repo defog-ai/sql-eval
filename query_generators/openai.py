@@ -110,7 +110,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         return num_tokens
 
     def generate_query(
-        self, question: str, instructions: str, k_shot_prompt: str, glossary: str
+        self, question: str, instructions: str, k_shot_prompt: str, glossary: str, table_metadata_string: str
     ) -> dict:
         start_time = time.time()
         self.err = ""
@@ -120,6 +120,12 @@ class OpenAIQueryGenerator(QueryGenerator):
         with open(self.prompt_file) as file:
             chat_prompt = file.read()
         question_instructions = question + " " + instructions
+        if table_metadata_string == "":
+                pruned_metadata_str = prune_metadata_str(
+                question_instructions, self.db_name, self.use_public_data
+            )
+        else:
+            pruned_metadata_str = table_metadata_string
         if self.model != "text-davinci-003":
             try:
                 sys_prompt = chat_prompt.split("### Input:")[0]
@@ -129,12 +135,9 @@ class OpenAIQueryGenerator(QueryGenerator):
                 assistant_prompt = chat_prompt.split("### Response:")[1]
             except:
                 raise ValueError("Invalid prompt file. Please use prompt_openai.md")
-
             user_prompt = user_prompt.format(
                 user_question=question,
-                table_metadata_string=prune_metadata_str(
-                    question_instructions, self.db_name, self.use_public_data
-                ),
+                table_metadata_string=pruned_metadata_str,
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
                 glossary=glossary,
@@ -147,9 +150,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         else:
             prompt = chat_prompt.format(
                 user_question=question,
-                table_metadata_string=prune_metadata_str(
-                    question_instructions, self.db_name, self.use_public_data
-                ),
+                table_metadata_string=pruned_metadata_str,
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
                 glossary=glossary,
