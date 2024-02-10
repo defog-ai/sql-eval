@@ -72,6 +72,9 @@ if __name__ == "__main__":
         from eval.api_runner import run_api_eval
 
         run_api_eval(args)
+    elif args.model_type == "llama_cpp":
+        from eval.llama_cpp_runner import run_llama_cpp_eval
+        run_llama_cpp_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api'"

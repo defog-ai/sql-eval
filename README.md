@@ -182,15 +182,12 @@ python -m vllm.entrypoints.api_server \
     --dtype float16
 
 # to run sql-eval using the api runner - depending on how much your GPUs can tahan, can increase p to higher values
-python main.py \
+python -W ignore main.py \
   -db postgres \
-  -o results/results.csv \
-  -g api \
-  -b 1 \
-  -f prompts/prompt.md \
-  --url localhost:8000/generate \
-  -p 5 \
-  -n 10
+  -o "results/results.csv" \
+  -g llama_cpp \
+  -f "prompts/prompt.md" \
+  -m path/to/model.gguf
 ```
 
 ### Multiple Prompts
@@ -221,6 +218,10 @@ python main.py \
   -n 10
 ```
 
+### Llama CPP
+```bash
+python
+
 ### CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
 | CLI Flags     | Description |
@@ -228,7 +229,7 @@ You can use the following flags in the command line to change the configurations
 |  -db, --db_type   |  Database type to run your queries on. Currently supported types are `postgres` and `snowflake`.   |
 |  -q, --questions_file   |  CSV file that contains the test questions and true queries. If this is not set, it will default to the relevant `questions_gen_<db_type>.csv` file. It may be helpful to always end your questions_file name with `_<db_type>.csv` to ensure compatibility between the queries and selected db_type.   |
 | -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
-|  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, and `api` for API endpoints.   |
+|  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `api` for API endpoints, and `llama_cpp` for llama cpp.   |
 |  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. Options for Anthropic are `claude-2` and `claude-instant-1`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
 |  -a, --adapter   |  Path to the relevant adapter model you're using. Only available for the `hf_runner` |
 |  --api_url   |  The URL of the custom API you want to send the prompt to. Only used when model_type is `api` |
