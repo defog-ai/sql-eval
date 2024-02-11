@@ -11,6 +11,7 @@ from time import time
 from utils.reporting import upload_results
 from llama_cpp import Llama
 
+
 def generate_prompt(
     prompt_file, question, db_name, instructions="", k_shot_prompt="", public_data=True
 ):
@@ -33,14 +34,20 @@ def generate_prompt(
 def process_row(llm, row):
     start_time = time()
     prompt = row["prompt"]
-    generated_query = llm(
-        prompt,
-        max_tokens=512,
-        temperature=0,
-        top_p=1,
-        echo=False,
-        repeat_penalty=1.0
-    )["choices"][0]["text"].split(";")[0].split("```")[0].strip() + ";"
+    generated_query = (
+        llm(
+            prompt,
+            max_tokens=512,
+            temperature=0,
+            top_p=1,
+            echo=False,
+            repeat_penalty=1.0,
+        )["choices"][0]["text"]
+        .split(";")[0]
+        .split("```")[0]
+        .strip()
+        + ";"
+    )
     end_time = time()
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
@@ -68,6 +75,7 @@ def process_row(llm, row):
         row["error_db_exec"] = 1
         row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
     return row
+
 
 def run_llama_cpp_eval(args):
     # get params from args
