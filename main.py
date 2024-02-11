@@ -1,4 +1,5 @@
 import argparse
+import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -35,6 +36,9 @@ if __name__ == "__main__":
         print(
             f"WARNING: Check that questions_file {args.questions_file} is compatible with db_type {args.db_type}"
         )
+
+    if args.upload_url is None:
+        args.upload_url = os.environ.get("SQL_EVAL_UPLOAD_URL")
 
     # check that the list of prompt files has the same length as the list of output files
     if len(args.prompt_file) != len(args.output_file):

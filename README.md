@@ -290,6 +290,8 @@ python main.py \
   --upload_url <your cloud function url>
 ```
 
+If you would like to always report your results to an upload_url, even if it's not explicitly provided, you can set it in your environment variables as `SQL_EVAL_UPLOAD_URL`
+
 #### Testing the function locally
 If you'd like to modify the functions and test it out locally, you can run these sample commands to deploy the function locally and then trigger the openai runner:
 ```bash
