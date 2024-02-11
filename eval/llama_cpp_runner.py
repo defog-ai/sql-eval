@@ -89,7 +89,7 @@ def run_llama_cpp_eval(args):
     max_workers = args.parallel_threads
     db_type = args.db_type
 
-    llm = Llama(model_path=model_path, n_gpu_layers=1, n_ctx=2048)
+    llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=2048)
 
     # get questions
     print("Preparing questions...")
