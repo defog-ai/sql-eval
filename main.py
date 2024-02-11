@@ -74,6 +74,7 @@ if __name__ == "__main__":
         run_api_eval(args)
     elif args.model_type == "llama_cpp":
         from eval.llama_cpp_runner import run_llama_cpp_eval
+
         run_llama_cpp_eval(args)
     else:
         raise ValueError(
