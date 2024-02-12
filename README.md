@@ -181,13 +181,16 @@ python -m vllm.entrypoints.api_server \
     --tensor-parallel-size 4 \
     --dtype float16
 
-# to run sql-eval using the api runner - depending on how much your GPUs can tahan, can increase p to higher values
-python -W ignore main.py \
+# to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p to higher values
+python main.py \
   -db postgres \
-  -o "results/results.csv" \
-  -g llama_cpp \
-  -f "prompts/prompt.md" \
-  -m path/to/model.gguf
+  -o results/results.csv \
+  -g api \
+  -b 1 \
+  -f prompts/prompt.md \
+  --url localhost:8000/generate \
+  -p 5 \
+  -n 10
 ```
 
 ### Multiple Prompts
@@ -219,8 +222,20 @@ python main.py \
 ```
 
 ### Llama CPP
+To run the eval using Llama CPP, you can use the following code. Before running this, you must install `llama-cpp-python` with the following (on Apple Silicon)
+
+`CMAKE_ARGS="-DLLAMA_METAL=on" pip install llama-cpp-python`
+
+Note that llama-cpp-python library does not currently have beam search, and hence will have lower quality results.
+
 ```bash
-python
+python -W ignore main.py \
+  -db postgres \
+  -o "results/results.csv" \
+  -g llama_cpp \
+  -f "prompts/prompt.md" \
+  -m path/to/model.gguf
+  ```
 
 ### CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
