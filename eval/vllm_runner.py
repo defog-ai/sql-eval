@@ -130,7 +130,7 @@ def run_vllm_eval(args):
         with tqdm(total=len(df)) as pbar:
             for i, output in enumerate(outputs):
                 generated_query = (
-                    output.outputs[0].text.split(";")[0].split("```")[0].strip()
+                    output.outputs[0].text.split(";")[0].split("```")[0].strip() + ";"
                 )
                 normalized_query = sqlparse.format(
                     generated_query, keyword_case="upper", strip_whitespace=True
