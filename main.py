@@ -80,6 +80,10 @@ if __name__ == "__main__":
         from eval.llama_cpp_runner import run_llama_cpp_eval
 
         run_llama_cpp_eval(args)
+    elif args.model_type == "mlx":
+        from eval.mlx_runner import run_mlx_eval
+
+        run_mlx_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api'"
