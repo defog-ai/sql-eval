@@ -151,7 +151,7 @@ def run_llama_cpp_eval(args):
             upload_results(
                 results=results,
                 url=args.upload_url,
-                runner_type="api_runner",
+                runner_type="llama_cpp_runner",
                 prompt=prompt,
                 args=args,
             )
