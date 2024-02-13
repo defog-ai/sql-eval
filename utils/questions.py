@@ -59,7 +59,7 @@ def prepare_questions_df(
     if "glossary" in question_query_df.columns:
         question_query_df["glossary"] = question_query_df["glossary"].fillna("")
         question_query_df["glossary"] = question_query_df["glossary"].apply(
-            lambda x: f"\nUse the following instructions if and only if they are relevant to the question:\n{x}\n"
+            lambda x: f"\nCarefully follow these instructions if and only if they are relevant to the question and the query you generate:\n{x}\n"
         )
     else:
         question_query_df["glossary"] = ""
