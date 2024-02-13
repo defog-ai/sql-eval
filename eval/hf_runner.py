@@ -192,22 +192,21 @@ def run_hf_eval(args):
 
                 # we set return_full_text to False so that we don't get the prompt text in the generated text
                 # this simplifies our postprocessing to deal with just the truncation of the end of the query
-                generated_query = (
-                    pipe(
-                        row["prompt"],
-                        max_new_tokens=300,
-                        do_sample=False,
-                        num_beams=num_beams,
-                        num_return_sequences=1,
-                        return_full_text=False,
-                        eos_token_id=tokenizer.eos_token_id,
-                        pad_token_id=tokenizer.eos_token_id,
-                    )[0]["generated_text"]
-                    .split("```")[0]
-                    .split(";")[0]
-                    .strip()
-                    + ";"
-                )
+                generated_query = pipe(
+                    row["prompt"],
+                    max_new_tokens=300,
+                    do_sample=False,
+                    num_beams=num_beams,
+                    num_return_sequences=1,
+                    return_full_text=False,
+                    eos_token_id=tokenizer.eos_token_id,
+                    pad_token_id=tokenizer.eos_token_id,
+                )[0]["generated_text"]
+                if "[SQL]" not in row["prompt"]:
+                    generated_query = (
+                        generated_query.split("```")[0].split(";")[0].strip() + ";"
+                    )
+
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()

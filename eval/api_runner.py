@@ -60,9 +60,13 @@ def process_row(row, api_url, num_beams):
         },
     )
     end_time = time()
-    generated_query = (
-        r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip() + ";"
-    )
+    if "[SQL]" not in row["prompt"]:
+        generated_query = (
+            r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip()
+            + ";"
+        )
+    else:
+        generated_query = r.json()["text"][0].split("[SQL]\n")[1]
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
