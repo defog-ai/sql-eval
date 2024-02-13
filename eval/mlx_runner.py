@@ -11,6 +11,7 @@ from time import time
 from utils.reporting import upload_results
 from mlx_lm import load, generate
 
+
 def generate_prompt(
     prompt_file, question, db_name, instructions="", k_shot_prompt="", public_data=True
 ):
@@ -33,16 +34,10 @@ def generate_prompt(
 def process_row(model, tokenizer, row):
     start_time = time()
     prompt = row["prompt"]
-    
+
     generated_query = (
-        generate(
-            model,
-            tokenizer,
-            prompt=prompt,
-            max_tokens=512,
-            temp=0,
-            verbose=True
-        ).split(";")[0]
+        generate(model, tokenizer, prompt=prompt, max_tokens=512, temp=0, verbose=True)
+        .split(";")[0]
         .split("```")[0]
         .strip()
         + ";"
