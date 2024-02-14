@@ -188,7 +188,7 @@ python main.py \
   -g api \
   -b 1 \
   -f prompts/prompt.md \
-  --url localhost:8000/generate \
+  --api_url "http://localhost:8000/generate" \
   -p 5 \
   -n 10
 ```
