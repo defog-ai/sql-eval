@@ -251,6 +251,18 @@ python -W ignore main.py \
   -m mlx-community/defog-sqlcoder-7b-2
 ```
 
+### Gemini
+```bash
+python -W ignore main.py \
+  -db postgres \
+  -o "results/results.csv" \
+  -g gemini \
+  -f "prompts/prompt.md" \
+  -m gemini-pro \
+  -p 1 \
+  -n 5
+```
+
 ### CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
 | CLI Flags     | Description |
