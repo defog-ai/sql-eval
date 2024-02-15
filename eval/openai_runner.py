@@ -121,7 +121,7 @@ def run_openai_eval(args):
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
         if "prompt" in output_df.columns:
             del output_df["prompt"]
-        print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
+        print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
         # get directory of output_file and create if not exist
         output_dir = os.path.dirname(output_file)
         if not os.path.exists(output_dir):
