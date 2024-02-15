@@ -17,6 +17,7 @@ api_key = os.environ.get("MISTRAL_API_KEY")
 
 client = MistralClient(api_key=api_key)
 
+
 def generate_prompt(
     prompt_file,
     question,
@@ -37,13 +38,19 @@ def generate_prompt(
         )
     else:
         pruned_metadata_str = table_metadata_string
-    
+
     messages = [
-    ChatMessage(role="system", content="Your task is to convert a text question to a SQL query that runs on Postgres, given a database schema. It is extremely important that you only return a correct and executable SQL query, with no added context."),
-    ChatMessage(role="user", content=f"""Generate a SQL query that answers the question `{question}`. This query will run on a PostgreSQL database whose schema is represented in this string:
+        ChatMessage(
+            role="system",
+            content="Your task is to convert a text question to a SQL query that runs on Postgres, given a database schema. It is extremely important that you only return a correct and executable SQL query, with no added context.",
+        ),
+        ChatMessage(
+            role="user",
+            content=f"""Generate a SQL query that answers the question `{question}`. This query will run on a PostgreSQL database whose schema is represented in this string:
 {pruned_metadata_str}
-""")
-]
+""",
+        ),
+    ]
 
     return messages
 
@@ -63,7 +70,9 @@ def process_row(row, model):
     generated_query = generated_query.replace("\\", "")
 
     generated_query = generated_query.split(";")[0].split("```sql")[-1].strip()
-    generated_query = [i for i in generated_query.split("```") if i.strip() != ""][0] + ";"
+    generated_query = [i for i in generated_query.split("```") if i.strip() != ""][
+        0
+    ] + ";"
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     golden_query = row["query"]
