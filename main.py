@@ -84,6 +84,10 @@ if __name__ == "__main__":
         from eval.mlx_runner import run_mlx_eval
 
         run_mlx_eval(args)
+    elif args.model_type == "mistral":
+        from eval.mistral_runner import run_mistral_eval
+
+        run_mistral_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api'"
