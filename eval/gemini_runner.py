@@ -15,15 +15,13 @@ from utils.reporting import upload_results
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel, Part
 
+
 def multiturn_generate_content(model_name="gemini-pro"):
-    config = {
-        "max_output_tokens": 600,
-        "temperature": 0,
-        "top_p": 1
-    }
+    config = {"max_output_tokens": 600, "temperature": 0, "top_p": 1}
     model = GenerativeModel(model_name, generation_config=config)
     chat = model.start_chat()
     return chat
+
 
 def generate_prompt(
     prompt_file,
@@ -45,7 +43,7 @@ def generate_prompt(
         )
     else:
         pruned_metadata_str = table_metadata_string
-    
+
     prompt = """Generate a PostgreSQL query to answer the following question: `{user_question}`
 
 The query will run on a database with the following schema:
@@ -67,7 +65,7 @@ def process_row(row, model_name):
     start_time = time()
     chat = multiturn_generate_content(model_name=model_name)
     response = chat.send_message(row["prompt"])
-    
+
     end_time = time()
     generated_query = response.text.split("```sql")[-1].split("```")[0].strip()
     print(generated_query)
