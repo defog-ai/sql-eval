@@ -2,6 +2,7 @@ accelerate
 anthropic
 argparse
 func_timeout
+mistralai
 openai>=1.1.0
 pandas
 pandas-gbq

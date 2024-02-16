@@ -251,6 +251,18 @@ python -W ignore main.py \
   -m mlx-community/defog-sqlcoder-7b-2
 ```
 
+### Mistral
+```bash
+python -W ignore main.py \
+  -db postgres \
+  -o "results/results.csv" \
+  -g mistral \
+  -f "prompts/prompt.md" \
+  -m mistral-medium \
+  -p 5 \
+  -n 10
+```
+
 ### CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
 | CLI Flags     | Description |

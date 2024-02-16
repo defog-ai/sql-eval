@@ -1,4 +1,3 @@
-import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
@@ -10,8 +9,13 @@ from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
 from tqdm import tqdm
 from time import time
-import requests
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
 from utils.reporting import upload_results
+
+api_key = os.environ.get("MISTRAL_API_KEY")
+
+client = MistralClient(api_key=api_key)
 
 
 def generate_prompt(
@@ -35,39 +39,40 @@ def generate_prompt(
     else:
         pruned_metadata_str = table_metadata_string
 
-    prompt = prompt.format(
-        user_question=question,
-        instructions=instructions,
-        table_metadata_string=pruned_metadata_str,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-    )
-    return prompt
+    messages = [
+        ChatMessage(
+            role="system",
+            content="Your task is to convert a text question to a SQL query that runs on Postgres, given a database schema. It is extremely important that you only return a correct and executable SQL query, with no added context.",
+        ),
+        ChatMessage(
+            role="user",
+            content=f"""Generate a SQL query that answers the question `{question}`. This query will run on a PostgreSQL database whose schema is represented in this string:
+{pruned_metadata_str}
+""",
+        ),
+    ]
+
+    return messages
 
 
-def process_row(row, api_url, num_beams):
+def process_row(row, model):
     start_time = time()
-    r = requests.post(
-        api_url,
-        json={
-            "prompt": row["prompt"],
-            "n": 1,
-            "use_beam_search": num_beams > 1,
-            "best_of": num_beams,
-            "temperature": 0,
-            "stop": [";", "```"],
-            "max_tokens": 600,
-        },
+    chat_response = client.chat(
+        model=model,
+        messages=row["prompt"],
+        temperature=0,
+        max_tokens=600,
     )
     end_time = time()
-    if "[SQL]" not in row["prompt"]:
-        generated_query = (
-            r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip()
-            + ";"
-        )
-    else:
-        generated_query = r.json()["text"][0].split("[SQL]\n")[1]
+    generated_query = chat_response.choices[0].message.content
 
+    # replace all backslashes with empty string
+    generated_query = generated_query.replace("\\", "")
+
+    generated_query = generated_query.split(";")[0].split("```sql")[-1].strip()
+    generated_query = [i for i in generated_query.split("```") if i.strip() != ""][
+        0
+    ] + ";"
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     golden_query = row["query"]
@@ -97,16 +102,15 @@ def process_row(row, api_url, num_beams):
     return row
 
 
-def run_api_eval(args):
+def run_mistral_eval(args):
     # get params from args
     questions_file = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
-    api_url = args.api_url
+    model = args.model
     output_file_list = args.output_file
     k_shot = args.k_shot
-    num_beams = args.num_beams
     max_workers = args.parallel_threads
     db_type = args.db_type
 
@@ -149,7 +153,7 @@ def run_api_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(executor.submit(process_row, row, api_url, num_beams))
+                futures.append(executor.submit(process_row, row, model))
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:
@@ -184,7 +188,7 @@ def run_api_eval(args):
             upload_results(
                 results=results,
                 url=args.upload_url,
-                runner_type="api_runner",
+                runner_type="mistral_runner",
                 prompt=prompt,
                 args=args,
             )
