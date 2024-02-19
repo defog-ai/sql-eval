@@ -132,7 +132,7 @@ def run_llama_cpp_eval(args):
 
         output_df = pd.DataFrame(output_rows)
         del output_df["prompt"]
-        print(output_df.groupby("query_category")[["exact_match", "correct"]].mean())
+        print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
         # get directory of output_file and create if not exist
         output_dir = os.path.dirname(output_file)

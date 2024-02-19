@@ -188,7 +188,7 @@ python main.py \
   -g api \
   -b 1 \
   -f prompts/prompt.md \
-  --url localhost:8000/generate \
+  --api_url "http://localhost:8000/generate" \
   -p 5 \
   -n 10
 ```
@@ -252,6 +252,7 @@ python -W ignore main.py \
 ```
 
 ### Gemini
+
 ```bash
 python -W ignore main.py \
   -db postgres \
@@ -261,6 +262,18 @@ python -W ignore main.py \
   -m gemini-pro \
   -p 1 \
   -n 5
+```
+
+### Mistral
+```bash
+python -W ignore main.py \
+  -db postgres \
+  -o "results/results.csv" \
+  -g mistral \
+  -f "prompts/prompt.md" \
+  -m mistral-medium \
+  -p 5 \
+  -n 10
 ```
 
 ### CLI Flags
