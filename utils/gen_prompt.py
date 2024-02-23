@@ -32,5 +32,4 @@ def generate_prompt(
         prev_invalid_sql=prev_invalid_sql,
         prev_error_msg=prev_error_msg,
     )
-    print(prompt)
     return prompt

@@ -57,7 +57,6 @@ def generate_prompt(
                 glossary=glossary,
                 prev_invalid_sql=prev_invalid_sql,
                 prev_error_msg=prev_error_msg,)
-    print(prompt)
     return prompt
 
 
