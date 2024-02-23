@@ -52,7 +52,7 @@ def prepare_questions_df(
             question_query_df["k_shot_prompt"] = question_query_df[
                 "k_shot_prompt"
             ].apply(
-                lambda x: f"\nAdhere closely to the following correct examples as references for answering the question:\n{x}"
+                lambda x: f"Adhere closely to the following correct examples as references for answering the question:\n{x}"
             )
 
     # get glossary if applicable
@@ -73,5 +73,21 @@ def prepare_questions_df(
         ].fillna("")
     else:
         question_query_df["table_metadata_string"] = ""
+
+    # get prev_invalid_sql if applicable
+    if "prev_invalid_sql" in question_query_df.columns:
+        question_query_df["prev_invalid_sql"] = question_query_df[
+            "prev_invalid_sql"
+        ].fillna("")
+    else:
+        question_query_df["prev_invalid_sql"] = ""
+
+    # get prev_error_msg if applicable
+    if "prev_error_msg" in question_query_df.columns:
+        question_query_df["prev_error_msg"] = question_query_df[
+            "prev_error_msg"
+        ].fillna("")
+    else:
+        question_query_df["prev_error_msg"] = ""
 
     return question_query_df

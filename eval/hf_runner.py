@@ -11,7 +11,7 @@ from transformers import (
     AutoModelForCausalLM,
     pipeline,
 )
-from utils.pruning import prune_metadata_str
+from utils.gen_prompt import generate_prompt
 from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
 from tqdm import tqdm
@@ -22,37 +22,6 @@ from peft import PeftModel, PeftConfig
 from utils.reporting import upload_results
 
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
-
-
-def generate_prompt(
-    prompt_file,
-    question,
-    db_name,
-    instructions="",
-    k_shot_prompt="",
-    glossary="",
-    table_metadata_string="",
-    public_data=True,
-):
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
-    question_instructions = question + " " + instructions
-
-    if table_metadata_string == "":
-        pruned_metadata_str = prune_metadata_str(
-            question_instructions, db_name, public_data
-        )
-    else:
-        pruned_metadata_str = table_metadata_string
-
-    prompt = prompt.format(
-        user_question=question,
-        instructions=instructions,
-        table_metadata_string=pruned_metadata_str,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-    )
-    return prompt
 
 
 def dynamic_num_beams(prompt: str, tokenizer, max_beams: int = 4) -> int:
@@ -162,6 +131,8 @@ def run_hf_eval(args):
                 "k_shot_prompt",
                 "glossary",
                 "table_metadata_string",
+                "prev_invalid_sql",
+                "prev_error_msg",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -172,6 +143,8 @@ def run_hf_eval(args):
                 row["k_shot_prompt"],
                 row["glossary"],
                 row["table_metadata_string"],
+                row["prev_invalid_sql"],
+                row["prev_error_msg"],
                 public_data,
             ),
             axis=1,

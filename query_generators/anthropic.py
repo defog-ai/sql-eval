@@ -79,6 +79,8 @@ class AnthropicQueryGenerator(QueryGenerator):
         k_shot_prompt: str,
         glossary: str,
         table_metadata_string: str,
+        prev_invalid_sql: str,
+        prev_error_msg: str,
     ) -> dict:
         start_time = time.time()
         self.err = ""
@@ -103,6 +105,8 @@ class AnthropicQueryGenerator(QueryGenerator):
             instructions=instructions,
             k_shot_prompt=k_shot_prompt,
             glossary=glossary,
+            prev_invalid_sql=prev_invalid_sql,
+            prev_error_msg=prev_error_msg,
         )
         function_to_run = self.get_completion
         package = prompt

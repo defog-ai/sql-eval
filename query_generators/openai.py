@@ -116,6 +116,8 @@ class OpenAIQueryGenerator(QueryGenerator):
         k_shot_prompt: str,
         glossary: str,
         table_metadata_string: str,
+        prev_invalid_sql: str,
+        prev_error_msg: str,
     ) -> dict:
         start_time = time.time()
         self.err = ""
@@ -146,6 +148,8 @@ class OpenAIQueryGenerator(QueryGenerator):
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
                 glossary=glossary,
+                prev_invalid_sql=prev_invalid_sql,
+                prev_error_msg=prev_error_msg,
             )
 
             messages = []
@@ -159,6 +163,8 @@ class OpenAIQueryGenerator(QueryGenerator):
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
                 glossary=glossary,
+                prev_invalid_sql=prev_invalid_sql,
+                prev_error_msg=prev_error_msg,
             )
         function_to_run = None
         package = None

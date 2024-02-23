@@ -22,6 +22,8 @@ class QueryGenerator:
         k_shot_prompt: str,
         glossary: str,
         table_metadata_string: str,
+        prev_invalid_sql: str,
+        prev_error_msg: str,
     ) -> dict:
         # generate a query given a question, instructions and k-shot prompt
         # any hard-coded logic, prompt-engineering, table-pruning, api calls etc

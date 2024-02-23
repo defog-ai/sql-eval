@@ -31,8 +31,13 @@ def generate_prompt(
     k_shot_prompt="",
     glossary="",
     table_metadata_string="",
+    prev_invalid_sql="",
+    prev_error_msg="",
     public_data=True,
 ):
+    if "gemini" not in prompt_file:
+        raise ValueError("Invalid prompt file. Please use prompt_gemini.md")
+
     with open(prompt_file, "r") as f:
         prompt = f.read()
     question_instructions = question + " " + instructions
@@ -44,19 +49,14 @@ def generate_prompt(
     else:
         pruned_metadata_str = table_metadata_string
 
-    prompt = """Generate a PostgreSQL query to answer the following question: `{user_question}`
-
-The query will run on a database with the following schema:
-{table_metadata_string}
-
-Please return only the SQL query in your response, nothing else."""
-
     prompt = prompt.format(
         user_question=question,
-        # instructions=instructions,
+        instructions=instructions,
         table_metadata_string=pruned_metadata_str,
-        # k_shot_prompt=k_shot_prompt,
-        # glossary=glossary,
+        k_shot_prompt=k_shot_prompt,
+        glossary=glossary,
+        prev_invalid_sql=prev_invalid_sql,
+        prev_error_msg=prev_error_msg,
     )
     return prompt
 
@@ -128,6 +128,8 @@ def run_gemini_eval(args):
                 "k_shot_prompt",
                 "glossary",
                 "table_metadata_string",
+                "prev_invalid_sql",
+                "prev_error_msg",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -138,6 +140,8 @@ def run_gemini_eval(args):
                 row["k_shot_prompt"],
                 row["glossary"],
                 row["table_metadata_string"],
+                row["prev_invalid_sql"],
+                row["prev_error_msg"],
                 public_data,
             ),
             axis=1,

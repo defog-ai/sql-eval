@@ -94,5 +94,5 @@ if __name__ == "__main__":
         run_mistral_eval(args)
     else:
         raise ValueError(
-            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api'"
+            f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api', 'llama_cpp', 'mlx', 'gemini', 'mistral'"
         )
