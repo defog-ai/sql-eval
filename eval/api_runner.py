@@ -5,44 +5,13 @@ from typing import Optional
 
 from eval.eval import compare_query_results
 import pandas as pd
-from utils.pruning import prune_metadata_str
+from utils.gen_prompt import generate_prompt
 from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
 from tqdm import tqdm
 from time import time
 import requests
 from utils.reporting import upload_results
-
-
-def generate_prompt(
-    prompt_file,
-    question,
-    db_name,
-    instructions="",
-    k_shot_prompt="",
-    glossary="",
-    table_metadata_string="",
-    public_data=True,
-):
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
-    question_instructions = question + " " + instructions
-
-    if table_metadata_string == "":
-        pruned_metadata_str = prune_metadata_str(
-            question_instructions, db_name, public_data
-        )
-    else:
-        pruned_metadata_str = table_metadata_string
-
-    prompt = prompt.format(
-        user_question=question,
-        instructions=instructions,
-        table_metadata_string=pruned_metadata_str,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-    )
-    return prompt
 
 
 def process_row(row, api_url, num_beams):
@@ -66,7 +35,11 @@ def process_row(row, api_url, num_beams):
             + ";"
         )
     else:
-        generated_query = r.json()["text"][0].split("[SQL]\n")[1]
+        generated_query = r.json()["text"][0]
+        if "[SQL]" in generated_query:
+            generated_query = generated_query.split("[SQL]")[1].strip()
+        else:
+            generated_query = generated_query.strip()
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
@@ -127,6 +100,8 @@ def run_api_eval(args):
                 "k_shot_prompt",
                 "glossary",
                 "table_metadata_string",
+                "prev_invalid_sql",
+                "prev_error_msg",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -137,6 +112,8 @@ def run_api_eval(args):
                 row["k_shot_prompt"],
                 row["glossary"],
                 row["table_metadata_string"],
+                row["prev_invalid_sql"],
+                row["prev_error_msg"],
                 public_data,
             ),
             axis=1,
