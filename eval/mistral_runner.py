@@ -26,12 +26,21 @@ def generate_prompt(
     k_shot_prompt="",
     glossary="",
     table_metadata_string="",
+    prev_invalid_sql="",
+    prev_error_msg="",
     public_data=True,
 ):
     with open(prompt_file, "r") as f:
         prompt = f.read()
-    question_instructions = question + " " + instructions
 
+    # Check that System and User prompts are in the prompt file
+    if "System:" not in prompt or "User:" not in prompt:
+        raise ValueError("Invalid prompt file. Please use prompt_mistral.md")
+    sys_prompt = prompt.split("System:")[1].split("User:")[0].strip()
+    user_prompt = prompt.split("User:")[1].strip()
+
+    question_instructions = question + " " + instructions
+    
     if table_metadata_string == "":
         pruned_metadata_str = prune_metadata_str(
             question_instructions, db_name, public_data
@@ -39,19 +48,24 @@ def generate_prompt(
     else:
         pruned_metadata_str = table_metadata_string
 
+    user_prompt = user_prompt.format(
+                user_question=question,
+                instructions=instructions,
+                table_metadata_string=pruned_metadata_str,
+                k_shot_prompt=k_shot_prompt,
+                glossary=glossary,
+                prev_invalid_sql=prev_invalid_sql,
+                prev_error_msg=prev_error_msg,)
     messages = [
         ChatMessage(
             role="system",
-            content="Your task is to convert a text question to a SQL query that runs on Postgres, given a database schema. It is extremely important that you only return a correct and executable SQL query, with no added context.",
+            content=sys_prompt,
         ),
         ChatMessage(
             role="user",
-            content=f"""Generate a SQL query that answers the question `{question}`. This query will run on a PostgreSQL database whose schema is represented in this string:
-{pruned_metadata_str}
-""",
-        ),
+            content=user_prompt,
+        )
     ]
-
     return messages
 
 
@@ -131,6 +145,8 @@ def run_mistral_eval(args):
                 "k_shot_prompt",
                 "glossary",
                 "table_metadata_string",
+                "prev_invalid_sql",
+                "prev_error_msg",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -141,6 +157,8 @@ def run_mistral_eval(args):
                 row["k_shot_prompt"],
                 row["glossary"],
                 row["table_metadata_string"],
+                row["prev_invalid_sql"],
+                row["prev_error_msg"],
                 public_data,
             ),
             axis=1,
