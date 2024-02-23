@@ -73,19 +73,21 @@ def prepare_questions_df(
         ].fillna("")
     else:
         question_query_df["table_metadata_string"] = ""
-    
+
     # get prev_invalid_sql if applicable
     if "prev_invalid_sql" in question_query_df.columns:
-        question_query_df["prev_invalid_sql"] = question_query_df["prev_invalid_sql"].fillna("")
+        question_query_df["prev_invalid_sql"] = question_query_df[
+            "prev_invalid_sql"
+        ].fillna("")
     else:
         question_query_df["prev_invalid_sql"] = ""
-    
+
     # get prev_error_msg if applicable
     if "prev_error_msg" in question_query_df.columns:
-        question_query_df["prev_error_msg"] = question_query_df["prev_error_msg"].fillna("")
+        question_query_df["prev_error_msg"] = question_query_df[
+            "prev_error_msg"
+        ].fillna("")
     else:
         question_query_df["prev_error_msg"] = ""
 
     return question_query_df
-
-

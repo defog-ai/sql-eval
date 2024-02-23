@@ -37,7 +37,7 @@ def generate_prompt(
 ):
     if "gemini" not in prompt_file:
         raise ValueError("Invalid prompt file. Please use prompt_gemini.md")
-    
+
     with open(prompt_file, "r") as f:
         prompt = f.read()
     question_instructions = question + " " + instructions
@@ -50,13 +50,14 @@ def generate_prompt(
         pruned_metadata_str = table_metadata_string
 
     prompt = prompt.format(
-                user_question=question,
-                instructions=instructions,
-                table_metadata_string=pruned_metadata_str,
-                k_shot_prompt=k_shot_prompt,
-                glossary=glossary,
-                prev_invalid_sql=prev_invalid_sql,
-                prev_error_msg=prev_error_msg,)
+        user_question=question,
+        instructions=instructions,
+        table_metadata_string=pruned_metadata_str,
+        k_shot_prompt=k_shot_prompt,
+        glossary=glossary,
+        prev_invalid_sql=prev_invalid_sql,
+        prev_error_msg=prev_error_msg,
+    )
     return prompt
 
 

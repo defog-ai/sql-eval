@@ -82,7 +82,16 @@ def run_llama_cpp_eval(args):
     for prompt_file, output_file in zip(prompt_file_list, output_file_list):
         # create a prompt for each question
         df["prompt"] = df[
-            ["question", "db_name", "instructions", "k_shot_prompt", "glossary", "table_metadata_string", "prev_invalid_sql", "prev_error_msg"]
+            [
+                "question",
+                "db_name",
+                "instructions",
+                "k_shot_prompt",
+                "glossary",
+                "table_metadata_string",
+                "prev_invalid_sql",
+                "prev_error_msg",
+            ]
         ].apply(
             lambda row: generate_prompt(
                 prompt_file,

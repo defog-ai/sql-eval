@@ -1,5 +1,6 @@
 from utils.pruning import prune_metadata_str
 
+
 def generate_prompt(
     prompt_file,
     question,

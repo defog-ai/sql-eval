@@ -40,7 +40,7 @@ def generate_prompt(
     user_prompt = prompt.split("User:")[1].strip()
 
     question_instructions = question + " " + instructions
-    
+
     if table_metadata_string == "":
         pruned_metadata_str = prune_metadata_str(
             question_instructions, db_name, public_data
@@ -49,13 +49,14 @@ def generate_prompt(
         pruned_metadata_str = table_metadata_string
 
     user_prompt = user_prompt.format(
-                user_question=question,
-                instructions=instructions,
-                table_metadata_string=pruned_metadata_str,
-                k_shot_prompt=k_shot_prompt,
-                glossary=glossary,
-                prev_invalid_sql=prev_invalid_sql,
-                prev_error_msg=prev_error_msg,)
+        user_question=question,
+        instructions=instructions,
+        table_metadata_string=pruned_metadata_str,
+        k_shot_prompt=k_shot_prompt,
+        glossary=glossary,
+        prev_invalid_sql=prev_invalid_sql,
+        prev_error_msg=prev_error_msg,
+    )
     messages = [
         ChatMessage(
             role="system",
@@ -64,7 +65,7 @@ def generate_prompt(
         ChatMessage(
             role="user",
             content=user_prompt,
-        )
+        ),
     ]
     return messages
 
