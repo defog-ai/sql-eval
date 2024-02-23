@@ -154,7 +154,7 @@ python -W ignore main.py \
   -o results/results.csv \
   -g hf \
   -f prompts/prompt.md \
-  -m defog/sqlcoder2 \
+  -m defog/sqlcoder-7b-2 \
   -n 10
 ```
 We also support loading a peft adapter here as well via the `-a` flag. Note that the loading of the adapter with the model will take slightly longer than usual.
@@ -168,7 +168,7 @@ python -W ignore main.py \
   -o "results/results.csv" \
   -g vllm \
   -f "prompts/prompt.md" \
-  -m defog/sqlcoder2
+  -m defog/sqlcoder-7b-2
 ```
 
 Optionally, if you're running evals on a model that is quantized with AWQ, add the `-qz` or `--quantized` parameter. Only applicable for the vllm runner.
@@ -177,7 +177,7 @@ If running with different settings, you can setup an api server to avoid reloadi
 ```bash
 # to set up a vllm server
 python -m vllm.entrypoints.api_server \
-    --model defog/sqlcoder-70b-alpha \
+    --model defog/sqlcoder-7b-2 \
     --tensor-parallel-size 4 \
     --dtype float16
 
