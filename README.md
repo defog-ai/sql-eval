@@ -252,7 +252,7 @@ python -W ignore main.py \
 ```
 
 ### Gemini
-Before running this, you must install these packages with `pip install vertexai google-cloud-aiplatform`.
+Before running this, you must create an account with [Google AI](https://ai.google.dev/) and set your credentials with `export GOOGLE_APPLICATION_CREDENTIALS=</path/to/service_account.json>`. Then, install these packages with `pip install vertexai google-cloud-aiplatform`.
 
 ```bash
 python -W ignore main.py \
@@ -266,6 +266,8 @@ python -W ignore main.py \
 ```
 
 ### Mistral
+Before running this, you must create an account with [Mistral](https://mistral.ai/) and obtain an API key and store it with `export MISTRAL_API_KEY=<your_api_key>`. Then, install `mistralai` with `pip install mistralai`.
+
 ```bash
 python -W ignore main.py \
   -db postgres \
