@@ -252,13 +252,14 @@ python -W ignore main.py \
 ```
 
 ### Gemini
+Before running this, you must install these packages with `pip install vertexai google-cloud-aiplatform`.
 
 ```bash
 python -W ignore main.py \
   -db postgres \
   -o "results/results.csv" \
   -g gemini \
-  -f "prompts/prompt.md" \
+  -f "prompts/prompt_gemini.md" \
   -m gemini-pro \
   -p 1 \
   -n 5
@@ -270,7 +271,7 @@ python -W ignore main.py \
   -db postgres \
   -o "results/results.csv" \
   -g mistral \
-  -f "prompts/prompt.md" \
+  -f "prompts/prompt_mistral.md" \
   -m mistral-medium \
   -p 5 \
   -n 10
