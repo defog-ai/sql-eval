@@ -119,6 +119,7 @@ def get_md_emb(
                 column_tuple = (column_name, column_type, column_description)
                 if column_tuple not in topk_table_columns[table_name]:
                     topk_table_columns[table_name].append(column_tuple)
+                table_column_names.add(table_column_name)
     topk_tables = sorted(list(topk_table_columns.keys()))
 
     # 3) get table pairs that can be joined
@@ -158,7 +159,7 @@ def get_md_emb(
     md_str = format_topk_sql(topk_table_columns)
 
     if len(join_list) > 0:
-        md_str += "```\n\nAdditionally, the following are tables/column pairs that can be joined in this database:\n```\n"
+        md_str += "\nHere is a list of joinable columns:\n"
         md_str += "\n".join(join_list)
         md_str += "\n```"
     return md_str
