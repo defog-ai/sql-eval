@@ -31,14 +31,15 @@ def test_metadata():
     column_join = {("airport", "country"): [("airport.country_id", "country.id")]}
     return column_emb, column_csv, column_ner, column_join
 
+
 @pytest.fixture
 def test_metadata_diff_coldesc():
     column_csv = [
-        "country.name,text,country name", 
+        "country.name,text,country name",
         "country.capital,text,country capital",
         "country.id,integer,unique id for country, not iso code",
         "airport.country_id,integer,unique id for country where airport is located in",
-        "airport.country_name,text,name of the country where the airport is located in", # added
+        "airport.country_name,text,name of the country where the airport is located in",  # added
         "airport.airport_name,text,name of airport",
         "flight.pilot_name,text,name of the pilot",
         "flight.airport_name,text,name of the airport",
@@ -47,19 +48,24 @@ def test_metadata_diff_coldesc():
     column_emb = encoder.encode(column_csv, convert_to_tensor=True)
     column_ner = {
         "GPE": [
-            "country.name,text,country name", 
+            "country.name,text,country name",
             "country.capital,text,country capital",
             "airport.country_name,text,name of the country where the airport is located in",
         ],
         "ORG": [
             "country.name,text,country name",
-            "airport.country_name,text,name of the country where the airport is located in", # added
+            "airport.country_name,text,name of the country where the airport is located in",  # added
             "airport.airport_name,text,name of airport",
             "flight.airport_name,text,name of the airport",
         ],
         "PERSON": ["flight.pilot_name,text,name of the pilot"],
     }
-    column_join = {("airport", "country"): [("airport.country_id", "country.id"), ("airport.country_name", "country.name")]}
+    column_join = {
+        ("airport", "country"): [
+            ("airport.country_id", "country.id"),
+            ("airport.country_name", "country.name"),
+        ]
+    }
     return column_emb, column_csv, column_ner, column_join
 
 
@@ -122,6 +128,7 @@ def test_get_md_emb_sql_emb_empty(test_metadata):
     )
     assert result == ""
 
+
 def test_get_md_emb_coldesc(test_metadata_diff_coldesc):
     column_emb, column_csv, column_ner, column_join = test_metadata_diff_coldesc
     question = "How many flights start from Los Angeles Airport (LAX)?"
@@ -141,4 +148,9 @@ def test_get_md_emb_coldesc(test_metadata_diff_coldesc):
     )
     print(f"result\n{result}")
     # count "name text" in the result
-    assert result.count("country_name text, --name of the country where the airport is located in") == 1
+    assert (
+        result.count(
+            "country_name text, --name of the country where the airport is located in"
+        )
+        == 1
+    )
