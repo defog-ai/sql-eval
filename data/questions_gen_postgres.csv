@@ -300,7 +300,7 @@ EXAMPLE QUESTION 2: Which course has the highest number of enrolled students, an
 EXAMPLE QUERY 2: SELECT course.name, course.num_enrolled FROM course ORDER BY course.num_enrolled DESC NULLS LAST LIMIT 1
 
 "
-"What is the total number of credits earned by each student, ordered from highest to lowest? Give the student id and the total number of credits.","SELECT {student.student_id, student.lastname, student.firstname}, student.total_credit FROM student ORDER BY student.total_credit DESC NULLS LAST;",advising,order_by,"EXAMPLE QUESTION 1: What is the total number of students enrolled in each course, ordered from highest to lowest?
+"What is the total number of credits earned by each student, ordered from highest to lowest? Give the student id and the total number of credits.","SELECT student.student_id, student.total_credit FROM student ORDER BY student.total_credit DESC NULLS LAST;",advising,order_by,"EXAMPLE QUESTION 1: What is the total number of students enrolled in each course, ordered from highest to lowest?
 EXAMPLE QUERY 1: SELECT course.course_id, SUM(course.num_enrolled) AS total_students FROM course GROUP BY course.course_id ORDER BY total_students DESC NULLS LAST
 
 EXAMPLE QUESTION 2: What is the total number of students who participated actively for each course id, ordered from highest to lowest participants?
@@ -874,7 +874,7 @@ EXAMPLE QUESTION 2: Which city has the highest-rated restaurant?
 EXAMPLE QUERY 2: SELECT DISTINCT restaurant.city_name FROM restaurant WHERE rating=(SELECT MAX(rating) FROM restaurant)
 
 "
-What is the ratio of restaurants with rating > 4.5 to the total number of restaurants in the database.,SELECT COUNT(*)::float / (SELECT COUNT(*) FROM restaurant) AS rating_ratio FROM restaurant WHERE rating > 4.5;,restaurants,ratio,"EXAMPLE QUESTION 1: What is the ratio of restaurants with a rating above 4 to restaurants with a rating below 4 in New York?
+What is the ratio of restaurants with rating > 4.5 to the total number of restaurants in the database.,"SELECT COUNT(*)::float / NULLIF((SELECT COUNT(*) FROM restaurant), 0) AS rating_ratio FROM restaurant WHERE rating > 4.5;",restaurants,ratio,"EXAMPLE QUESTION 1: What is the ratio of restaurants with a rating above 4 to restaurants with a rating below 4 in New York?
 EXAMPLE QUERY 1: SELECT CAST(COUNT(CASE WHEN rating > 4 THEN 1 END) AS FLOAT) / NULLIF(COUNT(CASE WHEN rating < 4 THEN 1 END), 0) AS ratio FROM restaurant WHERE city_name ILIKE 'New York'
 
 EXAMPLE QUESTION 2: What is the ratio of restaurants with a rating above 4.0 to restaurants with a rating below 4.0 overall?
@@ -885,14 +885,14 @@ What is the ratio of restaurants with a rating above 4.0 to restaurants with a r
 EXAMPLE QUERY 1: SELECT CAST(COUNT(CASE WHEN rating > 4 THEN 1 END) AS FLOAT) / NULLIF(COUNT(CASE WHEN rating < 4 THEN 1 END), 0) AS ratio FROM restaurant WHERE city_name ILIKE 'New York'
 
 EXAMPLE QUESTION 2: What is the ratio of restaurants with rating > 4.5 to the total number of restaurants in the database.
-EXAMPLE QUERY 2: SELECT COUNT(*)::float / (SELECT COUNT(*) FROM restaurant) AS rating_ratio FROM restaurant WHERE rating > 4.5
+EXAMPLE QUERY 2: SELECT COUNT(*)::float / NULLIF((SELECT COUNT(*) FROM restaurant), 0) AS rating_ratio FROM restaurant WHERE rating > 4.5
 
 "
 What is the ratio of restaurants with a rating above 4 to restaurants with a rating below 4 in New York?,"SELECT CAST(COUNT(CASE WHEN rating > 4 THEN 1 END) AS FLOAT) / NULLIF(COUNT(CASE WHEN rating < 4 THEN 1 END), 0) AS ratio FROM restaurant WHERE city_name ILIKE 'New York';",restaurants,ratio,"EXAMPLE QUESTION 1: What is the ratio of restaurants with a rating above 4.0 to restaurants with a rating below 4.0 overall?
 EXAMPLE QUERY 1: SELECT CAST(SUM(CASE WHEN restaurant.rating > 4.0 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN restaurant.rating < 4.0 THEN 1 ELSE 0 END), 0) AS ratio FROM restaurant
 
 EXAMPLE QUESTION 2: What is the ratio of restaurants with rating > 4.5 to the total number of restaurants in the database.
-EXAMPLE QUERY 2: SELECT COUNT(*)::float / (SELECT COUNT(*) FROM restaurant) AS rating_ratio FROM restaurant WHERE rating > 4.5
+EXAMPLE QUERY 2: SELECT COUNT(*)::float / NULLIF((SELECT COUNT(*) FROM restaurant), 0) AS rating_ratio FROM restaurant WHERE rating > 4.5
 
 "
 What is the ratio of restaurants serving vegan food to restaurants serving non-vegan food in San Francisco?,"SELECT CAST(SUM(CASE WHEN LOWER(restaurant.food_type) LIKE '%vegan%' THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN LOWER(restaurant.food_type) NOT LIKE '%vegan%' THEN 1 ELSE 0 END), 0) AS ratio FROM restaurant WHERE LOWER(restaurant.city_name) ILIKE '%san francisco%';",restaurants,ratio,"EXAMPLE QUESTION 1: What is the ratio of restaurants with a rating above 4 to restaurants with a rating below 4 in New York?
@@ -951,7 +951,7 @@ EXAMPLE QUESTION 2: What are the names of the top 3 restaurants with the highest
 EXAMPLE QUERY 2: SELECT restaurant.name FROM restaurant ORDER BY restaurant.rating DESC NULLS LAST LIMIT 3
 
 "
-What's the name and rating of all the restaurants that have a rating greater than 4 and are located in the city of New York?,"SELECT {restaurant.name, restaurant.id}, restaurant.rating FROM restaurant WHERE restaurant.rating > 4 AND restaurant.city_name ILIKE '%New York%';",restaurants,where,"EXAMPLE QUESTION 1: What are the names of the restaurants in Los Angeles that have a rating higher than 4?
+What's the name and rating of all the restaurants that have a rating greater than 4 and are located in the city of New York?,"SELECT restaurant.name, restaurant.rating FROM restaurant WHERE restaurant.rating > 4 AND restaurant.city_name ILIKE '%New York%';",restaurants,where,"EXAMPLE QUESTION 1: What are the names of the restaurants in Los Angeles that have a rating higher than 4?
 EXAMPLE QUERY 1: SELECT DISTINCT restaurant.name FROM restaurant WHERE restaurant.city_name ILIKE '%Los Angeles%' AND restaurant.rating > 4 ORDER BY restaurant.name NULLS LAST
 
 EXAMPLE QUESTION 2: What is the ratio of restaurants with a rating above 4 to restaurants with a rating below 4 in New York?
