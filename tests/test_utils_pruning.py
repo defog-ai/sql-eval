@@ -31,6 +31,37 @@ def test_metadata():
     column_join = {("airport", "country"): [("airport.country_id", "country.id")]}
     return column_emb, column_csv, column_ner, column_join
 
+@pytest.fixture
+def test_metadata_diff_coldesc():
+    column_csv = [
+        "country.name,text,country name", 
+        "country.capital,text,country capital",
+        "country.id,integer,unique id for country, not iso code",
+        "airport.country_id,integer,unique id for country where airport is located in",
+        "airport.country_name,text,name of the country where the airport is located in", # added
+        "airport.airport_name,text,name of airport",
+        "flight.pilot_name,text,name of the pilot",
+        "flight.airport_name,text,name of the airport",
+        "flight.flight_code,text,flight code",
+    ]
+    column_emb = encoder.encode(column_csv, convert_to_tensor=True)
+    column_ner = {
+        "GPE": [
+            "country.name,text,country name", 
+            "country.capital,text,country capital",
+            "airport.country_name,text,name of the country where the airport is located in",
+        ],
+        "ORG": [
+            "country.name,text,country name",
+            "airport.country_name,text,name of the country where the airport is located in", # added
+            "airport.airport_name,text,name of airport",
+            "flight.airport_name,text,name of the airport",
+        ],
+        "PERSON": ["flight.pilot_name,text,name of the pilot"],
+    }
+    column_join = {("airport", "country"): [("airport.country_id", "country.id"), ("airport.country_name", "country.name")]}
+    return column_emb, column_csv, column_ner, column_join
+
 
 # test embedding results + ner + join columns for sql
 def test_get_md_emb(test_metadata):
@@ -66,10 +97,8 @@ CREATE TABLE country (
   capital text, --country capital
   id integer, --unique id for country, not iso code
 );
-```
 
-Additionally, the following are tables/column pairs that can be joined in this database:
-```
+Here is a list of joinable columns:
 airport.country_id can be joined with country.id
 ```"""
     assert result == expected
@@ -92,3 +121,24 @@ def test_get_md_emb_sql_emb_empty(test_metadata):
         threshold,
     )
     assert result == ""
+
+def test_get_md_emb_coldesc(test_metadata_diff_coldesc):
+    column_emb, column_csv, column_ner, column_join = test_metadata_diff_coldesc
+    question = "How many flights start from Los Angeles Airport (LAX)?"
+    assert get_entity_types(question) == {"GPE", "ORG"}
+    k = 3
+    threshold = 0.0
+
+    # Call the function and get the result
+    result = get_md_emb(
+        question,
+        column_emb,
+        column_csv,
+        column_ner,
+        column_join,
+        k,
+        threshold,
+    )
+    print(f"result\n{result}")
+    # count "name text" in the result
+    assert result.count("country_name text, --name of the country where the airport is located in") == 1
