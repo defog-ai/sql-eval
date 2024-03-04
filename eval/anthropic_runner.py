@@ -70,6 +70,8 @@ def run_anthropic_eval(args):
                 row = input_rows[i]
                 result_dict = f.result()
                 query_gen = result_dict["query"]
+                print("Query for")
+                print(query_gen)
                 reason = result_dict["reason"]
                 err = result_dict["err"]
                 # save custom metrics
