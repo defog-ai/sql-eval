@@ -141,7 +141,8 @@ python main.py \
   -o results/claude-2.csv \
   -g anthropic \
   -f prompts/prompt_anthropic.md \
-  -m claude-2
+  -m claude-3-opus-20240229 \
+  -p 5
 ```
 
 ### Hugging Face
