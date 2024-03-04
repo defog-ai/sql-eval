@@ -49,13 +49,15 @@ class AnthropicQueryGenerator(QueryGenerator):
         generated_text = ""
         sys_prompt = prompt.split("### Input:")[0]
         user_prompt = prompt.split("### Input:")[1].split("### Response:")[0]
-        messages = [{"role": "user", "content": [{"type": "text", "text": user_prompt}]}]
+        messages = [
+            {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
+        ]
         try:
             completion = anthropic.messages.create(
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=messages
+                messages=messages,
             )
             generated_text = completion.content[0].text
         except Exception as e:
