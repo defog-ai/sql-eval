@@ -1,19 +1,16 @@
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+import os
+from time import time
+
+import pandas as pd
+from tqdm import tqdm
+from vertexai.preview.generative_models import GenerativeModel
 
 from eval.eval import compare_query_results
-import pandas as pd
+from utils.creds import db_creds_all
 from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
-from utils.creds import db_creds_all
-from tqdm import tqdm
-from time import time
-import requests
 from utils.reporting import upload_results
-
-import vertexai
-from vertexai.preview.generative_models import GenerativeModel, Part
 
 
 def multiturn_generate_content(model_name="gemini-pro"):
@@ -34,6 +31,8 @@ def generate_prompt(
     prev_invalid_sql="",
     prev_error_msg="",
     public_data=True,
+    num_columns_to_keep=20,
+    shuffle=True,
 ):
     if "gemini" not in prompt_file:
         raise ValueError("Invalid prompt file. Please use prompt_gemini.md")
@@ -44,7 +43,7 @@ def generate_prompt(
 
     if table_metadata_string == "":
         pruned_metadata_str = prune_metadata_str(
-            question_instructions, db_name, public_data
+            question_instructions, db_name, public_data, num_columns_to_keep, shuffle
         )
     else:
         pruned_metadata_str = table_metadata_string
@@ -143,6 +142,8 @@ def run_gemini_eval(args):
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
                 public_data,
+                args.num_columns,
+                args.shuffle_metadata,
             ),
             axis=1,
         )
@@ -151,6 +152,7 @@ def run_gemini_eval(args):
         total_correct = 0
         output_rows = []
 
+        print(f"Running evaluation using {model_name}...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):

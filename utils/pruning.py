@@ -1,5 +1,8 @@
+import logging
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 from sentence_transformers import SentenceTransformer
 import spacy
 import torch
@@ -55,13 +58,23 @@ def get_entity_types(sentence, verbose: bool = False):
 
 def format_topk_sql(
     topk_table_columns: Dict[str, List[Tuple[str, str, str]]],
+    shuffle: bool,
 ) -> str:
     if len(topk_table_columns) == 0:
         return ""
     md_str = "```\n"
-    for table_name in topk_table_columns:
+    # shuffle the keys in topk_table_columns
+    table_names = list(topk_table_columns.keys())
+    if shuffle:
+        np.random.seed(0)
+        np.random.shuffle(table_names)
+    for table_name in table_names:
         columns_str = ""
-        for column_tuple in topk_table_columns[table_name]:
+        columns = topk_table_columns[table_name]
+        if shuffle:
+            np.random.seed(0)
+            np.random.shuffle(columns)
+        for column_tuple in columns:
             if len(column_tuple) > 2:
                 columns_str += (
                     f"\n  {column_tuple[0]} {column_tuple[1]}, --{column_tuple[2]}"
@@ -69,6 +82,7 @@ def format_topk_sql(
             else:
                 columns_str += f"\n  {column_tuple[0]} {column_tuple[1]}, "
         md_str += f"CREATE TABLE {table_name} ({columns_str}\n);\n"
+    md_str += "```\n"
     return md_str
 
 
@@ -78,7 +92,8 @@ def get_md_emb(
     column_info_csv: List[str],
     column_ner: Dict[str, List[str]],
     column_join: Dict[str, dict],
-    k: int = 20,
+    k: int,
+    shuffle: bool,
     threshold: float = 0.2,
 ) -> str:
     """
@@ -90,7 +105,7 @@ def get_md_emb(
     Steps are:
     1. Get top k columns from question to `column_emb` using `knn` and add the corresponding column info to topk_table_columns.
     2. Get entity types from question. If entity type is in `column_ner`, add the corresponding list of column info to topk_table_columns.
-    3. Generate the metadata string using the column info so far.
+    3. Generate the metadata string using the column info so far, shuffling the order of the tables and the order of columns within the tables if `shuffle` is True.
     4. Get joinable columns between tables in topk_table_columns and add to final metadata string.
     """
     # 1) get top k columns
@@ -156,16 +171,18 @@ def get_md_emb(
                         join_list.append(join_str)
 
     # 4) format metadata string
-    md_str = format_topk_sql(topk_table_columns)
+    md_str = format_topk_sql(topk_table_columns, shuffle)
 
     if len(join_list) > 0:
         md_str += "\nHere is a list of joinable columns:\n"
         md_str += "\n".join(join_list)
-        md_str += "\n```"
+        md_str += "\n"
     return md_str
 
 
-def prune_metadata_str(question, db_name, public_data=True):
+def prune_metadata_str(
+    question, db_name, public_data: bool, columns_to_keep: int, shuffle: bool
+):
     # current file dir
     root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     if public_data:
@@ -185,6 +202,8 @@ def prune_metadata_str(question, db_name, public_data=True):
             csv_descriptions[db_name],
             sup.columns_ner[db_name],
             sup.columns_join[db_name],
+            columns_to_keep,
+            shuffle,
         )
     except KeyError:
         if public_data:

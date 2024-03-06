@@ -115,6 +115,8 @@ def run_api_eval(args):
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
                 public_data,
+                args.num_columns,
+                args.shuffle_metadata,
             ),
             axis=1,
         )
