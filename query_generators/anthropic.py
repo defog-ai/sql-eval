@@ -47,16 +47,21 @@ class AnthropicQueryGenerator(QueryGenerator):
     ):
         """Get Anthropic chat completion for a given prompt and model"""
         generated_text = ""
+        sys_prompt = prompt.split("### Input:")[0]
+        user_prompt = prompt.split("### Input:")[1].split("### Response:")[0]
+        messages = [
+            {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
+        ]
         try:
-            completion = anthropic.completions.create(
+            completion = anthropic.messages.create(
                 model=model,
-                prompt=prompt,
-                max_tokens_to_sample=max_tokens,
+                max_tokens=max_tokens,
                 temperature=temperature,
-                stop_sequences=stop,
+                messages=messages,
             )
-            generated_text = completion.completion
+            generated_text = completion.content[0].text
         except Exception as e:
+            print(str(e))
             if self.verbose:
                 print(type(e), e)
         return generated_text
@@ -89,9 +94,6 @@ class AnthropicQueryGenerator(QueryGenerator):
 
         with open(self.prompt_file) as file:
             model_prompt = file.read()
-            # Check that Human and Assistant prompts are in the prompt file
-            if "Human:" not in model_prompt:
-                raise ValueError("Invalid prompt file. Please use prompt_anthropic.md")
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
             pruned_metadata_str = prune_metadata_str(
