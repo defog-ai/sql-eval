@@ -86,6 +86,8 @@ class AnthropicQueryGenerator(QueryGenerator):
         table_metadata_string: str,
         prev_invalid_sql: str,
         prev_error_msg: str,
+        columns_to_keep: int,
+        shuffle: bool,
     ) -> dict:
         start_time = time.time()
         self.err = ""
@@ -97,7 +99,11 @@ class AnthropicQueryGenerator(QueryGenerator):
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
             pruned_metadata_str = prune_metadata_str(
-                question_instructions, self.db_name, self.use_public_data
+                question_instructions,
+                self.db_name,
+                self.use_public_data,
+                columns_to_keep,
+                shuffle,
             )
         else:
             pruned_metadata_str = table_metadata_string

@@ -126,7 +126,7 @@ To test it out with just 10 questions (instead of all 200), parallelized across 
 ```bash
 python main.py \
   -db postgres \
-  -o results/my_query_generator.csv \
+  -o results/openai.csv \
   -g oa \
   -f prompts/prompt_openai.md \
   -m gpt-3.5-turbo-0613 \
@@ -138,7 +138,7 @@ To test out the full suite of questions for claude-2:
 ```bash
 python main.py \
   -db postgres \
-  -o results/claude-2.csv \
+  -o results/claude-3.csv \
   -g anthropic \
   -f prompts/prompt_anthropic.md \
   -m claude-3-opus-20240229 \
@@ -166,7 +166,7 @@ We also have a [vllm](https://blog.vllm.ai/) runner which uses the vLLM engine t
 ```bash
 python -W ignore main.py \
   -db postgres \
-  -o "results/results.csv" \
+  -o "results/vllm.csv" \
   -g vllm \
   -f "prompts/prompt.md" \
   -m defog/sqlcoder-7b-2
@@ -174,6 +174,7 @@ python -W ignore main.py \
 
 Optionally, if you're running evals on a model that is quantized with AWQ, add the `-qz` or `--quantized` parameter. Only applicable for the vllm runner.
 
+#### Running with an API Server
 If running with different settings, you can setup an api server to avoid reloading for each test setting and then run the tests subsequently. To setup the api server:
 ```bash
 # to set up a vllm server
@@ -182,10 +183,10 @@ python -m vllm.entrypoints.api_server \
     --tensor-parallel-size 4 \
     --dtype float16
 
-# to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p to higher values
+# to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p and b to higher values
 python main.py \
   -db postgres \
-  -o results/results.csv \
+  -o results/api.csv \
   -g api \
   -b 1 \
   -f prompts/prompt.md \
@@ -194,7 +195,7 @@ python main.py \
   -n 10
 ```
 
-### Multiple Prompts
+#### Multiple Prompts
 
 If you'd like to test out a few prompts in a single run (to save the few minutes spent loading the model into GPU at the start of each run), you can specify a list of prompt files in `--prompt_file` (e.g. `-f prompts/prompt-1.md prompts/prompt-2.md prompts/prompt-3.md`), as well as a corresponding list of output files in `--output_file` (e.g. `-o results/results-1.csv results/results-2.csv results/results-3.csv`). The number of prompts and output files must be the same. Here's a sample command:
 ```bash
@@ -207,20 +208,6 @@ python -W ignore main.py \
 ```
 While you can do the same for the other runners, the time savings are most significant when loading a large model locally, vs calling an always-on API.
 
-### API
-To test it out with just 10 questions (instead of all 200), parallelized across 3 calls:
-```bash
-mkdir results
-python main.py \
-  -db postgres \
-  -o results/results.csv \
-  -g api \
-  -b 5 \
-  -f prompts/prompt.md \
-  --api_url YOUR_API_URL \
-  -p 3 \
-  -n 10
-```
 
 ### Llama CPP
 To run the eval using Llama CPP, you can use the following code. Before running this, you must install `llama-cpp-python` with the following (on Apple Silicon)
@@ -232,7 +219,7 @@ Note that llama-cpp-python library does not currently have beam search, and henc
 ```bash
 python -W ignore main.py \
   -db postgres \
-  -o "results/results.csv" \
+  -o "results/llama_cpp.csv" \
   -g llama_cpp \
   -f "prompts/prompt.md" \
   -m path/to/model.gguf
@@ -246,7 +233,7 @@ Note that MLX does not currently have beam search, and hence will have lower qua
 ```bash
 python -W ignore main.py \
   -db postgres \
-  -o "results/results.csv" \
+  -o "results/mlx_sqlcoder-7b-2.csv" \
   -g mlx \
   -f "prompts/prompt.md" \
   -m mlx-community/defog-sqlcoder-7b-2
@@ -258,7 +245,7 @@ Before running this, you must create an account with [Google AI](https://ai.goog
 ```bash
 python -W ignore main.py \
   -db postgres \
-  -o "results/results.csv" \
+  -o "results/gemini_pro.csv" \
   -g gemini \
   -f "prompts/prompt_gemini.md" \
   -m gemini-pro \
@@ -280,28 +267,48 @@ python -W ignore main.py \
   -n 10
 ```
 
-### CLI Flags
+## CLI Flags
 You can use the following flags in the command line to change the configurations of your evaluation runs.
-| CLI Flags     | Description |
-|-------------|-------|
-|  -db, --db_type   |  Database type to run your queries on. Currently supported types are `postgres` and `snowflake`.   |
-|  -q, --questions_file   |  CSV file that contains the test questions and true queries. If this is not set, it will default to the relevant `questions_gen_<db_type>.csv` file. It may be helpful to always end your questions_file name with `_<db_type>.csv` to ensure compatibility between the queries and selected db_type.   |
-| -n, --num_questions  |  Use this to limit the total number of questions you want to test.  |
-|  -g, --model_type   |  Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, and `mlx` for mlx   |
-|  -m, --model   |  Model that will be tested and used to generate the queries. Currently defined options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. Options for Anthropic are `claude-2` and `claude-instant-1`. For Hugging Face models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).  |
-|  -a, --adapter   |  Path to the relevant adapter model you're using. Only available for the `hf_runner` |
-|  --api_url   |  The URL of the custom API you want to send the prompt to. Only used when model_type is `api` |
-|  -f, --prompt_file   |  Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.  |
-|  -k, --k_shot   |  Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.  |
-|  -d, --use_private_data  |  Use this to read from your own private data library.  |
-|  -o, --output_file   |  Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files |
-|  -b, --num_beams   |  Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner` and `api_runner`. |
-|  -qz, --quantized   |  Indicate whether the model is an AWQ quantized model. Only available for `vllm_runner`. |
-| -p, --parallel_threads  |  The default no. of parallel threads is 5. Decrease this to 1 for gpt-4 to avoid the rate limit error. Parallelization support is currently only defined for OpenAI models.  |
-| -t, --timeout_gen  |  No. of seconds before timeout occurs for query generation. The default is 30.0s. |
-| -u, --timeout_exec  |  No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.  |
-| -v, --verbose  |  Prints details in command line. |
-| --upload_url | (optional) the URL that you want to report the results to. The server that serves this URL must have functionality that is similar to the sample server in `utils/webserver.py` |
+### Data-related parameters
+
+| CLI Flags           | Description                                                                                                                                                                                                                                                |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -q, --questions_file | CSV file that contains the test questions and true queries. If this is not set, it will default to the relevant `questions_gen_<db_type>.csv` file. It may be helpful to always end your questions_file name with `_<db_type>.csv` to ensure compatibility between the queries and selected db_type. |
+| -n, --num_questions | Use this to limit the total number of questions you want to test.                                                                                                                                                                                           |
+| -db, --db_type       | Database type to run your queries on. Currently supported types are `postgres` and `snowflake`.                                                                                                                                                             |
+| -d, --use_private_data | Use this to read from your own private data library.                                                                                                                                                                                                        |
+
+### Model-related parameters
+
+| CLI Flags         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -g, --model_type  | Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, and `mlx` for mlx                                                                                                                                              |
+| -m, --model       | Model that will be tested and used to generate the queries. Some options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. Options for Anthropic include the latest claude-3 family of models (e.g. `claude-3-opus-20240229`). For Hugging Face, and VLLM models, simply use the path of your chosen model (e.g. `defog/sqlcoder`).                                                                                          |
+| -a, --adapter     | Path to the relevant adapter model you're using. Only available for the `hf_runner`.                                                                                                                                                                                                                                                                                                                                                         |
+| --api_url         | The URL of the custom API you want to send the prompt to. Only used when model_type is `api`.                                                                                                                                                                                                                                                                                                                                                |
+| -qz, --quantized | Indicate whether the model is an AWQ quantized model. Only available for `vllm_runner`.                              |
+
+### Inference-technique-related parameters
+
+| CLI Flags                | Description                                                                                                                                                                    |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -f, --prompt_file        | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.                                                                                               |
+| -b, --num_beams          | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`.                                                                                                 |
+| -c, --num_columns        | Number of columns.                                                                                                                                                             |
+| -s, --shuffle_metadata   | Shuffle metadata.                                                                                                                                                              |
+| -k, --k_shot             | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.                                                                                                    |
+
+### Execution-related parameters
+
+| CLI Flags                  | Description                                                                                                                                                                        |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -o, --output_file          | Output CSV file that will store your results. You need to pass the same number of output file paths as the number of prompt files.                                                                                                             |
+| -p, --parallel_threads     | No. of parallel workers available for generating and processing queries                                                                      |
+| -t, --timeout_gen          | No. of seconds before timeout occurs for query generation. The default is 30.0s.                                                                                                                                                                 |
+| -u, --timeout_exec         | No. of seconds before timeout occurs for query execution on the database. The default is 10.0s.                                                                                                                                                 |
+| -v, --verbose              | Prints details in command line.                                                                                                                                                     |
+| --upload_url               | (optional) the URL that you want to report the results to. The server that serves this URL must have functionality that is similar to the sample server in `utils/webserver.py`.                                                           |
+
 
 ## Checking the Results
 To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about. 

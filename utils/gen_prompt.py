@@ -12,6 +12,8 @@ def generate_prompt(
     prev_invalid_sql="",
     prev_error_msg="",
     public_data=True,
+    columns_to_keep=20,
+    shuffle=True,
 ):
     with open(prompt_file, "r") as f:
         prompt = f.read()
@@ -19,7 +21,7 @@ def generate_prompt(
 
     if table_metadata_string == "":
         pruned_metadata_str = prune_metadata_str(
-            question_instructions, db_name, public_data
+            question_instructions, db_name, public_data, columns_to_keep, shuffle
         )
     else:
         pruned_metadata_str = table_metadata_string

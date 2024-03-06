@@ -22,8 +22,6 @@ def run_anthropic_eval(args):
         args.questions_file, args.db_type, args.num_questions, args.k_shot
     )
     for prompt_file, output_file in zip(args.prompt_file, args.output_file):
-        qg_class = AnthropicQueryGenerator
-
         input_rows = question_query_df.to_dict("records")
         output_rows = []
         with ThreadPoolExecutor(args.parallel_threads) as executor:
@@ -34,7 +32,7 @@ def run_anthropic_eval(args):
                 db_name = row["db_name"]
                 db_creds = db_creds_all[row["db_type"]]
 
-                qg = qg_class(
+                qg = AnthropicQueryGenerator(
                     db_creds=copy.deepcopy(db_creds),
                     db_name=db_name,
                     model=args.model,
@@ -42,12 +40,6 @@ def run_anthropic_eval(args):
                     timeout=args.timeout_gen,
                     use_public_data=not args.use_private_data,
                     verbose=args.verbose,
-                    instructions=row["instructions"],
-                    k_shot_prompt=row["k_shot_prompt"],
-                    glossary=row["glossary"],
-                    table_metadata_string=row["table_metadata_string"],
-                    prev_invalid_sql=row["prev_invalid_sql"],
-                    prev_error_msg=row["prev_error_msg"],
                 )
 
                 generated_query_fut = executor.submit(
@@ -59,6 +51,8 @@ def run_anthropic_eval(args):
                     table_metadata_string=row["table_metadata_string"],
                     prev_invalid_sql=row["prev_invalid_sql"],
                     prev_error_msg=row["prev_error_msg"],
+                    columns_to_keep=args.num_columns,
+                    shuffle=args.shuffle_metadata,
                 )
                 futures.append(generated_query_fut)
 

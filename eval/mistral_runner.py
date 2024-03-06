@@ -1,16 +1,17 @@
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
+from time import time
 from typing import Optional
 
-from eval.eval import compare_query_results
-import pandas as pd
-from utils.pruning import prune_metadata_str
-from utils.questions import prepare_questions_df
-from utils.creds import db_creds_all
-from tqdm import tqdm
-from time import time
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
+import pandas as pd
+from tqdm import tqdm
+
+from eval.eval import compare_query_results
+from utils.creds import db_creds_all
+from utils.pruning import prune_metadata_str
+from utils.questions import prepare_questions_df
 from utils.reporting import upload_results
 
 api_key = os.environ.get("MISTRAL_API_KEY")
@@ -29,6 +30,8 @@ def generate_prompt(
     prev_invalid_sql="",
     prev_error_msg="",
     public_data=True,
+    columns_to_keep=20,
+    shuffle=True,
 ):
     with open(prompt_file, "r") as f:
         prompt = f.read()
@@ -43,7 +46,7 @@ def generate_prompt(
 
     if table_metadata_string == "":
         pruned_metadata_str = prune_metadata_str(
-            question_instructions, db_name, public_data
+            question_instructions, db_name, public_data, columns_to_keep, shuffle
         )
     else:
         pruned_metadata_str = table_metadata_string
@@ -81,13 +84,17 @@ def process_row(row, model):
     end_time = time()
     generated_query = chat_response.choices[0].message.content
 
-    # replace all backslashes with empty string
-    generated_query = generated_query.replace("\\", "")
+    try:
+        # replace all backslashes with empty string
+        generated_query = generated_query.replace("\\", "")
 
-    generated_query = generated_query.split(";")[0].split("```sql")[-1].strip()
-    generated_query = [i for i in generated_query.split("```") if i.strip() != ""][
-        0
-    ] + ";"
+        generated_query = generated_query.split(";")[0].split("```sql")[-1].strip()
+        generated_query = [i for i in generated_query.split("```") if i.strip() != ""][
+            0
+        ] + ";"
+    except Exception as e:
+        print(e)
+        generated_query = chat_response.choices[0].message.content
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     golden_query = row["query"]
@@ -161,6 +168,8 @@ def run_mistral_eval(args):
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
                 public_data,
+                args.num_columns,
+                args.shuffle_metadata,
             ),
             axis=1,
         )
