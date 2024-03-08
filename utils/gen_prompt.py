@@ -26,6 +26,9 @@ def generate_prompt(
     else:
         pruned_metadata_str = table_metadata_string
 
+    if instructions != "":
+        instructions = "\n\n### Instructions\n" + instructions
+
     prompt = prompt.format(
         user_question=question,
         instructions=instructions,
