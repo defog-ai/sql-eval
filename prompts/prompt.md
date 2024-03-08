@@ -1,5 +1,6 @@
 ### Task
 Generate a SQL query to answer [QUESTION]{user_question}[/QUESTION]
+{instructions}
 
 ### Database Schema
 The query will run on a database with the following schema:
