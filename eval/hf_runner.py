@@ -87,7 +87,13 @@ def run_hf_eval(args):
 
     # from here, we generate and evaluate predictions
     # eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device_map="auto", batch_size=batch_size)
+    pipe = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        device_map="auto",
+        batch_size=batch_size,
+    )
 
     support_beam_search = True
 
