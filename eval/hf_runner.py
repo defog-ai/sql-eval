@@ -24,16 +24,6 @@ from utils.reporting import upload_results
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
 
 
-def dynamic_num_beams(prompt: str, tokenizer, max_beams: int = 4) -> int:
-    tokens = len(tokenizer.encode(prompt))
-    if tokens <= 1024:
-        return max_beams
-    elif tokens <= 1536:
-        return max_beams // 2
-    else:
-        return max_beams // 4
-
-
 def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     """
     Load a HuggingFace tokenizer and model.
@@ -80,6 +70,8 @@ def run_hf_eval(args):
     output_file_list = args.output_file
     k_shot = args.k_shot
     db_type = args.db_type
+    batch_size = args.batch_size
+    num_beams = args.num_beams
 
     if model_name is None and adapter_path is None:
         raise ValueError(
@@ -95,7 +87,7 @@ def run_hf_eval(args):
 
     # from here, we generate and evaluate predictions
     # eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device_map="auto", batch_size=batch_size)
 
     support_beam_search = True
 
@@ -156,19 +148,19 @@ def run_hf_eval(args):
         total_correct = 0
         output_rows = []
 
+        def chunk_dataframe(df, chunk_size):
+            """Yield successive chunk_size chunks from df."""
+            for i in range(0, len(df), chunk_size):
+                yield df[i : i + chunk_size]
+
+        df_chunks = list(chunk_dataframe(df, batch_size))
+
         with tqdm(total=len(df)) as pbar:
-            for row in df.to_dict("records"):
-                total_tried += 1
-                start_time = time()
-
-                num_beams = 1
-                if support_beam_search:
-                    num_beams = dynamic_num_beams(row["prompt"], tokenizer)
-
-                # we set return_full_text to False so that we don't get the prompt text in the generated text
-                # this simplifies our postprocessing to deal with just the truncation of the end of the query
-                generated_query = pipe(
-                    row["prompt"],
+            for batch in df_chunks:
+                prompts = batch["prompt"].tolist()
+                num_beams = num_beams
+                generated_queries = pipe(
+                    prompts,
                     max_new_tokens=300,
                     do_sample=False,
                     num_beams=num_beams,
@@ -176,55 +168,58 @@ def run_hf_eval(args):
                     return_full_text=False,
                     eos_token_id=tokenizer.eos_token_id,
                     pad_token_id=tokenizer.eos_token_id,
-                )[0]["generated_text"]
-                if "[SQL]" not in row["prompt"]:
-                    generated_query = (
-                        generated_query.split("```")[0].split(";")[0].strip() + ";"
-                    )
-
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                    torch.cuda.synchronize()
-                end_time = time()
-
-                row["generated_query"] = generated_query
-                row["latency_seconds"] = end_time - start_time
-                golden_query = row["query"]
-                db_name = row["db_name"]
-                db_type = row["db_type"]
-                question = row["question"]
-                query_category = row["query_category"]
-                exact_match = correct = 0
-                db_creds = db_creds_all[db_type]
-
-                try:
-                    exact_match, correct = compare_query_results(
-                        query_gold=golden_query,
-                        query_gen=generated_query,
-                        db_name=db_name,
-                        db_type=db_type,
-                        db_creds=db_creds,
-                        question=question,
-                        query_category=query_category,
-                    )
-                    row["exact_match"] = int(exact_match)
-                    row["correct"] = int(correct)
-                    row["error_msg"] = ""
-                    if correct:
-                        total_correct += 1
-                except QueryCanceledError as e:
-                    row["timeout"] = 1
-                    row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
-                except Exception as e:
-                    row["error_db_exec"] = 1
-                    row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-
-                output_rows.append(row)
-                pbar.update(1)
-                pbar.set_description(
-                    f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
                 )
+                gc.collect()
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+
+                for row, result in zip(batch.to_dict("records"), generated_queries):
+                    total_tried += 1
+                    generated_query = (
+                        result[0]["generated_text"]
+                        .split("```")[0]
+                        .split(";")[0]
+                        .strip()
+                        + ";"
+                    )
+
+                    row["generated_query"] = generated_query
+                    row["latency_seconds"] = "n/a"
+                    golden_query = row["query"]
+                    db_name = row["db_name"]
+                    db_type = row["db_type"]
+                    question = row["question"]
+                    query_category = row["query_category"]
+                    exact_match = correct = 0
+                    db_creds = db_creds_all[db_type]
+
+                    try:
+                        exact_match, correct = compare_query_results(
+                            query_gold=golden_query,
+                            query_gen=generated_query,
+                            db_name=db_name,
+                            db_type=db_type,
+                            db_creds=db_creds,
+                            question=question,
+                            query_category=query_category,
+                        )
+                        row["exact_match"] = int(exact_match)
+                        row["correct"] = int(correct)
+                        row["error_msg"] = ""
+                        if correct:
+                            total_correct += 1
+                    except QueryCanceledError as e:
+                        row["timeout"] = 1
+                        row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
+                    except Exception as e:
+                        row["error_db_exec"] = 1
+                        row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
+
+                    output_rows.append(row)
+                    pbar.update(1)
+                    pbar.set_description(
+                        f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
+                    )
 
         output_df = pd.DataFrame(output_rows)
         del output_df["prompt"]

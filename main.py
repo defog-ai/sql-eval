@@ -19,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--num_columns", type=int, default=20)
     parser.add_argument("-s", "--shuffle_metadata", action="store_true")
     parser.add_argument("-k", "--k_shot", action="store_true")
+    parser.add_argument("-bs", "--batch_size", type=int, default=16)
     # execution-related parameters
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
