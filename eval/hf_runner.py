@@ -165,6 +165,8 @@ def run_hf_eval(args):
             for batch in df_chunks:
                 prompts = batch["prompt"].tolist()
                 num_beams = num_beams
+                
+                pipe.tokenizer.pad_token_id = tokenizer.eos_token_id
                 generated_queries = pipe(
                     prompts,
                     max_new_tokens=300,
