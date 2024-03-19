@@ -235,16 +235,26 @@ def compare_df(
     query_gold and query_gen are the original queries that generated the respective dataframes.
     """
     # drop duplicates to ensure equivalence
-    if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
-        return True
+    try:
+        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
+            return True
+    except:
+        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values):
+            return True
 
     df_gold = normalize_table(df_gold, query_category, question, query_gold)
     df_gen = normalize_table(df_gen, query_category, question, query_gen)
 
-    if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
-        return True
-    else:
-        return False
+    try:
+        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
+            return True
+        else:
+            return False
+    except:
+        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values):
+            return True
+        else:
+            return False
 
 
 def subset_df(
