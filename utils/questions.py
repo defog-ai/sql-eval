@@ -29,7 +29,7 @@ def prepare_questions_df(
             lambda x: x.replace(". ", ".\n")
         )
         question_query_df["instructions"] = question_query_df["instructions"].apply(
-            lambda x: f"Instructions:\n{x}\n"
+            lambda x: f"\n### Instructions:\n{x}\n"
         )
     else:
         question_query_df["instructions"] = ""
@@ -89,5 +89,23 @@ def prepare_questions_df(
         ].fillna("")
     else:
         question_query_df["prev_error_msg"] = ""
+
+    # get question_0, query_0, question_1, query_1 if applicable
+    if "question_0" in question_query_df.columns:
+        question_query_df["question_0"] = question_query_df["question_0"].fillna("")
+    else:
+        question_query_df["question_0"] = ""
+    if "query_0" in question_query_df.columns:
+        question_query_df["query_0"] = question_query_df["query_0"].fillna("")
+    else:
+        question_query_df["query_0"] = ""
+    if "question_1" in question_query_df.columns:
+        question_query_df["question_1"] = question_query_df["question_1"].fillna("")
+    else:
+        question_query_df["question_1"] = ""
+    if "query_1" in question_query_df.columns:
+        question_query_df["query_1"] = question_query_df["query_1"].fillna("")
+    else:
+        question_query_df["query_1"] = ""
 
     return question_query_df

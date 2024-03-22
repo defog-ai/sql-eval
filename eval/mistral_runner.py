@@ -155,6 +155,10 @@ def run_mistral_eval(args):
                 "table_metadata_string",
                 "prev_invalid_sql",
                 "prev_error_msg",
+                "question_0",
+                "query_0",
+                "question_1",
+                "query_1",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -167,6 +171,10 @@ def run_mistral_eval(args):
                 row["table_metadata_string"],
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
+                row["question_0"],
+                row["query_0"],
+                row["question_1"],
+                row["query_1"],
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,
