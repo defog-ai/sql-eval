@@ -106,7 +106,6 @@ def run_api_eval(args):
                 "query_0",
                 "question_1",
                 "query_1",
-
             ]
         ].apply(
             lambda row: generate_prompt(

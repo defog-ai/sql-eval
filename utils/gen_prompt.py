@@ -11,10 +11,10 @@ def generate_prompt(
     table_metadata_string="",
     prev_invalid_sql="",
     prev_error_msg="",
-    question_0 = "",
-    query_0 = "",
-    question_1 = "",
-    query_1 = "",
+    question_0="",
+    query_0="",
+    question_1="",
+    query_1="",
     public_data=True,
     columns_to_keep=40,
     shuffle_metadata=False,
@@ -25,7 +25,11 @@ def generate_prompt(
 
     if table_metadata_string == "":
         pruned_metadata_str = prune_metadata_str(
-            question_instructions, db_name, public_data, columns_to_keep, shuffle_metadata
+            question_instructions,
+            db_name,
+            public_data,
+            columns_to_keep,
+            shuffle_metadata,
         )
     else:
         pruned_metadata_str = table_metadata_string
@@ -38,9 +42,9 @@ def generate_prompt(
         glossary=glossary,
         prev_invalid_sql=prev_invalid_sql,
         prev_error_msg=prev_error_msg,
-        question_0 = question_0,
-        query_0 = query_0,
-        question_1 = question_1,
-        query_1 = query_1,
+        question_0=question_0,
+        query_0=query_0,
+        question_1=question_1,
+        query_1=query_1,
     )
     return prompt
