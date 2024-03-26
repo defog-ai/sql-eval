@@ -5,6 +5,7 @@ from eval.eval import (
     normalize_table,
     compare_df,
     query_postgres_db,
+    query_postgres_temp_db,
     query_snowflake_db,
     subset_df,
 )
@@ -177,6 +178,31 @@ def test_query_postgres_db(mock_pd_read_sql_query):
     mock_pd_read_sql_query.return_value = df
 
     results_df = query_postgres_db(query, db_name, db_creds, timeout)
+    assert mock_pd_read_sql_query.call_count == 1
+    assert_frame_equal(results_df, df)
+
+
+@mock.patch("pandas.read_sql_query")
+def test_query_postgres_temp_db(mock_pd_read_sql_query):
+    # note that we don't need to mock create_engine as it only contains the config,
+    # but doesn't create the connection to the underlying db
+    db_name = "db_temp"
+    db_creds = {
+        "host": "localhost",
+        "port": 5432,
+        "user": "postgres",
+        "password": "postgres",
+    }
+
+    table_metadata_string = "CREATE TABLE table_name (A INT, B INT);"
+    timeout = 10
+    query = "SELECT * FROM table_name;"
+    df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+    mock_pd_read_sql_query.return_value = df
+
+    results_df = query_postgres_temp_db(
+        query, db_name, db_creds, table_metadata_string, timeout
+    )
     assert mock_pd_read_sql_query.call_count == 1
     assert_frame_equal(results_df, df)
 

@@ -5,7 +5,7 @@ import re
 from func_timeout import func_timeout
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from utils.creds import db_creds_all
 
 LIKE_PATTERN = r"LIKE[\s\S]*'"
@@ -166,6 +166,7 @@ def query_postgres_db(
 
     timeout: time in seconds to wait for query to finish before timing out
     """
+    engine = None
     if db_creds is None:
         db_creds = db_creds_all["postgres"]
     try:
@@ -185,6 +186,84 @@ def query_postgres_db(
         raise e
 
 
+def clean_metadata_string(md_str: str) -> str:
+    # for every line, remove all text after "--"
+    md_str = "\n".join([line.split("--")[0] for line in md_str.split("\n")])
+    # remove all ", \n);"
+    md_str = md_str.replace(", \n);", "\n);").replace(",\n);", "\n);").strip()
+    md_str = md_str.split("Here is a list of joinable columns:")[0].strip()
+    return md_str
+
+
+def query_postgres_temp_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    table_metadata_string: str = "",
+    timeout: float = 10.0,
+) -> pd.DataFrame:
+    """
+    Creates a temporary db from the table metadata string, runs query on the temporary db, and returns results as a dataframe.
+    After the query is run, the temporary db is dropped.
+    timeout: time in seconds to wait for query to finish before timing out
+    """
+    engine = None
+    admin_engine = None
+    conn = None
+
+    create_table_ddl = clean_metadata_string(table_metadata_string)
+    if db_creds is None:
+        db_creds = db_creds_all["postgres"]
+    try:
+        # create a temporary database on postgres if it doesn't exist
+        admin_db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/postgres"
+        admin_engine = create_engine(admin_db_url)
+        with admin_engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            db_exists = (
+                conn.execute(
+                    text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+                ).first()
+                is not None
+            )
+            if not db_exists:
+                conn.execute(text(f"CREATE DATABASE {db_name}"))
+            conn.close()
+        admin_engine.dispose()  # close connection
+
+        # create tables in the temporary database
+        db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn.execute(text(create_table_ddl))
+            escaped_query = re.sub(
+                LIKE_PATTERN, escape_percent, query, flags=re.IGNORECASE
+            )  # ignore case of LIKE
+            results_df = func_timeout(
+                timeout, pd.read_sql_query, args=(escaped_query, engine)
+            )
+            conn.close()
+        engine.dispose()  # close connection
+
+        # remove the temporary database
+        with admin_engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn.execute(text(f"DROP DATABASE IF EXISTS {db_name}"))
+            conn.close()
+        admin_engine.dispose()  # close connection
+
+        return results_df
+    except Exception as e:
+        if engine:
+            engine.dispose()
+        if admin_engine:
+            admin_engine.dispose()
+        if conn:
+            conn.close()
+        raise e
+
+
 def query_snowflake_db(
     query: str, db_name: str, db_creds: dict = None, timeout: float = 10.0
 ) -> pd.DataFrame:
@@ -198,6 +277,8 @@ def query_snowflake_db(
 
     import snowflake.connector
 
+    conn = None
+    cur = None
     if db_creds is None:
         db_creds = db_creds_all["snowflake"]
 
@@ -219,6 +300,10 @@ def query_snowflake_db(
         df = pd.DataFrame(results, columns=colnames)
         return df
     except Exception as e:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
         raise e
 
 
@@ -322,6 +407,7 @@ def compare_query_results(
     db_creds: dict,
     question: str,
     query_category: str,
+    table_metadata_string: str = "",
     timeout: float = 10.0,
 ) -> "tuple[bool, bool]":
     """
@@ -331,24 +417,45 @@ def compare_query_results(
     We bubble up exceptions (mostly from query_postgres_db) to be handled in the runner.
     """
     queries_gold = get_all_minimal_queries(query_gold)
-    if db_type == "postgres":
-        results_gen = query_postgres_db(query_gen, db_name, db_creds, timeout)
-    elif db_type == "snowflake":
-        results_gen = query_snowflake_db(query_gen, db_name, db_creds, timeout)
-    else:
-        raise ValueError(
-            f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
-        )
-    correct = False
-    for q in queries_gold:
+    if "_temp" not in db_name:
         if db_type == "postgres":
-            results_gold = query_postgres_db(q, db_name, db_creds, timeout)
+            results_gen = query_postgres_db(query_gen, db_name, db_creds, timeout)
         elif db_type == "snowflake":
-            results_gold = query_snowflake_db(q, db_name, db_creds, timeout)
+            results_gen = query_snowflake_db(query_gen, db_name, db_creds, timeout)
         else:
             raise ValueError(
                 f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
             )
+    else:
+        if db_type == "postgres":
+            results_gen = query_postgres_temp_db(
+                query_gen, db_name, db_creds, table_metadata_string, timeout
+            )
+        else:
+            raise ValueError(
+                f"Invalid db_type: {db_type}. Only postgres is supported for temporary databases."
+            )
+
+    correct = False
+    for q in queries_gold:
+        if "_temp" not in db_name:
+            if db_type == "postgres":
+                results_gold = query_postgres_db(q, db_name, db_creds, timeout)
+            elif db_type == "snowflake":
+                results_gold = query_snowflake_db(q, db_name, db_creds, timeout)
+            else:
+                raise ValueError(
+                    f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
+                )
+        else:
+            if db_type == "postgres":
+                results_gold = query_postgres_temp_db(
+                    q, db_name, db_creds, table_metadata_string, timeout
+                )
+            else:
+                raise ValueError(
+                    f"Invalid db_type: {db_type}. Only postgres is supported for temporary databases."
+                )
         if compare_df(
             results_gold, results_gen, query_category, question, query_gold, query_gen
         ):
