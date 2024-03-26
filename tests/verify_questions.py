@@ -1,6 +1,7 @@
 import pandas as pd
-
-from eval.eval import get_all_minimal_queries, query_postgres_db
+from unittest import mock
+from eval.eval import get_all_minimal_queries, query_postgres_db, query_postgres_temp_db
+from pandas.testing import assert_frame_equal
 
 
 def test_questions_non_null():
@@ -15,3 +16,27 @@ def test_questions_non_null():
             if len(df_result) == 0:
                 print(i, query_gold)
                 print(df_result)
+
+
+@mock.patch("pandas.read_sql_query")
+def test_query_postgres_temp_db(mock_pd_read_sql_query):
+    # note that we need to mock create_engine
+    db_name = "db_temp"
+    db_creds = {
+        "host": "localhost",
+        "port": 5432,
+        "user": "postgres",
+        "password": "postgres",
+    }
+
+    table_metadata_string = "CREATE TABLE table_name (A INT, B INT);"
+    timeout = 10
+    query = "SELECT * FROM table_name;"
+    df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+    mock_pd_read_sql_query.return_value = df
+
+    results_df = query_postgres_temp_db(
+        query, db_name, db_creds, table_metadata_string, timeout
+    )
+    assert mock_pd_read_sql_query.call_count == 1
+    assert_frame_equal(results_df, df)
