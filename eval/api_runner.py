@@ -48,6 +48,7 @@ def process_row(row, api_url, num_beams):
     db_type = row["db_type"]
     question = row["question"]
     query_category = row["query_category"]
+    table_metadata_string = row["table_metadata_string"]
     exact_match = correct = 0
 
     try:
@@ -59,6 +60,7 @@ def process_row(row, api_url, num_beams):
             db_creds=db_creds_all[row["db_type"]],
             question=question,
             query_category=query_category,
+            table_metadata_string=table_metadata_string,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
