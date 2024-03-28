@@ -67,6 +67,7 @@ def run_openai_eval(args):
                 query_gen = result_dict["query"]
                 reason = result_dict["reason"]
                 err = result_dict["err"]
+                table_metadata_string = result_dict["table_metadata_string"]
                 # save custom metrics
                 if "latency_seconds" in result_dict:
                     row["latency_seconds"] = result_dict["latency_seconds"]
@@ -75,6 +76,7 @@ def run_openai_eval(args):
                 row["generated_query"] = query_gen
                 row["reason"] = reason
                 row["error_msg"] = err
+                row["table_metadata_string"] = table_metadata_string
                 # save failures into relevant columns in the dataframe
                 if "GENERATION ERROR" in err:
                     row["error_query_gen"] = 1
@@ -123,7 +125,17 @@ def run_openai_eval(args):
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
         if "prompt" in output_df.columns:
             del output_df["prompt"]
-        print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
+        # get num rows, mean correct, mean error_db_exec for each query_category
+        agg_stats = (
+            output_df.groupby("query_category")
+            .agg(
+                num_rows=("db_name", "count"),
+                mean_correct=("correct", "mean"),
+                mean_error_db_exec=("error_db_exec", "mean"),
+            )
+            .reset_index()
+        )
+        print(agg_stats)
         # get directory of output_file and create if not exist
         output_dir = os.path.dirname(output_file)
         if not os.path.exists(output_dir):
