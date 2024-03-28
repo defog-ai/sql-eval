@@ -1,11 +1,13 @@
 import time
 from typing import Dict, List
+
+from defog_data.metadata import dbs
 from func_timeout import FunctionTimedOut, func_timeout
 from openai import OpenAI
 import tiktoken
 
 from query_generators.query_generator import QueryGenerator
-from utils.pruning import prune_metadata_str
+from utils.pruning import prune_metadata_str, to_prompt_schema
 
 openai = OpenAI()
 
@@ -130,15 +132,21 @@ class OpenAIQueryGenerator(QueryGenerator):
             chat_prompt = file.read()
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
-            pruned_metadata_str = prune_metadata_str(
-                question_instructions,
-                self.db_name,
-                self.use_public_data,
-                columns_to_keep,
-                shuffle,
-            )
-        else:
-            pruned_metadata_str = table_metadata_string
+            if columns_to_keep > 0:
+                table_metadata_string = prune_metadata_str(
+                    question_instructions,
+                    self.db_name,
+                    self.use_public_data,
+                    columns_to_keep,
+                    shuffle,
+                )
+            elif columns_to_keep == 0:
+                md = dbs[self.db_name]["table_metadata"]
+                table_metadata_string = to_prompt_schema(md, shuffle)
+            else:
+                raise ValueError("columns_to_keep must be >= 0")
+        if glossary == "":
+            glossary = dbs[self.db_name]["glossary"]
         if self.model != "text-davinci-003":
             try:
                 sys_prompt = chat_prompt.split("### Input:")[0]
@@ -150,7 +158,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                 raise ValueError("Invalid prompt file. Please use prompt_openai.md")
             user_prompt = user_prompt.format(
                 user_question=question,
-                table_metadata_string=pruned_metadata_str,
+                table_metadata_string=table_metadata_string,
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
                 glossary=glossary,
@@ -165,7 +173,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         else:
             prompt = chat_prompt.format(
                 user_question=question,
-                table_metadata_string=pruned_metadata_str,
+                table_metadata_string=table_metadata_string,
                 instructions=instructions,
                 k_shot_prompt=k_shot_prompt,
                 glossary=glossary,
@@ -211,6 +219,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             tokens_used = self.count_tokens(self.model, messages=messages)
 
         return {
+            "table_metadata_string": table_metadata_string,
             "query": self.query,
             "reason": self.reason,
             "err": self.err,

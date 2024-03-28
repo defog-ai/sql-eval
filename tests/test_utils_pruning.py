@@ -1,5 +1,11 @@
 import pytest
-from utils.pruning import encoder, get_entity_types, format_topk_sql, get_md_emb
+from utils.pruning import (
+    encoder,
+    get_entity_types,
+    format_topk_sql,
+    get_md_emb,
+    to_prompt_schema,
+)
 
 
 @pytest.fixture
@@ -261,3 +267,87 @@ def test_format_topk_sql_shuffle():
         "```\n"
     )
     assert format_topk_sql(table_columns, True) == expected_output
+
+
+def test_to_prompt_schema_without_seed():
+    metadata = {
+        "table1": [
+            {
+                "column_name": "col1",
+                "data_type": "int",
+                "column_description": "primary key",
+            },
+            {
+                "column_name": "col2",
+                "data_type": "text",
+                "column_description": "not null",
+            },
+            {"column_name": "col3", "data_type": "text", "column_description": ""},
+        ],
+        "table2": [
+            {
+                "column_name": "col1",
+                "data_type": "int",
+                "column_description": "primary key",
+            },
+            {
+                "column_name": "col2",
+                "data_type": "text",
+                "column_description": "not null",
+            },
+        ],
+    }
+    result = to_prompt_schema(metadata)
+    expected = """CREATE TABLE table1 (
+  col1 int, --primary key
+  col2 text, --not null
+  col3 text
+);
+CREATE TABLE table2 (
+  col1 int, --primary key
+  col2 text --not null
+);
+"""
+    assert result == expected
+
+
+def test_to_prompt_schema_with_seed():
+    metadata = {
+        "table1": [
+            {
+                "column_name": "col1",
+                "data_type": "int",
+                "column_description": "primary key",
+            },
+            {
+                "column_name": "col2",
+                "data_type": "text",
+                "column_description": "not null",
+            },
+            {"column_name": "col3", "data_type": "text", "column_description": ""},
+        ],
+        "table2": [
+            {
+                "column_name": "col1",
+                "data_type": "int",
+                "column_description": "primary key",
+            },
+            {
+                "column_name": "col2",
+                "data_type": "text",
+                "column_description": "not null",
+            },
+        ],
+    }
+    result = to_prompt_schema(metadata, seed=1)
+    expected = """CREATE TABLE table1 (
+  col1 int, --primary key
+  col3 text,
+  col2 text --not null
+);
+CREATE TABLE table2 (
+  col1 int, --primary key
+  col2 text --not null
+);
+"""
+    assert result == expected

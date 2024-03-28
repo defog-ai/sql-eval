@@ -294,8 +294,8 @@ You can use the following flags in the command line to change the configurations
 |--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | -f, --prompt_file        | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.                                                                                               |
 | -b, --num_beams          | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`.                                                                                                 |
-| -c, --num_columns        | Number of columns.                                                                                                                                                             |
-| -s, --shuffle_metadata   | Shuffle metadata.                                                                                                                                                              |
+| -c, --num_columns        | Number of columns, default 20. To not prune the columns, set it to 0. |
+| -s, --shuffle_metadata   | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database). |
 | -k, --k_shot             | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.                                                                                                    |
 
 ### Execution-related parameters

@@ -1,6 +1,7 @@
 accelerate
 anthropic
 argparse
+git+https://github.com/defog-ai/defog-data.git
 func_timeout
 mistralai
 openai>=1.1.0
