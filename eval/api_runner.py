@@ -10,9 +10,11 @@ from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
 from tqdm import tqdm
 from time import time
+from transformers import AutoTokenizer
 import requests
 from utils.reporting import upload_results
 
+tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-7b-hf")
 
 def process_row(row, api_url, num_beams):
     start_time = time()
@@ -43,6 +45,7 @@ def process_row(row, api_url, num_beams):
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
+    row["tokens_used"] = len(tokenizer.encode(generated_query))
     golden_query = row["query"]
     db_name = row["db_name"]
     db_type = row["db_type"]
