@@ -16,6 +16,7 @@ from utils.reporting import upload_results
 
 tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-7b-hf")
 
+
 def process_row(row, api_url, num_beams):
     start_time = time()
     r = requests.post(
