@@ -67,8 +67,7 @@ def process_row(row, model_name):
 
     end_time = time()
     generated_query = response.text.split("```sql")[-1].split("```")[0].strip()
-    print(generated_query)
-
+    
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     golden_query = row["query"]
