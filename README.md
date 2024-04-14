@@ -118,7 +118,7 @@ When testing your own query generator with an existing runner, you can replace t
 
 ## Running the Test
 
-### OpenAI / Anthropic
+### OpenAI
 Remember to have your API key (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) set as an environment variable before running the test if you plan to call the OpenAI or Anthropic/other LLM API's accordingly.
 
 To test it out with just 10 questions (instead of all 200), parallelized across 5 :
@@ -134,6 +134,7 @@ python main.py \
   -p 5
 ```
 
+### Anthropic
 To test out the full suite of questions for claude-3:
 ```bash
 python main.py \
