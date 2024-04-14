@@ -217,6 +217,7 @@ def run_hf_eval(args):
                         question=question,
                         query_category=query_category,
                         table_metadata_string=table_metadata_string,
+                        decimal_points=args.decimal_points,
                     )
                     row["exact_match"] = int(exact_match)
                     row["correct"] = int(correct)

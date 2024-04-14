@@ -12,7 +12,7 @@ from utils.reporting import upload_results
 from mlx_lm import load, generate
 
 
-def process_row(model, tokenizer, row):
+def process_row(model, tokenizer, row, args):
     start_time = time()
     prompt = row["prompt"]
 
@@ -44,6 +44,7 @@ def process_row(model, tokenizer, row):
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,
+            decimal_points=args.decimal_points
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -119,7 +120,7 @@ def run_mlx_eval(args):
 
         with tqdm(total=len(df)) as pbar:
             for row in df.to_dict("records"):
-                row = process_row(model, tokenizer, row)
+                row = process_row(model, tokenizer, row, args)
                 output_rows.append(row)
                 if row["correct"]:
                     total_correct += 1
