@@ -134,7 +134,7 @@ python main.py \
   -p 5
 ```
 
-To test out the full suite of questions for claude-2:
+To test out the full suite of questions for claude-3:
 ```bash
 python main.py \
   -db postgres \
