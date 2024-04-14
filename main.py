@@ -8,6 +8,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num_questions", type=int, default=None)
     parser.add_argument("-db", "--db_type", type=str, required=True)
     parser.add_argument("-d", "--use_private_data", action="store_true")
+    parser.add_argument("-dp", "--decimal_points", type=int, default=None)
     # model-related parameters
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)

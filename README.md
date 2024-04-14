@@ -277,6 +277,7 @@ You can use the following flags in the command line to change the configurations
 | -n, --num_questions | Use this to limit the total number of questions you want to test.                                                                                                                                                                                           |
 | -db, --db_type       | Database type to run your queries on. Currently supported types are `postgres` and `snowflake`.                                                                                                                                                             |
 | -d, --use_private_data | Use this to read from your own private data library.                                                                                                                                                                                                        |
+| -dp, --decimal_points | Use this to specify the number of decimal points a result should be rounded to. This is `None` by default                                                                                                                                                                                                        |
 
 ### Model-related parameters
 
