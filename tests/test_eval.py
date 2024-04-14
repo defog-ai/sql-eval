@@ -428,7 +428,7 @@ def test_subset_df(test_dataframes):
 @mock.patch("eval.eval.query_postgres_db")
 def test_compare_query_results(mock_query_postgres_db):
     # Set up mock behavior
-    def mock_query_postgres_db_fn(query, db_name, db_creds, timeout) -> pd.DataFrame:
+    def mock_query_postgres_db_fn(query, db_name, db_creds, timeout, decimal_points) -> pd.DataFrame:
         if query == "SELECT id FROM users WHERE age < 18":
             return pd.DataFrame({"id": [1, 2, 3]})
         elif query == "SELECT name FROM users WHERE age < 18":
