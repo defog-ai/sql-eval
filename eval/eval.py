@@ -157,7 +157,11 @@ def get_all_minimal_queries(query: str) -> "list[str]":
 
 
 def query_postgres_db(
-    query: str, db_name: str, db_creds: dict = None, timeout: float = 10.0, decimal_points: int = None
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    timeout: float = 10.0,
+    decimal_points: int = None,
 ) -> pd.DataFrame:
     """
     Runs query on postgres db and returns results as a dataframe.
@@ -183,7 +187,6 @@ def query_postgres_db(
         # round floats to decimal_points
         if decimal_points:
             results_df = results_df.round(decimal_points)
-
 
         engine.dispose()  # close connection
         return results_df
@@ -277,7 +280,11 @@ def query_postgres_temp_db(
 
 
 def query_snowflake_db(
-    query: str, db_name: str, db_creds: dict = None, timeout: float = 10.0, decimal_points: int = None
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    timeout: float = 10.0,
+    decimal_points: int = None,
 ) -> pd.DataFrame:
     """
     Runs query on snowflake db and returns results as a dataframe.
@@ -437,9 +444,13 @@ def compare_query_results(
     queries_gold = get_all_minimal_queries(query_gold)
     if "_temp" not in db_name:
         if db_type == "postgres":
-            results_gen = query_postgres_db(query_gen, db_name, db_creds, timeout, decimal_points=decimal_points)
+            results_gen = query_postgres_db(
+                query_gen, db_name, db_creds, timeout, decimal_points=decimal_points
+            )
         elif db_type == "snowflake":
-            results_gen = query_snowflake_db(query_gen, db_name, db_creds, timeout, decimal_points=decimal_points)
+            results_gen = query_snowflake_db(
+                query_gen, db_name, db_creds, timeout, decimal_points=decimal_points
+            )
         else:
             raise ValueError(
                 f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
@@ -447,7 +458,12 @@ def compare_query_results(
     else:
         if db_type == "postgres":
             results_gen = query_postgres_temp_db(
-                query_gen, db_name, db_creds, table_metadata_string, timeout, decimal_points=decimal_points
+                query_gen,
+                db_name,
+                db_creds,
+                table_metadata_string,
+                timeout,
+                decimal_points=decimal_points,
             )
         else:
             raise ValueError(
@@ -458,9 +474,13 @@ def compare_query_results(
     for q in queries_gold:
         if "_temp" not in db_name:
             if db_type == "postgres":
-                results_gold = query_postgres_db(q, db_name, db_creds, timeout, decimal_points=decimal_points)
+                results_gold = query_postgres_db(
+                    q, db_name, db_creds, timeout, decimal_points=decimal_points
+                )
             elif db_type == "snowflake":
-                results_gold = query_snowflake_db(q, db_name, db_creds, timeout, decimal_points=decimal_points)
+                results_gold = query_snowflake_db(
+                    q, db_name, db_creds, timeout, decimal_points=decimal_points
+                )
             else:
                 raise ValueError(
                     f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
@@ -468,7 +488,12 @@ def compare_query_results(
         else:
             if db_type == "postgres":
                 results_gold = query_postgres_temp_db(
-                    q, db_name, db_creds, table_metadata_string, timeout, decimal_points=decimal_points
+                    q,
+                    db_name,
+                    db_creds,
+                    table_metadata_string,
+                    timeout,
+                    decimal_points=decimal_points,
                 )
             else:
                 raise ValueError(

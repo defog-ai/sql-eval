@@ -143,7 +143,9 @@ def run_api_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(executor.submit(process_row, row, api_url, num_beams, args))
+                futures.append(
+                    executor.submit(process_row, row, api_url, num_beams, args)
+                )
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:
