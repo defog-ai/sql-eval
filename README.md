@@ -118,7 +118,7 @@ When testing your own query generator with an existing runner, you can replace t
 
 ## Running the Test
 
-### OpenAI / Anthropic
+### OpenAI
 Remember to have your API key (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) set as an environment variable before running the test if you plan to call the OpenAI or Anthropic/other LLM API's accordingly.
 
 To test it out with just 10 questions (instead of all 200), parallelized across 5 :
@@ -134,7 +134,8 @@ python main.py \
   -p 5
 ```
 
-To test out the full suite of questions for claude-2:
+### Anthropic
+To test out the full suite of questions for claude-3:
 ```bash
 python main.py \
   -db postgres \
@@ -277,6 +278,7 @@ You can use the following flags in the command line to change the configurations
 | -n, --num_questions | Use this to limit the total number of questions you want to test.                                                                                                                                                                                           |
 | -db, --db_type       | Database type to run your queries on. Currently supported types are `postgres` and `snowflake`.                                                                                                                                                             |
 | -d, --use_private_data | Use this to read from your own private data library.                                                                                                                                                                                                        |
+| -dp, --decimal_points | Use this to specify the number of decimal points a result should be rounded to. This is `None` by default                                                                                                                                                                                                        |
 
 ### Model-related parameters
 

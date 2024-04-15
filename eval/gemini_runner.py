@@ -60,7 +60,7 @@ def generate_prompt(
     return prompt
 
 
-def process_row(row, model_name):
+def process_row(row, model_name, args):
     start_time = time()
     chat = multiturn_generate_content(model_name=model_name)
     response = chat.send_message(row["prompt"])
@@ -75,7 +75,6 @@ def process_row(row, model_name):
     db_type = row["db_type"]
     question = row["question"]
     query_category = row["query_category"]
-    table_metadata_string = row["table_metadata_string"]
     exact_match = correct = 0
 
     try:
@@ -87,7 +86,7 @@ def process_row(row, model_name):
             db_creds=db_creds_all[row["db_type"]],
             question=question,
             query_category=query_category,
-            table_metadata_string=table_metadata_string,
+            decimal_points=args.decimal_points,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -161,7 +160,7 @@ def run_gemini_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(executor.submit(process_row, row, model_name))
+                futures.append(executor.submit(process_row, row, model_name, args))
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:

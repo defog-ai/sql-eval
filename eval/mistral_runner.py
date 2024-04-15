@@ -73,7 +73,7 @@ def generate_prompt(
     return messages
 
 
-def process_row(row, model):
+def process_row(row, model, args):
     start_time = time()
     chat_response = client.chat(
         model=model,
@@ -115,6 +115,7 @@ def process_row(row, model):
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,
+            decimal_points=args.decimal_points,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -191,7 +192,7 @@ def run_mistral_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(executor.submit(process_row, row, model))
+                futures.append(executor.submit(process_row, row, model, args))
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:

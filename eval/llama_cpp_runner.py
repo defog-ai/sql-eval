@@ -12,7 +12,7 @@ from utils.reporting import upload_results
 from llama_cpp import Llama
 
 
-def process_row(llm, row):
+def process_row(llm, row, args):
     start_time = time()
     prompt = row["prompt"]
     generated_query = (
@@ -50,6 +50,7 @@ def process_row(llm, row):
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,
+            decimal_points=args.decimal_points,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -126,7 +127,7 @@ def run_llama_cpp_eval(args):
 
         with tqdm(total=len(df)) as pbar:
             for row in df.to_dict("records"):
-                row = process_row(llm, row)
+                row = process_row(llm, row, args)
                 output_rows.append(row)
                 if row["correct"]:
                     total_correct += 1

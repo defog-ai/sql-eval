@@ -17,7 +17,7 @@ from utils.reporting import upload_results
 tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-7b-hf")
 
 
-def process_row(row, api_url, num_beams):
+def process_row(row, api_url, num_beams, args):
     start_time = time()
     r = requests.post(
         api_url,
@@ -65,6 +65,7 @@ def process_row(row, api_url, num_beams):
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,
+            decimal_points=args.decimal_points,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -142,7 +143,9 @@ def run_api_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(executor.submit(process_row, row, api_url, num_beams))
+                futures.append(
+                    executor.submit(process_row, row, api_url, num_beams, args)
+                )
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:
