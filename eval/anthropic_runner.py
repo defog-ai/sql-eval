@@ -21,8 +21,10 @@ def run_anthropic_eval(args):
     num_questions = args.num_questions
     k_shot = args.k_shot
     db_type = args.db_type
-    
-    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
+
+    for questions_file, prompt_file, output_file in zip(
+        questions_file_list, prompt_file_list, output_file_list
+    ):
 
         print(f"Using prompt file {prompt_file}")
         # get questions
@@ -30,7 +32,9 @@ def run_anthropic_eval(args):
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
         )
-        question_query_df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
+        question_query_df = prepare_questions_df(
+            questions_file, db_type, num_questions, k_shot
+        )
         input_rows = question_query_df.to_dict("records")
         output_rows = []
         with ThreadPoolExecutor(args.parallel_threads) as executor:

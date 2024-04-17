@@ -49,11 +49,19 @@ if __name__ == "__main__":
 
     # check args
     # check that either args.questions_file > 1 and args.prompt_file = 1 or vice versa
-    if len(args.questions_file) > 1 and len(args.prompt_file) == 1 and len(args.output_file) > 1:
+    if (
+        len(args.questions_file) > 1
+        and len(args.prompt_file) == 1
+        and len(args.output_file) > 1
+    ):
         args.prompt_file = args.prompt_file * len(args.questions_file)
-    elif len(args.questions_file) == 1 and len(args.prompt_file) > 1 and len(args.output_file) > 1:
+    elif (
+        len(args.questions_file) == 1
+        and len(args.prompt_file) > 1
+        and len(args.output_file) > 1
+    ):
         args.questions_file = args.questions_file * len(args.prompt_file)
-    if not(len(args.questions_file) == len(args.prompt_file) == len(args.output_file)):
+    if not (len(args.questions_file) == len(args.prompt_file) == len(args.output_file)):
         raise ValueError(
             "If args.output_file > 1, then at least 1 of args.prompt_file or args.questions_file must be > 1 and match lengths."
             f"Obtained lengths: args.questions_file={len(args.questions_file)}, args.prompt_file={len(args.prompt_file)}, args.output_file={len(args.output_file)}"

@@ -68,7 +68,9 @@ def run_mlx_eval(args):
 
     model, tokenizer = load(model_path)
 
-    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
+    for questions_file, prompt_file, output_file in zip(
+        questions_file_list, prompt_file_list, output_file_list
+    ):
 
         print(f"Using prompt file {prompt_file}")
         # get questions

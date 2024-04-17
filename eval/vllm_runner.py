@@ -12,7 +12,8 @@ import time
 import torch
 from transformers import AutoTokenizer
 from tqdm import tqdm
-from utils.reporting import upload_results 
+from utils.reporting import upload_results
+
 
 def run_vllm_eval(args):
     # get params from args
@@ -47,7 +48,9 @@ def run_vllm_eval(args):
         temperature=0,
     )
 
-    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
+    for questions_file, prompt_file, output_file in zip(
+        questions_file_list, prompt_file_list, output_file_list
+    ):
 
         print(f"Using prompt file {prompt_file}")
         # get questions

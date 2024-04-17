@@ -75,7 +75,9 @@ def run_llama_cpp_eval(args):
 
     llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=2048)
 
-    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
+    for questions_file, prompt_file, output_file in zip(
+        questions_file_list, prompt_file_list, output_file_list
+    ):
 
         print(f"Using prompt file {prompt_file}")
         # get questions
