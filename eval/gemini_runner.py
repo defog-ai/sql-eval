@@ -110,7 +110,9 @@ def run_gemini_eval(args):
     max_workers = args.parallel_threads
     db_type = args.db_type
 
-    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
+    for questions_file, prompt_file, output_file in zip(
+        questions_file_list, prompt_file_list, output_file_list
+    ):
 
         print(f"Using prompt file {prompt_file}")
         # get questions
