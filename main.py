@@ -4,7 +4,7 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # data-related parameters
-    parser.add_argument("-q", "--questions_file", type=str)
+    parser.add_argument("-q", "--questions_file", nargs="+", type=str, required=True)
     parser.add_argument("-n", "--num_questions", type=int, default=None)
     parser.add_argument("-db", "--db_type", type=str, required=True)
     parser.add_argument("-d", "--use_private_data", action="store_true")
@@ -38,18 +38,25 @@ if __name__ == "__main__":
         args.questions_file = f"data/questions_gen_{args.db_type}.csv"
 
     # check that questions_file matches db_type
-    if args.db_type not in args.questions_file:
-        print(
-            f"WARNING: Check that questions_file {args.questions_file} is compatible with db_type {args.db_type}"
-        )
+    for questions_file in args.questions_file:
+        if args.db_type not in questions_file:
+            print(
+                f"WARNING: Check that questions_file {questions_file} is compatible with db_type {args.db_type}"
+            )
 
     if args.upload_url is None:
         args.upload_url = os.environ.get("SQL_EVAL_UPLOAD_URL")
 
-    # check that the list of prompt files has the same length as the list of output files
-    if len(args.prompt_file) != len(args.output_file):
+    # check args
+    # check that either args.questions_file > 1 and args.prompt_file = 1 or vice versa
+    if len(args.questions_file) > 1 and len(args.prompt_file) == 1 and len(args.output_file) > 1:
+        args.prompt_file = args.prompt_file * len(args.questions_file)
+    elif len(args.questions_file) == 1 and len(args.prompt_file) > 1 and len(args.output_file) > 1:
+        args.questions_file = args.questions_file * len(args.prompt_file)
+    if not(len(args.questions_file) == len(args.prompt_file) == len(args.output_file)):
         raise ValueError(
-            f"Number of prompt files ({len(args.prompt_file)}) must be the same as the number of output files ({len(args.output_file)})"
+            "If args.output_file > 1, then at least 1 of args.prompt_file or args.questions_file must be > 1 and match lengths."
+            f"Obtained lengths: args.questions_file={len(args.questions_file)}, args.prompt_file={len(args.prompt_file)}, args.output_file={len(args.output_file)}"
         )
 
     if args.model_type == "oa":

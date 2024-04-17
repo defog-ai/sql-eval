@@ -63,7 +63,7 @@ def process_row(llm, row, args):
 
 def run_llama_cpp_eval(args):
     # get params from args
-    questions_file = args.questions_file
+    questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
@@ -75,14 +75,15 @@ def run_llama_cpp_eval(args):
 
     llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=2048)
 
-    # get questions
-    print("Preparing questions...")
-    print(
-        f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
-    )
-    df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
+    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
 
-    for prompt_file, output_file in zip(prompt_file_list, output_file_list):
+        print(f"Using prompt file {prompt_file}")
+        # get questions
+        print("Preparing questions...")
+        print(
+            f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
+        )
+        df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
         # create a prompt for each question
         df["prompt"] = df[
             [

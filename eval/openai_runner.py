@@ -14,15 +14,24 @@ from utils.reporting import upload_results
 
 
 def run_openai_eval(args):
-    # get questions
-    print("Preparing questions...")
-    print(
-        f"Using {'all' if args.num_questions is None else args.num_questions} questions from {args.questions_file}"
-    )
-    question_query_df = prepare_questions_df(
-        args.questions_file, args.db_type, args.num_questions, args.k_shot
-    )
-    for prompt_file, output_file in zip(args.prompt_file, args.output_file):
+
+    # get params from args
+    questions_file_list = args.questions_file
+    prompt_file_list = args.prompt_file
+    output_file_list = args.output_file
+    num_questions = args.num_questions
+    k_shot = args.k_shot
+    db_type = args.db_type
+
+    for questions_file, prompt_file, output_file in zip(questions_file_list, prompt_file_list, output_file_list):
+
+        print(f"Using prompt file {prompt_file}")
+        # get questions
+        print("Preparing questions...")
+        print(
+            f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
+        )
+        question_query_df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
         input_rows = question_query_df.to_dict("records")
         output_rows = []
         with ThreadPoolExecutor(args.parallel_threads) as executor:
