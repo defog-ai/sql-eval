@@ -81,6 +81,9 @@ def run_hf_eval(args):
     print(f"Questions prepared\nNow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name, adapter_path)
+    
+    # for decoder models like Llama3 only
+    tokenizer.padding_side = "left"
     tokenizer.pad_token_id = tokenizer.eos_token_id
     model.tie_weights()
 
