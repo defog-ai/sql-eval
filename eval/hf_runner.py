@@ -190,6 +190,8 @@ def run_hf_eval(args):
                             .strip()
                             + ";"
                         )
+                    
+                    print(generated_query)
 
                     gc.collect()
                     if torch.cuda.is_available():
