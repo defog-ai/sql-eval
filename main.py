@@ -17,6 +17,9 @@ if __name__ == "__main__":
     # inference-technique-related parameters
     parser.add_argument("-f", "--prompt_file", nargs="+", type=str, required=True)
     parser.add_argument("-b", "--num_beams", type=int, default=1)
+    parser.add_argument(
+        "-bs", "--batch_size", type=int, default=4
+    )  # batch size, only relevant for the hf runner
     parser.add_argument("-c", "--num_columns", type=int, default=20)
     parser.add_argument("-s", "--shuffle_metadata", action="store_true")
     parser.add_argument("-k", "--k_shot", action="store_true")
