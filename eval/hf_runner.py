@@ -159,7 +159,6 @@ def run_hf_eval(args):
         with tqdm(total=len(df)) as pbar:
             for batch in df_chunks:
                 prompts = batch["prompt"].tolist()
-                num_beams = 1
                 generated_queries = pipe(
                     prompts,
                     max_new_tokens=300,
