@@ -126,6 +126,7 @@ To test it out with just 10 questions (instead of all 200), parallelized across 
 ```bash
 python main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o results/openai.csv \
   -g oa \
   -f prompts/prompt_openai.md \
@@ -139,6 +140,7 @@ To test out the full suite of questions for claude-3:
 ```bash
 python main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o results/claude-3.csv \
   -g anthropic \
   -f prompts/prompt_anthropic.md \
@@ -153,6 +155,7 @@ To test it out with our fine-tuned sql model with just 10 questions (instead of 
 # use the -W option to ignore warnings about sequential use of transformers pipeline
 python -W ignore main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o results/results.csv \
   -g hf \
   -f prompts/prompt.md \
@@ -167,6 +170,7 @@ We also have a [vllm](https://blog.vllm.ai/) runner which uses the vLLM engine t
 ```bash
 python -W ignore main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o "results/vllm.csv" \
   -g vllm \
   -f "prompts/prompt.md" \
@@ -187,6 +191,7 @@ python -m vllm.entrypoints.api_server \
 # to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p and b to higher values
 python main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o results/api.csv \
   -g api \
   -b 1 \
@@ -202,6 +207,7 @@ If you'd like to test out a few prompts in a single run (to save the few minutes
 ```bash
 python -W ignore main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o results/results_1.csv results/results_2.csv \
   -g vllm \
   -f prompts/prompt_1.md prompts/prompt_2.md \
@@ -219,6 +225,7 @@ Note that llama-cpp-python library does not currently have beam search, and henc
 
 ```bash
 python -W ignore main.py \
+  -q "data/questions_gen_postgres.csv" \
   -db postgres \
   -o "results/llama_cpp.csv" \
   -g llama_cpp \
@@ -234,6 +241,7 @@ Note that MLX does not currently have beam search, and hence will have lower qua
 ```bash
 python -W ignore main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o "results/mlx_sqlcoder-7b-2.csv" \
   -g mlx \
   -f "prompts/prompt.md" \
@@ -246,6 +254,7 @@ Before running this, you must create an account with [Google AI](https://ai.goog
 ```bash
 python -W ignore main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o "results/gemini_pro.csv" \
   -g gemini \
   -f "prompts/prompt_gemini.md" \
@@ -260,6 +269,7 @@ Before running this, you must create an account with [Mistral](https://mistral.a
 ```bash
 python -W ignore main.py \
   -db postgres \
+  -q "data/questions_gen_postgres.csv" \
   -o "results/results.csv" \
   -g mistral \
   -f "prompts/prompt_mistral.md" \
