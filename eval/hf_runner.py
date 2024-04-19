@@ -196,8 +196,6 @@ def run_hf_eval(args):
                             + ";"
                         )
                     
-                    print(generated_query)
-
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
