@@ -80,6 +80,7 @@ def run_hf_eval(args):
     output_file_list = args.output_file
     k_shot = args.k_shot
     db_type = args.db_type
+    num_beams = args.num_beams
 
     if model_name is None and adapter_path is None:
         raise ValueError(
@@ -96,24 +97,7 @@ def run_hf_eval(args):
     # from here, we generate and evaluate predictions
     # eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
-
-    support_beam_search = True
-
-    # check that the model supports beam search with a try except statement
-    try:
-        pipe("Hi", num_beams=2, do_sample=False, max_new_tokens=5)
-    except AttributeError as e:
-        error_trace = traceback.format_exception(type(e), e, e.__traceback__)
-        support_beam_search = (
-            len([line for line in error_trace if "self.beam_search" in line]) == 0
-        )
-        if not support_beam_search:
-            print(
-                "WARNING: This model does not support beam search. will use num_beams=1"
-            )
-        else:
-            raise e
-
+    
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
@@ -171,10 +155,6 @@ def run_hf_eval(args):
             for row in df.to_dict("records"):
                 total_tried += 1
                 start_time = time()
-
-                num_beams = 1
-                if support_beam_search:
-                    num_beams = dynamic_num_beams(row["prompt"], tokenizer)
 
                 # we set return_full_text to False so that we don't get the prompt text in the generated text
                 # this simplifies our postprocessing to deal with just the truncation of the end of the query
