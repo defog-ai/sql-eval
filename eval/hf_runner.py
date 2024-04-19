@@ -23,17 +23,6 @@ from utils.reporting import upload_results
 
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
 
-
-def dynamic_num_beams(prompt: str, tokenizer, max_beams: int = 4) -> int:
-    tokens = len(tokenizer.encode(prompt))
-    if tokens <= 1024:
-        return max_beams
-    elif tokens <= 1536:
-        return max_beams // 2
-    else:
-        return max_beams // 4
-
-
 def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     """
     Load a HuggingFace tokenizer and model.
