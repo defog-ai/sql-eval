@@ -29,7 +29,7 @@ def prepare_questions_df(
             lambda x: x.replace(". ", ".\n")
         )
         question_query_df["instructions"] = question_query_df["instructions"].apply(
-            lambda x: f"\n### Instructions:\n{x}\n"
+            lambda x: f"\n### Instructions:\n{x}\n" if x != "" else ""
         )
     else:
         question_query_df["instructions"] = ""
