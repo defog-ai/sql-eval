@@ -28,7 +28,7 @@ def process_row(row, api_url, num_beams, args):
             "best_of": num_beams,
             "temperature": 0,
             "stop": [";", "```"],
-            "max_tokens": 600,
+            "max_tokens": 4000,
         },
     )
     end_time = time()

@@ -11,7 +11,7 @@ import torch.nn.functional as F
 if os.getenv("TOKENIZERS_PARALLELISM") is None:
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
+encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cuda")
 nlp = spacy.load("en_core_web_sm")
 
 
@@ -24,7 +24,7 @@ def knn(
     """
     Get top most similar columns' embeddings to query using cosine similarity.
     """
-    query_emb = encoder.encode(query, convert_to_tensor=True, device="cpu").unsqueeze(0)
+    query_emb = encoder.encode(query, convert_to_tensor=True, device="cuda").unsqueeze(0)
     similarity_scores = F.cosine_similarity(query_emb, all_emb)
     top_results = torch.nonzero(similarity_scores > threshold).squeeze()
     # if top_results is empty, return empty tensors
