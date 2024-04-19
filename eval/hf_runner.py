@@ -81,6 +81,7 @@ def run_hf_eval(args):
     print(f"Questions prepared\nNow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name, adapter_path)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
     model.tie_weights()
 
     print("model loaded\nnow generating and evaluating predictions...")
@@ -168,65 +169,73 @@ def run_hf_eval(args):
                 torch.cuda.empty_cache()
                 torch.cuda.synchronize()
 
-            for row, result in zip(batch.to_dict("records"), generated_queries):
-                total_tried += 1
-                # we set return_full_text to False so that we don't get the prompt text in the generated text
-                # this simplifies our postprocessing to deal with just the truncation of the end of the query
+                for row, result in zip(batch.to_dict("records"), generated_queries):
+                    total_tried += 1
+                    # we set return_full_text to False so that we don't get the prompt text in the generated text
+                    # this simplifies our postprocessing to deal with just the truncation of the end of the query
 
-                if "[SQL]" not in row["prompt"]:
-                    generated_query = (
-                        result[0]['generated_text'].split("```")[0].split(";")[0].strip() + ";"
+                    if "[SQL]" not in row["prompt"]:
+                        generated_query = (
+                            result[0]["generated_text"]
+                            .split("```")[0]
+                            .split(";")[0]
+                            .strip()
+                            + ";"
+                        )
+                    else:
+                        generated_query = (
+                            result[0]["generated_text"]
+                            .split("[/SQL]")[0]
+                            .split(";")[0]
+                            .strip()
+                            + ";"
+                        )
+
+                    gc.collect()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                        torch.cuda.synchronize()
+
+                    row["generated_query"] = generated_query
+                    row["latency_seconds"] = None
+                    golden_query = row["query"]
+                    db_name = row["db_name"]
+                    db_type = row["db_type"]
+                    question = row["question"]
+                    query_category = row["query_category"]
+                    table_metadata_string = row["table_metadata_string"]
+                    exact_match = correct = 0
+                    db_creds = db_creds_all[db_type]
+
+                    try:
+                        exact_match, correct = compare_query_results(
+                            query_gold=golden_query,
+                            query_gen=generated_query,
+                            db_name=db_name,
+                            db_type=db_type,
+                            db_creds=db_creds,
+                            question=question,
+                            query_category=query_category,
+                            table_metadata_string=table_metadata_string,
+                            decimal_points=args.decimal_points,
+                        )
+                        row["exact_match"] = int(exact_match)
+                        row["correct"] = int(correct)
+                        row["error_msg"] = ""
+                        if correct:
+                            total_correct += 1
+                    except QueryCanceledError as e:
+                        row["timeout"] = 1
+                        row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
+                    except Exception as e:
+                        row["error_db_exec"] = 1
+                        row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
+
+                    output_rows.append(row)
+                    pbar.update(1)
+                    pbar.set_description(
+                        f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
                     )
-                else:
-                    generated_query = (
-                        result[0]['generated_text'].split("[/SQL]")[0].split(";")[0].strip() + ";"
-                    )
-
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                    torch.cuda.synchronize()
-                
-                row["generated_query"] = generated_query
-                row["latency_seconds"] = None
-                golden_query = row["query"]
-                db_name = row["db_name"]
-                db_type = row["db_type"]
-                question = row["question"]
-                query_category = row["query_category"]
-                table_metadata_string = row["table_metadata_string"]
-                exact_match = correct = 0
-                db_creds = db_creds_all[db_type]
-
-                try:
-                    exact_match, correct = compare_query_results(
-                        query_gold=golden_query,
-                        query_gen=generated_query,
-                        db_name=db_name,
-                        db_type=db_type,
-                        db_creds=db_creds,
-                        question=question,
-                        query_category=query_category,
-                        table_metadata_string=table_metadata_string,
-                        decimal_points=args.decimal_points,
-                    )
-                    row["exact_match"] = int(exact_match)
-                    row["correct"] = int(correct)
-                    row["error_msg"] = ""
-                    if correct:
-                        total_correct += 1
-                except QueryCanceledError as e:
-                    row["timeout"] = 1
-                    row["error_msg"] = f"QUERY EXECUTION TIMEOUT: {e}"
-                except Exception as e:
-                    row["error_db_exec"] = 1
-                    row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-
-                output_rows.append(row)
-                pbar.update(1)
-                pbar.set_description(
-                    f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
-                )
 
         output_df = pd.DataFrame(output_rows)
         del output_df["prompt"]
