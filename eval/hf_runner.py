@@ -18,7 +18,6 @@ from tqdm import tqdm
 from psycopg2.extensions import QueryCanceledError
 from time import time
 import gc
-from peft import PeftModel, PeftConfig
 from utils.reporting import upload_results
 
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
@@ -29,6 +28,7 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     You may supply either a normal huggingface model name, or a peft adapter path.
     """
     if adapter_path is not None:
+        from peft import PeftModel, PeftConfig
         print(f"Loading adapter model {adapter_path}")
         config = PeftConfig.from_pretrained(adapter_path)
         tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
