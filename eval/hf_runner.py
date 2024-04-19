@@ -81,11 +81,11 @@ def run_hf_eval(args):
     print(f"Questions prepared\nNow loading model...")
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name, adapter_path)
-    
+
     if "llama-3" in model_name.lower():
         # do this since it doesn't seem to have been done by default
         tokenizer.padding_side = "left"
-    
+
     tokenizer.pad_token_id = tokenizer.eos_token_id
     model.tie_weights()
 
@@ -195,7 +195,7 @@ def run_hf_eval(args):
                             .strip()
                             + ";"
                         )
-                    
+
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
