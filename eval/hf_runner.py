@@ -82,8 +82,10 @@ def run_hf_eval(args):
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name, adapter_path)
     
-    # for decoder models like Llama3 only
-    tokenizer.padding_side = "left"
+    if "llama-3" in model_name.lower():
+        # do this since it doesn't seem to have been done by default
+        tokenizer.padding_side = "left"
+    
     tokenizer.pad_token_id = tokenizer.eos_token_id
     model.tie_weights()
 
