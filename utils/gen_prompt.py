@@ -1,7 +1,3 @@
-from utils.pruning import prune_metadata_str, to_prompt_schema
-import os
-
-
 def generate_prompt(
     prompt_file,
     question,
@@ -28,6 +24,7 @@ def generate_prompt(
 
     if table_metadata_string == "":
         if columns_to_keep > 0:
+            from utils.pruning import prune_metadata_str
             table_metadata_string = prune_metadata_str(
                 question_instructions,
                 db_name,
@@ -36,6 +33,7 @@ def generate_prompt(
                 shuffle_metadata,
             )
         elif columns_to_keep == 0:
+            from utils.pruning import to_prompt_schema
             if public_data:
                 import defog_data.supplementary as sup
 
@@ -54,7 +52,7 @@ def generate_prompt(
                     join_list.append(join_str)
 
             if len(join_list) > 0:
-                join_list = "\n\n- " + "\n- ".join(join_list)
+                join_list = "\n\n-- " + "\n-- ".join(join_list)
 
             md = dbs[db_name]["table_metadata"]
             table_metadata_string = to_prompt_schema(md, shuffle_metadata) + join_list
