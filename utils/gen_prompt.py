@@ -54,7 +54,7 @@ def generate_prompt(
                     join_list.append(join_str)
 
             if len(join_list) > 0:
-                join_list = "- " + "\n- ".join(join_list)
+                join_list = "\n\n- " + "\n- ".join(join_list)
 
             md = dbs[db_name]["table_metadata"]
             table_metadata_string = to_prompt_schema(md, shuffle_metadata) + join_list
