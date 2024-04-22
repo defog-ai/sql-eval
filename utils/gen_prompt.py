@@ -39,11 +39,11 @@ def generate_prompt(
             if public_data:
                 import defog_data.supplementary as sup
 
-                column_join = sup.columns_join[db_name]
+                column_join = sup.columns_join.get(db_name, [])
             else:
                 import defog_data_private.supplementary as sup
 
-                column_join = sup.columns_join[db_name]
+                column_join = sup.columns_join.get(db_name, [])
 
             join_list = []
             for values in column_join.values():
@@ -53,6 +53,7 @@ def generate_prompt(
                 if join_str not in join_list:
                     join_list.append(join_str)
 
+            if len(join_list) > 0:
                 join_list = "- " + "\n- ".join(join_list)
 
             md = dbs[db_name]["table_metadata"]
