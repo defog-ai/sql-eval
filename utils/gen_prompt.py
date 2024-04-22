@@ -88,11 +88,11 @@ def generate_prompt(
             if public_data:
                 import defog_data.supplementary as sup
 
-                column_join = sup.columns_join.get(db_name, [])
+                column_join = sup.columns_join.get(db_name, {})
             else:
                 import defog_data_private.supplementary as sup
 
-                column_join = sup.columns_join.get(db_name, [])
+                column_join = sup.columns_join.get(db_name, {})
 
             join_list = []
             for values in column_join.values():
@@ -104,6 +104,8 @@ def generate_prompt(
 
             if len(join_list) > 0:
                 join_list = "\n\n-- " + "\n-- ".join(join_list)
+            else:
+                join_list = ""
 
             md = dbs[db_name]["table_metadata"]
             table_metadata_string = to_prompt_schema(md, shuffle_metadata) + join_list
