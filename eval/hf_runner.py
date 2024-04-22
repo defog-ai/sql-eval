@@ -50,7 +50,9 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
         except:
-            tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-34b-hf")
+            tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+        
+        tokenizer.pad_token_id = tokenizer.eos_token_id
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
