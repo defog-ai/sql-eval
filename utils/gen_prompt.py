@@ -1,4 +1,5 @@
 from utils.pruning import prune_metadata_str, to_prompt_schema
+import os
 
 
 def generate_prompt(
@@ -19,7 +20,6 @@ def generate_prompt(
     columns_to_keep=40,
     shuffle_metadata=False,
 ):
-
     from defog_data.metadata import dbs  # to avoid CI error
 
     with open(prompt_file, "r") as f:
@@ -36,8 +36,27 @@ def generate_prompt(
                 shuffle_metadata,
             )
         elif columns_to_keep == 0:
+            if public_data:
+                import defog_data.supplementary as sup
+
+                column_join = sup.columns_join[db_name]
+            else:
+                import defog_data_private.supplementary as sup
+
+                column_join = sup.columns_join[db_name]
+
+            join_list = []
+            for values in column_join.values():
+                col_1, col_2 = values[0]
+                # add to join_list
+                join_str = f"{col_1} can be joined with {col_2}"
+                if join_str not in join_list:
+                    join_list.append(join_str)
+
+                join_list = "- " + "\n- ".join(join_list)
+
             md = dbs[db_name]["table_metadata"]
-            table_metadata_string = to_prompt_schema(md, shuffle_metadata)
+            table_metadata_string = to_prompt_schema(md, shuffle_metadata) + join_list
         else:
             raise ValueError("columns_to_keep must be >= 0")
     if glossary == "":
