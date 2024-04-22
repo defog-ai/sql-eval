@@ -1,13 +1,13 @@
 import time
 from typing import Dict, List
 
-from defog_data.metadata import dbs
 from func_timeout import FunctionTimedOut, func_timeout
 from openai import OpenAI
 import tiktoken
 
 from query_generators.query_generator import QueryGenerator
-from utils.pruning import prune_metadata_str, to_prompt_schema
+from utils.pruning import prune_metadata_str
+from utils.gen_prompt import to_prompt_schema
 
 openai = OpenAI()
 
@@ -127,6 +127,12 @@ class OpenAIQueryGenerator(QueryGenerator):
         self.err = ""
         self.query = ""
         self.reason = ""
+
+        if self.use_public_data:
+            from defog_data.metadata import dbs
+        else:
+            # raise Exception("Replace this with your private data import")
+            from defog_data_private.metadata import dbs
 
         with open(self.prompt_file) as file:
             chat_prompt = file.read()
