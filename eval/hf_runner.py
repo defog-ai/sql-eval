@@ -50,8 +50,10 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
         except:
-            tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
-        
+            tokenizer = AutoTokenizer.from_pretrained(
+                "meta-llama/Meta-Llama-3-8B-Instruct"
+            )
+
         tokenizer.pad_token_id = tokenizer.eos_token_id
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
