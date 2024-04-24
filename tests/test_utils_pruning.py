@@ -4,8 +4,9 @@ from utils.pruning import (
     get_entity_types,
     format_topk_sql,
     get_md_emb,
-    to_prompt_schema,
 )
+
+from utils.gen_prompt import to_prompt_schema
 
 
 @pytest.fixture
