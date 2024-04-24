@@ -44,7 +44,7 @@ def run_vllm_eval(args):
         best_of=num_beams,
         use_beam_search=num_beams != 1,
         stop_token_ids=[tokenizer.eos_token_id],
-        max_tokens=600,
+        max_tokens=1000,
         temperature=0,
     )
 
