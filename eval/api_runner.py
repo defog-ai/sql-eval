@@ -87,11 +87,10 @@ def run_api_eval(args):
     max_workers = args.parallel_threads
     db_type = args.db_type
     decimal_points = args.decimal_points
-    
+
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
-
         print(f"Using prompt file {prompt_file}")
         # get questions
         print("Preparing questions...")
