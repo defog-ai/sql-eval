@@ -14,10 +14,8 @@ from transformers import AutoTokenizer
 import requests
 from utils.reporting import upload_results
 
-tokenizer = AutoTokenizer.from_pretrained("codellama/CodeLlama-7b-hf")
 
-
-def process_row(row, api_url, num_beams, args):
+def process_row(row, api_url, num_beams, tokenizer, decimal_points):
     start_time = time()
     r = requests.post(
         api_url,
@@ -65,7 +63,7 @@ def process_row(row, api_url, num_beams, args):
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,
-            decimal_points=args.decimal_points,
+            decimal_points=decimal_points,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -89,6 +87,11 @@ def run_api_eval(args):
     num_beams = args.num_beams
     max_workers = args.parallel_threads
     db_type = args.db_type
+    decimal_points = args.decimal_points
+    tokenizer_path = args.model
+
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -147,7 +150,9 @@ def run_api_eval(args):
             futures = []
             for row in df.to_dict("records"):
                 futures.append(
-                    executor.submit(process_row, row, api_url, num_beams, args)
+                    executor.submit(
+                        process_row, row, api_url, num_beams, tokenizer, decimal_points
+                    )
                 )
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
