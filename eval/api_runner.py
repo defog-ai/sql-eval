@@ -10,12 +10,11 @@ from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
 from tqdm import tqdm
 from time import time
-from transformers import AutoTokenizer
 import requests
 from utils.reporting import upload_results
 
 
-def process_row(row, api_url, num_beams, tokenizer, decimal_points):
+def process_row(row, api_url, num_beams, decimal_points):
     start_time = time()
     r = requests.post(
         api_url,
@@ -44,7 +43,7 @@ def process_row(row, api_url, num_beams, tokenizer, decimal_points):
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
-    row["tokens_used"] = len(tokenizer.encode(generated_query))
+    row["tokens_used"] = None
     golden_query = row["query"]
     db_name = row["db_name"]
     db_type = row["db_type"]
@@ -88,11 +87,7 @@ def run_api_eval(args):
     max_workers = args.parallel_threads
     db_type = args.db_type
     decimal_points = args.decimal_points
-    tokenizer_path = args.model
-
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-
+    
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
@@ -151,7 +146,7 @@ def run_api_eval(args):
             for row in df.to_dict("records"):
                 futures.append(
                     executor.submit(
-                        process_row, row, api_url, num_beams, tokenizer, decimal_points
+                        process_row, row, api_url, num_beams, decimal_points
                     )
                 )
 
