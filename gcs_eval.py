@@ -30,7 +30,11 @@ def download_evaluate():
             .split("\n")
         )
         for gcs_model_path in existing_models:
-            model_name = gcs_model_path.replace(GCS_MODEL_DIR, "").replace("/", "")
+            model_name = (
+                gcs_model_path.replace(GCS_MODEL_DIR, "").replace("/", "").strip()
+            )
+            if not model_name:
+                continue
             local_model_path = os.path.join(LOCAL_MODEL_DIR, model_name)
             if not os.path.exists(local_model_path):
                 print(f"Downloading model: {model_name}")

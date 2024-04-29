@@ -86,7 +86,7 @@ def run_hf_eval(args):
     # initialize tokenizer and model
     tokenizer, model = get_tokenizer_model(model_name, adapter_path)
 
-    if "llama-3" in model_name.lower():
+    if "8b" in model_name.lower():
         # do this since it doesn't seem to have been done by default
         tokenizer.padding_side = "left"
 
@@ -156,7 +156,7 @@ def run_hf_eval(args):
         def chunk_dataframe(df, chunk_size):
             """Yield successive chunk_size chunks from df."""
             for i in range(0, len(df), chunk_size):
-                yield df[i : i + chunk_size]
+                yield df[i : min(i + chunk_size, len(df))]
 
         df_chunks = list(chunk_dataframe(df, args.batch_size))
 
@@ -165,7 +165,7 @@ def run_hf_eval(args):
                 prompts = batch["prompt"].tolist()
                 generated_queries = pipe(
                     prompts,
-                    max_new_tokens=300,
+                    max_new_tokens=600,
                     do_sample=False,
                     num_beams=num_beams,
                     num_return_sequences=1,

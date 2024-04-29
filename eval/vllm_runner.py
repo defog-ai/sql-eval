@@ -30,6 +30,7 @@ def run_vllm_eval(args):
     # initialize model only once as it takes a while
     print(f"Preparing {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
     if not args.quantized:
         llm = LLM(model=model_name, tensor_parallel_size=torch.cuda.device_count())
     else:
@@ -97,35 +98,46 @@ def run_vllm_eval(args):
             axis=1,
         )
         print(f"Prepared {len(df)} question(s) from {questions_file}")
-        print(f"Generating completions")
-        start_time = time.time()
-        # we pass the full list of prompts at once to the vllm engine
-        outputs = llm.generate(df["prompt"].tolist(), sampling_params)
-        time_taken = time.time() - start_time
-        print(f"Time taken: {time_taken:.1f}s")
 
-        # save generation metrics
-        df["latency_seconds"] = time_taken / len(df)
+        def chunk_dataframe(df, chunk_size):
+            """Returns successive chunk_size chunks from df as a list of dfs"""
+            df_chunks = []
+            for i in range(0, len(df), chunk_size):
+                df_i = df.iloc[i : min(i + chunk_size, len(df))]
+                print(
+                    f"Chunk {i//chunk_size+1}/{len(df)//chunk_size+1} with {len(df_i)} questions"
+                )
+                df_chunks.append(df_i)
+            return df_chunks
 
-        df["generated_query"] = ""
-        df["tokens_used"] = 0
-        df["correct"] = 0
-        df["exact_match"] = 0
-        df["error_db_exec"] = 0
-        df["error_msg"] = ""
+        df_chunks = chunk_dataframe(df, args.batch_size)
+
+        total_tried = 0
         total_correct = 0
-        with tqdm(total=len(df)) as pbar:
-            for i, output in enumerate(outputs):
+        output_rows = []
+
+        print(f"Generating completions")
+
+        for batch in (pbar := tqdm(df_chunks, total=len(df))):
+            prompts = batch["prompt"].tolist()
+            print(f"Generating completions for {len(prompts)} prompts")
+            start_time = time.time()
+            outputs = llm.generate(prompts, sampling_params)
+            print(
+                f"Generated {len(outputs)} completions in {time.time() - start_time:.2f} seconds"
+            )
+            time_taken = time.time() - start_time
+            for row, output in zip(batch.to_dict("records"), outputs):
                 generated_query = (
                     output.outputs[0].text.split(";")[0].split("```")[0].strip() + ";"
                 )
                 normalized_query = sqlparse.format(
                     generated_query, keyword_case="upper", strip_whitespace=True
                 )
-                df.loc[i, "generated_query"] = normalized_query
-                df.loc[i, "tokens_used"] = len(output.outputs[0].token_ids)
-                df.loc[i, "latency_seconds"] = time_taken / len(df)
-                row = df.iloc[i]
+                row["generated_query"] = normalized_query
+                row["tokens_used"] = len(output.outputs[0].token_ids)
+                row["latency_seconds"] = time_taken / len(batch)
+
                 golden_query = row["query"]
                 db_name = row["db_name"]
                 db_type = row["db_type"]
@@ -146,18 +158,22 @@ def run_vllm_eval(args):
                         table_metadata_string=table_metadata_string,
                         decimal_points=args.decimal_points,
                     )
-                    df.loc[i, "exact_match"] = int(exact_match)
-                    df.loc[i, "correct"] = int(correct)
-                    df.loc[i, "error_msg"] = ""
+                    row["exact_match"] = int(exact_match)
+                    row["correct"] = int(correct)
+                    row["error_msg"] = ""
                     if correct:
                         total_correct += 1
                 except Exception as e:
-                    df.loc[i, "error_db_exec"] = 1
-                    df.loc[i, "error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-                pbar.update(1)
-                pbar.set_description(
-                    f"Correct so far: {total_correct}/{(i+1)} ({100*total_correct/(i+1):.2f}%)"
-                )
+                    row["error_db_exec"] = 1
+                    row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
+
+                total_tried += 1
+                output_rows.append(row)
+            pbar.update(len(batch))
+            pbar.set_description(
+                f"Correct so far: {total_correct}/{(total_tried)} ({100*total_correct/(total_tried):.2f}%)"
+            )
+        df = pd.DataFrame(output_rows)
         del df["prompt"]
         print(df.groupby("query_category")[["exact_match", "correct"]].mean())
         df = df.sort_values(by=["db_name", "query_category", "question"])
