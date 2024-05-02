@@ -215,6 +215,17 @@ python -W ignore main.py \
 ```
 While you can do the same for the other runners, the time savings are most significant when loading a large model locally, vs calling an always-on API.
 
+### Bedrock
+```bash
+python -W ignore main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" \
+  -o results/llama3_70b.csv \
+  -g bedrock \
+  -f prompts/prompt.md \
+  -m meta.llama3-70b-instruct-v1:0
+```
+
 
 ### Llama CPP
 To run the eval using Llama CPP, you can use the following code. Before running this, you must install `llama-cpp-python` with the following (on Apple Silicon)
