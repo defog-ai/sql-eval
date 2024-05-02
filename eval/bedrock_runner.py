@@ -13,28 +13,37 @@ from tqdm import tqdm
 from time import time
 from utils.reporting import upload_results
 
-bedrock = boto3.client(service_name='bedrock-runtime')
+bedrock = boto3.client(service_name="bedrock-runtime")
+
 
 def process_row(row, model_id, decimal_points):
     start_time = time()
-    
-    body = json.dumps({
-        "prompt": row["prompt"],
-        "max_gen_len": 400,
-        "temperature": 0,
-        "top_p": 1,
-    })
 
-    accept = 'application/json'
-    contentType = 'application/json'
-    response = bedrock.invoke_model(body=body, modelId=model_id, accept=accept, contentType=contentType)
-    model_response = json.loads(response['body'].read())
+    body = json.dumps(
+        {
+            "prompt": row["prompt"],
+            "max_gen_len": 400,
+            "temperature": 0,
+            "top_p": 1,
+        }
+    )
 
-    generated_query = model_response['generation']
+    accept = "application/json"
+    contentType = "application/json"
+    response = bedrock.invoke_model(
+        body=body, modelId=model_id, accept=accept, contentType=contentType
+    )
+    model_response = json.loads(response["body"].read())
+
+    generated_query = model_response["generation"]
     end_time = time()
 
     generated_query = (
-        generated_query.split("[/SQL]")[0].split("```sql")[-1].split("```")[0].split(";")[0].strip()
+        generated_query.split("[/SQL]")[0]
+        .split("```sql")[-1]
+        .split("```")[0]
+        .split(";")[0]
+        .strip()
         + ";"
     )
 
@@ -142,9 +151,7 @@ def run_bedrock_eval(args):
             futures = []
             for row in df.to_dict("records"):
                 futures.append(
-                    executor.submit(
-                        process_row, row, model_id, decimal_points
-                    )
+                    executor.submit(process_row, row, model_id, decimal_points)
                 )
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
