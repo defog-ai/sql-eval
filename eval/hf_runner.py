@@ -172,8 +172,8 @@ def run_hf_eval(args):
                     return_full_text=False,
                     eos_token_id=tokenizer.eos_token_id,
                     pad_token_id=tokenizer.eos_token_id,
-                    temperature=1.0,
-                    top_p=1.0,
+                    temperature=None,
+                    top_p=None,
                 )
                 gc.collect()
                 torch.cuda.empty_cache()
