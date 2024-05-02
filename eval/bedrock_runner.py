@@ -15,31 +15,30 @@ from utils.reporting import upload_results
 
 bedrock = boto3.client(service_name='bedrock-runtime')
 
-def process_row(row, modelId, decimal_points):
+def process_row(row, model_id, decimal_points):
     start_time = time()
     
     body = json.dumps({
         "prompt": row["prompt"],
-        "max_gen_len": 600,
+        "max_gen_len": 400,
         "temperature": 0,
         "top_p": 1,
     })
 
-    modelId = modelId
     accept = 'application/json'
     contentType = 'application/json'
-    response = bedrock.invoke_model(body=body, modelId=modelId, accept=accept, contentType=contentType)
+    response = bedrock.invoke_model(body=body, modelId=model_id, accept=accept, contentType=contentType)
     model_response = json.loads(response['body'].read())
 
     generated_query = model_response['generation']
     end_time = time()
 
-    print(generated_query)
-
     generated_query = (
-        generated_query.split("[/SQL]")[0].split("```")[-1].split("```")[0].split(";")[0].strip()
+        generated_query.split("[/SQL]")[0].split("```sql")[-1].split("```")[0].split(";")[0].strip()
         + ";"
     )
+
+    print(generated_query)
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
@@ -85,7 +84,7 @@ def run_bedrock_eval(args):
     max_workers = args.parallel_threads
     db_type = args.db_type
     decimal_points = args.decimal_points
-    modelId = args.model
+    model_id = args.model
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -144,7 +143,7 @@ def run_bedrock_eval(args):
             for row in df.to_dict("records"):
                 futures.append(
                     executor.submit(
-                        process_row, row, decimal_points
+                        process_row, row, model_id, decimal_points
                     )
                 )
 
