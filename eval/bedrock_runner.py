@@ -38,8 +38,6 @@ def process_row(row, model_id, decimal_points):
     generated_query = model_response["generation"]
     end_time = time()
 
-    print(generated_query)
-
     if "```sql" in generated_query:
         generated_query = (
             generated_query.split("[/SQL]")[0]
@@ -52,11 +50,13 @@ def process_row(row, model_id, decimal_points):
     else:
         generated_query = (
             generated_query.split("[/SQL]")[0]
-            .split("```")[-1]
+            .split("```")[1]
             .split(";")[0]
             .strip()
             + ";"
         )
+    
+    print(generated_query)
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
