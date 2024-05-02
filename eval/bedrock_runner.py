@@ -47,8 +47,6 @@ def process_row(row, model_id, decimal_points):
         + ";"
     )
 
-    print(generated_query)
-
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     row["tokens_used"] = None
