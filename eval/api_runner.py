@@ -20,8 +20,8 @@ def mk_vllm_json(prompt, num_beams):
         "n": 1,
         "use_beam_search": num_beams > 1,
         "best_of": num_beams,
-        "temperature": 0,
-        "stop": [";", "```"],
+        # "temperature": 0,
+        # "stop": [";", "```"],
         "max_tokens": 1024,
     }
 
@@ -53,18 +53,18 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
         json=json_data,
     )
     end_time = time()
-    if "[SQL]" not in row["prompt"]:
-        generated_query = (
-            r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip()
-            + ";"
-        )
-    elif api_type == "tgi":
+    if api_type == "tgi":
         # we do not return the original prompt in tgi
         try:
             generated_query = r.json()["generated_text"]
         except KeyError:
             print(r.json())
             generated_query = ""
+    elif "[SQL]" not in row["prompt"]:
+        generated_query = (
+            r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip()
+            + ";"
+        )
     else:
         generated_query = r.json()["text"][0]
         if "[SQL]" in generated_query:
