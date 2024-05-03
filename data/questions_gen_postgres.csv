@@ -220,7 +220,7 @@ Filter strings of state using exact upper case matches.
 Assume the rating of a business to be its average rating, and compute it before computing other aggregates on it.
 Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
 "
-"How many reviews were posted by users with the name ""Sarah Williams"" in the month of April?",SELECT COUNT(*) FROM review JOIN users ON review.user_id = users.user_id WHERE users.name ILIKE '%Sarah Williams%' AND review.month ILIKE '%April%';,yelp,instruct,"Filter strings of users, city, address, business.name using ILIKE with wildcards.
+"How many reviews were posted by users with the name ""Sarah Williams"" in the month of April 2021?",SELECT COUNT(*) FROM review JOIN users ON review.user_id = users.user_id WHERE users.name ILIKE '%Sarah Williams%' AND review.month ILIKE '%April%';,yelp,instruct,"Filter strings of users, city, address, business.name using ILIKE with wildcards.
 Filter strings of state using exact upper case matches.
 Assume the rating of a business to be its average rating, and compute it before computing other aggregates on it.
 Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
