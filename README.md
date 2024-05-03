@@ -179,8 +179,11 @@ python -W ignore main.py \
 
 Optionally, if you're running evals on a model that is quantized with AWQ, add the `-qz` or `--quantized` parameter. Only applicable for the vllm runner.
 
-#### Running with an API Server
-If running with different settings, you can setup an api server to avoid reloading for each test setting and then run the tests subsequently. To setup the api server:
+### Running with an API Server
+If running with different settings, you can setup an api server to avoid reloading for each test setting and then run the tests subsequently. We enable setting up 2 types of api servers, namely the vllm api server, as well as the TGI server.
+
+#### VLLM API Server
+
 ```bash
 # to set up a vllm server
 python -m vllm.entrypoints.api_server \
@@ -197,8 +200,39 @@ python main.py \
   -b 1 \
   -f prompts/prompt.md \
   --api_url "http://localhost:8000/generate" \
-  -p 5 \
-  -n 10
+  --api_type "vllm" \
+  -p 8
+```
+
+#### TGI API Server
+
+You may consult the [TGI documentation](https://huggingface.co/docs/text-generation-inference/quicktour) for more information on how to set up a TGI server. Here's a sample command to set up a TGI server using a preset docker image and run the evaluation using the API runner. Note that you would want to change the number of shards and the model id accordingly, depending on how many gpu's you have available and your model of choice.
+```bash
+# to set up a tgi server
+model="defog/sqlcoder-7b-2"
+docker run --gpus all \
+  --shm-size 1g \
+  -p 8000:80 \
+  -v /models:/models ghcr.io/huggingface/text-generation-inference:2.0 \
+  --model-id "${model}" \
+  --max-best-of 4 \
+  --max-input-tokens 3072 \
+  --sharded true \
+  --num-shard 4 \
+  --hostname 0.0.0.0 \
+  --port 80
+
+# to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p and b to higher values. Note that cuda graphs in tgi is optimized for batch sizes that are powers of 2 by default.
+python main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" \
+  -o results/api.csv \
+  -g api \
+  -b 1 \
+  -f prompts/prompt.md \
+  --api_url "http://localhost:8000/generate" \
+  --api_type "vllm" \
+  -p 8
 ```
 
 #### Multiple Prompts

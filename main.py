@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str)
     parser.add_argument("-a", "--adapter", type=str)
     parser.add_argument("--api_url", type=str)
+    parser.add_argument("--api_type", type=str)
     # inference-technique-related parameters
     parser.add_argument("-f", "--prompt_file", nargs="+", type=str, required=True)
     parser.add_argument("-b", "--num_beams", type=int, default=1)
@@ -97,6 +98,10 @@ if __name__ == "__main__":
 
         run_hf_eval(args)
     elif args.model_type == "api":
+        assert args.api_url is not None, "api_url must be provided for api model"
+        assert args.api_type is not None, "api_type must be provided for api model"
+        assert args.api_type in ["vllm", "tgi"], "api_type must be one of 'vllm', 'tgi'"
+
         from eval.api_runner import run_api_eval
 
         run_api_eval(args)
