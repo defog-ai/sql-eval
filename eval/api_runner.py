@@ -14,22 +14,53 @@ import requests
 from utils.reporting import upload_results
 
 
-def process_row(row, api_url, num_beams, decimal_points):
+def mk_vllm_json(prompt, num_beams):
+    return {
+        "prompt": prompt,
+        "n": 1,
+        "use_beam_search": num_beams > 1,
+        "best_of": num_beams,
+        # "temperature": 0,
+        # "stop": [";", "```"],
+        "max_tokens": 1024,
+    }
+
+
+def mk_tgi_json(prompt, num_beams):
+    # see swagger docs for /generate for the full list of parameters:
+    # https://huggingface.github.io/text-generation-inference/#/Text%20Generation%20Inference/generate
+    return {
+        "inputs": prompt,
+        "parameters": {
+            "best_of": num_beams,
+            "do_sample": num_beams > 1,
+            "return_full_text": False,
+            "max_new_tokens": 1024,
+        },
+    }
+
+
+def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points: int):
     start_time = time()
+    if api_type == "tgi":
+        json_data = mk_tgi_json(row["prompt"], num_beams)
+    elif api_type == "vllm":
+        json_data = mk_vllm_json(row["prompt"], num_beams)
+    else:
+        raise ValueError(f"Invalid api_type: {api_type}")
     r = requests.post(
         api_url,
-        json={
-            "prompt": row["prompt"],
-            "n": 1,
-            "use_beam_search": num_beams > 1,
-            "best_of": num_beams,
-            "temperature": 0,
-            "stop": [";", "```"],
-            "max_tokens": 4000,
-        },
+        json=json_data,
     )
     end_time = time()
-    if "[SQL]" not in row["prompt"]:
+    if api_type == "tgi":
+        # we do not return the original prompt in tgi
+        try:
+            generated_query = r.json()["generated_text"]
+        except KeyError:
+            print(r.json())
+            generated_query = ""
+    elif "[SQL]" not in row["prompt"]:
         generated_query = (
             r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip()
             + ";"
@@ -37,7 +68,7 @@ def process_row(row, api_url, num_beams, decimal_points):
     else:
         generated_query = r.json()["text"][0]
         if "[SQL]" in generated_query:
-            generated_query = generated_query.split("[SQL]")[1].strip()
+            generated_query = generated_query.split("[SQL]", 1)[1].strip()
         else:
             generated_query = generated_query.strip()
 
@@ -81,6 +112,7 @@ def run_api_eval(args):
     num_questions = args.num_questions
     public_data = not args.use_private_data
     api_url = args.api_url
+    api_type = args.api_type
     output_file_list = args.output_file
     k_shot = args.k_shot
     num_beams = args.num_beams
@@ -145,7 +177,7 @@ def run_api_eval(args):
             for row in df.to_dict("records"):
                 futures.append(
                     executor.submit(
-                        process_row, row, api_url, num_beams, decimal_points
+                        process_row, row, api_url, api_type, num_beams, decimal_points
                     )
                 )
 
