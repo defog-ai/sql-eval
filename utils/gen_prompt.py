@@ -103,7 +103,7 @@ def generate_prompt(
                     join_list.append(join_str)
 
             if len(join_list) > 0:
-                join_list = "\n\n-- " + "\n-- ".join(join_list)
+                join_list = "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
             else:
                 join_list = ""
 
