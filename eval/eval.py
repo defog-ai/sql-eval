@@ -404,7 +404,7 @@ def subset_df(
             except AssertionError:
                 continue
         
-        if col_match == False:
+        if not col_match:
             if verbose:
                 print(f"no match for {col_sub_name}")
             return False
