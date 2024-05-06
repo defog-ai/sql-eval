@@ -359,7 +359,7 @@ def compare_df(
     df_gold = normalize_table(df_gold, query_category, question, query_gold)
     df_gen = normalize_table(df_gen, query_category, question, query_gen)
 
-    # stop early if shapes do not match
+    # perform same checks again for normalized tables
     if df_gold.shape != df_gen.shape:
         return False
 
