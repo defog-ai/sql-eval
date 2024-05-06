@@ -346,7 +346,7 @@ def compare_df(
     # stop early if shapes do not match
     if df_gold.shape != df_gen.shape:
         return False
-    
+
     # drop duplicates to ensure equivalence
     try:
         if (df_gold.values == df_gen.values).all():
@@ -405,12 +405,12 @@ def subset_df(
                 break
             except AssertionError:
                 continue
-        
+
         if not col_match:
             if verbose:
                 print(f"no match for {col_sub_name}")
             return False
-    
+
     df_sub_normalized = normalize_table(df_sub, query_category, question, query_sub)
 
     # get matched columns from df_super, and rename them with columns from df_sub, then normalize
