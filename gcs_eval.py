@@ -11,7 +11,7 @@ from eval.vllm_runner import run_vllm_eval
 # GCS_MODEL_EVAL_DIR: gcs path where the evaluated models will be shifted to
 # LOCAL_MODEL_DIR: local path where the models will be downloaded
 # SQL_EVAL_DIR: local path where the sql-eval repo is cloned
-GCS_MODEL_DIR = "gs://defog-finetuning/fsdp_hpp2"
+GCS_MODEL_DIR = "gs://defog-finetuning/fsdp_wrong_sql_eval"
 GCS_MODEL_EVAL_DIR = "gs://defog-finetuning/fsdp_evaluated"
 LOCAL_MODEL_DIR = os.path.expanduser("/models/fsdp")
 SQL_EVAL_DIR = os.path.expanduser("~/sql-eval")
