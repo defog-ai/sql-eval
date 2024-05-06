@@ -391,6 +391,7 @@ def subset_df(
             col_super = (
                 df_super_temp[col_super_name].sort_values().reset_index(drop=True)
             )
+
             try:
                 assert_series_equal(
                     col_sub, col_super, check_dtype=False, check_names=False
@@ -402,10 +403,12 @@ def subset_df(
                 break
             except AssertionError:
                 continue
+        
         if col_match == False:
             if verbose:
                 print(f"no match for {col_sub_name}")
             return False
+    
     df_sub_normalized = normalize_table(df_sub, query_category, question, query_sub)
 
     # get matched columns from df_super, and rename them with columns from df_sub, then normalize
