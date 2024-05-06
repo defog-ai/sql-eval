@@ -20,6 +20,8 @@ SQL_EVAL_DIR = os.path.expanduser("~/sql-eval")
 # in the vllm runner.
 os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
 os.chdir(SQL_EVAL_DIR)  # for executing sql-eval commands
+# edit the run configs as per your requirements
+NUM_BEAMS = 1
 
 
 def download_evaluate():
@@ -62,9 +64,9 @@ def download_evaluate():
                 ]
                 prompt_file = "prompts/prompt.md"
                 output_files = [
-                    f"results/{model_name}_beam4_basic.csv",
-                    f"results/{model_name}_beam4_advanced.csv",
-                    f"results/{model_name}_beam4_v1.csv",
+                    f"results/{model_name}_beam{NUM_BEAMS}_basic.csv",
+                    f"results/{model_name}_beam{NUM_BEAMS}_advanced.csv",
+                    f"results/{model_name}_beam{NUM_BEAMS}_v1.csv",
                 ]
                 subprocess.run(
                     [
@@ -79,7 +81,7 @@ def download_evaluate():
                         "-g",
                         "vllm",
                         "-b",
-                        "4",
+                        str(NUM_BEAMS),
                         "-c",
                         "0",
                         "-f",

@@ -182,11 +182,19 @@ Optionally, if you're running evals on a model that is quantized with AWQ, add t
 ### Running with an API Server
 If running with different settings, you can setup an api server to avoid reloading for each test setting and then run the tests subsequently. We enable setting up 2 types of api servers, namely the vllm api server, as well as the TGI server.
 
+We also provide our custom modification of the vllm api server, which only returns the generated output.
+
 #### VLLM API Server
 
 ```bash
 # to set up a vllm server
 python -m vllm.entrypoints.api_server \
+    --model defog/sqlcoder-7b-2 \
+    --tensor-parallel-size 4 \
+    --dtype float16
+
+# to use our modified api server
+python utils/api_server.py \
     --model defog/sqlcoder-7b-2 \
     --tensor-parallel-size 4 \
     --dtype float16
