@@ -3,9 +3,21 @@
 Thank you for your interest in contributing to our project! We value your contributions and want to ensure a smooth and collaborative experience for everyone. Please take a moment to review the following guidelines.
 
 ## Table of Contents
+- [Installation](#installation)
 - [Linting](#linting)
 - [Testing](#testing)
 - [Submitting Changes](#submitting-changes)
+
+## Installation
+
+Firstly, clone the repository where we store our database data and schema. Install all Python libraries listed in the `requirements.txt` file. Download the spacy model used in the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py). Finally, install the library:
+```bash
+git clone https://github.com/defog-ai/defog-data.git
+cd defog-data
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+pip install -e .
+```
 
 ## Linting
 
