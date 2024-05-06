@@ -348,11 +348,12 @@ def compare_df(
         return False
 
     # drop duplicates to ensure equivalence
+    is_equal = df_gold.values == df_gen.values
     try:
-        if (df_gold.values == df_gen.values).all():
+        if is_equal.all():
             return True
     except:
-        if df_gold.values == df_gen.values:
+        if is_equal:
             return True
 
     df_gold = normalize_table(df_gold, query_category, question, query_gold)
@@ -362,10 +363,11 @@ def compare_df(
     if df_gold.shape != df_gen.shape:
         return False
 
+    is_equal = df_gold.values == df_gen.values
     try:
-        return (df_gold.values == df_gen.values).all()
+        return is_equal.all()
     except:
-        return df_gold.values == df_gen.values
+        return is_equal
 
 
 def subset_df(
