@@ -343,27 +343,29 @@ def compare_df(
     Compares two dataframes and returns True if they are the same, else False.
     query_gold and query_gen are the original queries that generated the respective dataframes.
     """
+    # stop early if shapes do not match
+    if df_gold.shape != df_gen.shape:
+        return False
+    
     # drop duplicates to ensure equivalence
     try:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
+        if (df_gold.values == df_gen.values).all():
             return True
     except:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values):
+        if df_gold.values == df_gen.values:
             return True
 
     df_gold = normalize_table(df_gold, query_category, question, query_gold)
     df_gen = normalize_table(df_gen, query_category, question, query_gen)
 
+    # stop early if shapes do not match
+    if df_gold.shape != df_gen.shape:
+        return False
+
     try:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
-            return True
-        else:
-            return False
+        return (df_gold.values == df_gen.values).all()
     except:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values):
-            return True
-        else:
-            return False
+        return df_gold.values == df_gen.values
 
 
 def subset_df(
@@ -376,7 +378,7 @@ def subset_df(
     verbose: bool = False,
 ) -> bool:
     """
-    Checks if df_sub is a subset of df_super
+    Checks if df_sub is a subset of df_super.
     """
     if df_sub.empty:
         return False  # handle cases for empty dataframes
