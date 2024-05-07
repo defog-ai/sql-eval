@@ -12,4 +12,8 @@ results_fn_postgres/*.json
 **/__pycache__/
 .pytest_cache
 
+# virtual envs
+*venv/
+*env/
+
 .vscode

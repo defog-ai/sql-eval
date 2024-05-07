@@ -343,27 +343,31 @@ def compare_df(
     Compares two dataframes and returns True if they are the same, else False.
     query_gold and query_gen are the original queries that generated the respective dataframes.
     """
+    # stop early if shapes do not match
+    if df_gold.shape != df_gen.shape:
+        return False
+
     # drop duplicates to ensure equivalence
+    is_equal = df_gold.values == df_gen.values
     try:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
+        if is_equal.all():
             return True
     except:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values):
+        if is_equal:
             return True
 
     df_gold = normalize_table(df_gold, query_category, question, query_gold)
     df_gen = normalize_table(df_gen, query_category, question, query_gen)
 
+    # perform same checks again for normalized tables
+    if df_gold.shape != df_gen.shape:
+        return False
+
+    is_equal = df_gold.values == df_gen.values
     try:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values).all():
-            return True
-        else:
-            return False
+        return is_equal.all()
     except:
-        if df_gold.shape == df_gen.shape and (df_gold.values == df_gen.values):
-            return True
-        else:
-            return False
+        return is_equal
 
 
 def subset_df(
@@ -376,7 +380,7 @@ def subset_df(
     verbose: bool = False,
 ) -> bool:
     """
-    Checks if df_sub is a subset of df_super
+    Checks if df_sub is a subset of df_super.
     """
     if df_sub.empty:
         return False  # handle cases for empty dataframes
@@ -391,6 +395,7 @@ def subset_df(
             col_super = (
                 df_super_temp[col_super_name].sort_values().reset_index(drop=True)
             )
+
             try:
                 assert_series_equal(
                     col_sub, col_super, check_dtype=False, check_names=False
@@ -402,10 +407,12 @@ def subset_df(
                 break
             except AssertionError:
                 continue
-        if col_match == False:
+
+        if not col_match:
             if verbose:
                 print(f"no match for {col_sub_name}")
             return False
+
     df_sub_normalized = normalize_table(df_sub, query_category, question, query_sub)
 
     # get matched columns from df_super, and rename them with columns from df_sub, then normalize
