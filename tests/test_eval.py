@@ -157,6 +157,35 @@ def test_get_all_minimal_queries():
         option5,
         option6,
     ]
+    query6 = """WITH merchant_revenue AS (SELECT {m.mid,m.name}, m.category AS merchant_category, SUM(w.amount) AS total_revenue
+    FROM consumer_div.merchants m
+    INNER JOIN consumer_div.wallet_transactions_daily w ON m.mid = w.receiver_id AND w.receiver_type = 1
+    WHERE w.status = 'success'
+    GROUP BY {}, m.category)
+    SELECT *, RANK() OVER (ORDER BY total_revenue DESC) AS mrr FROM merchant_revenue"""
+    option7 = """WITH merchant_revenue AS (SELECT m.mid, m.category AS merchant_category, SUM(w.amount) AS total_revenue
+    FROM consumer_div.merchants m
+    INNER JOIN consumer_div.wallet_transactions_daily w ON m.mid = w.receiver_id AND w.receiver_type = 1
+    WHERE w.status = 'success'
+    GROUP BY m.mid, m.category)
+    SELECT *, RANK() OVER (ORDER BY total_revenue DESC) AS mrr FROM merchant_revenue"""
+    option8 = """WITH merchant_revenue AS (SELECT m.name, m.category AS merchant_category, SUM(w.amount) AS total_revenue
+    FROM consumer_div.merchants m
+    INNER JOIN consumer_div.wallet_transactions_daily w ON m.mid = w.receiver_id AND w.receiver_type = 1
+    WHERE w.status = 'success'
+    GROUP BY m.name, m.category)
+    SELECT *, RANK() OVER (ORDER BY total_revenue DESC) AS mrr FROM merchant_revenue"""
+    option9 = """WITH merchant_revenue AS (SELECT m.mid, m.name, m.category AS merchant_category, SUM(w.amount) AS total_revenue
+    FROM consumer_div.merchants m
+    INNER JOIN consumer_div.wallet_transactions_daily w ON m.mid = w.receiver_id AND w.receiver_type = 1
+    WHERE w.status = 'success'
+    GROUP BY m.mid, m.name, m.category)
+    SELECT *, RANK() OVER (ORDER BY total_revenue DESC) AS mrr FROM merchant_revenue"""
+    for expected, result in zip(
+        get_all_minimal_queries(query6), [option7, option8, option9]
+    ):
+        assert expected == result
+    assert get_all_minimal_queries(query6) == [option7, option8, option9]
 
 
 @mock.patch("pandas.read_sql_query")
