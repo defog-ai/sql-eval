@@ -21,7 +21,7 @@ def mk_vllm_json(prompt, num_beams):
         "use_beam_search": num_beams > 1,
         "best_of": num_beams,
         # "temperature": 0,
-        # "stop": [";", "```"],
+        "stop": [";", "```"],
         "max_tokens": 1024,
     }
 
@@ -62,8 +62,7 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
             generated_query = ""
     elif "[SQL]" not in row["prompt"]:
         generated_query = (
-            r.json()["text"][0].split("```")[-1].split("```")[0].split(";")[0].strip()
-            + ";"
+            r.json()["text"][0].split("```", 1)[0].split(";")[0].strip() + ";"
         )
     else:
         generated_query = r.json()["text"][0]
