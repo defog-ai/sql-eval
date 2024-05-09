@@ -20,9 +20,9 @@ def mk_vllm_json(prompt, num_beams):
         "n": 1,
         "use_beam_search": num_beams > 1,
         "best_of": num_beams,
-        # "temperature": 0,
+        "temperature": 0,
         "stop": [";", "```"],
-        "max_tokens": 1024,
+        "max_tokens": 4000,
     }
 
 
@@ -47,7 +47,16 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
     elif api_type == "vllm":
         json_data = mk_vllm_json(row["prompt"], num_beams)
     else:
-        raise ValueError(f"Invalid api_type: {api_type}")
+        # add any custom JSON data here, e.g. for a custom API
+        json_data = {
+            "prompt": row["prompt"],
+            "n": 1,
+            "use_beam_search": num_beams > 1,
+            "best_of": num_beams,
+            "temperature": 0,
+            "stop": [";", "```"],
+            "max_tokens": 4000,
+        }
     r = requests.post(
         api_url,
         json=json_data,
@@ -70,7 +79,7 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
             generated_query = generated_query.split("[SQL]", 1)[1].strip()
         else:
             generated_query = generated_query.strip()
-
+    
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     row["tokens_used"] = None
