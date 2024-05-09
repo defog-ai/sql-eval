@@ -126,13 +126,13 @@ To test it out with just 10 questions (instead of all 200), parallelized across 
 ```bash
 python main.py \
   -db postgres \
-  -q "data/questions_gen_postgres.csv" \
-  -o results/openai.csv \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/openai_classic.csv results/openai_basic.csv results/openai_advanced.csv \
   -g oa \
   -f prompts/prompt_openai.md \
-  -m gpt-3.5-turbo-0613 \
-  -n 10 \
-  -p 5
+  -m gpt-4-turbo \
+  -p 5 \
+  -c 0
 ```
 
 ### Anthropic
@@ -140,12 +140,13 @@ To test out the full suite of questions for claude-3:
 ```bash
 python main.py \
   -db postgres \
-  -q "data/questions_gen_postgres.csv" \
-  -o results/claude-3.csv \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/claude3_classic.csv results/claude3_basic.csv results/claude3_advanced.csv \
   -g anthropic \
   -f prompts/prompt_anthropic.md \
   -m claude-3-opus-20240229 \
-  -p 5
+  -p 5 \
+  -c 0
 ```
 
 ### Hugging Face
@@ -155,12 +156,12 @@ To test it out with our fine-tuned sql model with just 10 questions (instead of 
 # use the -W option to ignore warnings about sequential use of transformers pipeline
 python -W ignore main.py \
   -db postgres \
-  -q "data/questions_gen_postgres.csv" \
-  -o results/results.csv \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/hf_classic.csv results/hf_basic.csv results/hf_advanced.csv \
   -g hf \
   -f prompts/prompt.md \
-  -m defog/sqlcoder-7b-2 \
-  -n 10
+  -m defog/llama-3-sqlcoder-8b \
+  -c 0
 ```
 We also support loading a peft adapter here as well via the `-a` flag. Note that the loading of the adapter with the model will take slightly longer than usual.
 
@@ -170,11 +171,12 @@ We also have a [vllm](https://blog.vllm.ai/) runner which uses the vLLM engine t
 ```bash
 python -W ignore main.py \
   -db postgres \
-  -q "data/questions_gen_postgres.csv" \
-  -o "results/vllm.csv" \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/vllm_classic.csv results/vllm_basic.csv results/vllm_advanced.csv \
   -g vllm \
   -f "prompts/prompt.md" \
-  -m defog/sqlcoder-7b-2
+  -m defog/llama-3-sqlcoder-8b \
+  -c 0
 ```
 
 Optionally, if you're running evals on a model that is quantized with AWQ, add the `-qz` or `--quantized` parameter. Only applicable for the vllm runner.
