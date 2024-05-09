@@ -71,7 +71,7 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
             generated_query = ""
     elif "[SQL]" not in row["prompt"]:
         generated_query = (
-            r.json()["text"][0].split("```", 1)[0].split(";")[0].strip() + ";"
+            r.json()["text"][0].split("```sql")[-1].split("```")[0].split(";")[0].strip() + ";"
         )
     else:
         generated_query = r.json()["text"][0]

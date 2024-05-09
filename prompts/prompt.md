@@ -1,11 +1,10 @@
-### Task
-Generate a SQL query to answer [QUESTION]{user_question}[/QUESTION]
+<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+Generate a SQL query to answer this question: `{user_question}`
 {instructions}
 
-### Database Schema
-The query will run on a database with the following schema:
-{table_metadata_string}
+DDL statements:
+{table_metadata_string}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
-### Answer
-Given the database schema, here is the SQL query that answers [QUESTION]{user_question}[/QUESTION]
-[SQL]
+The following SQL query best answers the question `{user_question}`:
+```sql
