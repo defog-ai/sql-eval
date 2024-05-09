@@ -29,9 +29,11 @@ def prepare_questions_df(
             lambda x: x.replace(". ", ".\n")
         )
         question_query_df["instructions"] = question_query_df["instructions"].apply(
-            lambda x: f"\nFollow the instructions below to generate the query:\n{x}\n"
-            if x != ""
-            else ""
+            lambda x: (
+                f"\nFollow the instructions below to generate the query:\n{x}\n"
+                if x != ""
+                else ""
+            )
         )
     else:
         question_query_df["instructions"] = ""
