@@ -34,22 +34,20 @@ def download_evaluate():
         existing_checkpoints = []
         for existing_model_folder in existing_models:
             results = (
-                (
-                    subprocess.run(
-                        ["gsutil", "ls", existing_model_folder], capture_output=True
-                    )
-                    .stdout.decode("utf-8")
-                    .split("\n")
+                subprocess.run(
+                    ["gsutil", "ls", existing_model_folder], capture_output=True
                 )
+                .stdout.decode("utf-8")
+                .split("\n")
             )
             for path in results:
                 if path.startswith(GCS_MODEL_DIR) and "checkpoint" in path:
                     existing_checkpoints.append(path)
         print(existing_checkpoints)
         for gcs_model_checkpoint_path in existing_checkpoints:
-            run_name_checkpoint = (
-                gcs_model_checkpoint_path.replace(GCS_MODEL_DIR, "").strip(" /")
-            )
+            run_name_checkpoint = gcs_model_checkpoint_path.replace(
+                GCS_MODEL_DIR, ""
+            ).strip(" /")
             if not run_name_checkpoint:
                 print("No model found, skipping.")
                 continue
@@ -60,9 +58,18 @@ def download_evaluate():
                 local_run_name_folder = os.path.join(LOCAL_MODEL_DIR, run_name)
                 os.makedirs(local_run_name_folder, exist_ok=True)
                 # download from gcs's checkpoint folder into a run name folder
-                print(f"Downloading from {gcs_model_checkpoint_path} to {local_run_name_folder}")
+                print(
+                    f"Downloading from {gcs_model_checkpoint_path} to {local_run_name_folder}"
+                )
                 subprocess.run(
-                    ["gsutil", "-m", "cp", "-r", gcs_model_checkpoint_path, local_run_name_folder]
+                    [
+                        "gsutil",
+                        "-m",
+                        "cp",
+                        "-r",
+                        gcs_model_checkpoint_path,
+                        local_run_name_folder,
+                    ]
                 )
             else:
                 print(f"Model folder exists: {run_name_checkpoint}")
@@ -116,7 +123,13 @@ def download_evaluate():
                 )
                 # move the model to the evaluated directory once evaluated successfully
                 subprocess.run(
-                    ["gsutil", "-m", "mv", gcs_model_checkpoint_path, GCS_MODEL_EVAL_DIR],
+                    [
+                        "gsutil",
+                        "-m",
+                        "mv",
+                        gcs_model_checkpoint_path,
+                        GCS_MODEL_EVAL_DIR,
+                    ],
                     check=True,
                 )
                 subprocess.run(["rm", "-rf", local_model_path], check=True)
