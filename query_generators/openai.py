@@ -101,7 +101,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         messages: (only for OpenAI chat models) a list of messages to be used as a prompt. Each message is a dict with two keys: role and content
         prompt: (only for text-davinci-003 model) a string to be used as a prompt
         """
-        tokenizer = tiktoken.encoding_for_model(model)
+        tokenizer = tiktoken.get_encoding("cl100k_base")
         num_tokens = 0
         if model != "text-davinci-003":
             for message in messages:
