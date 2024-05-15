@@ -18,7 +18,7 @@ This is a comprehensive set of instructions that assumes basic familiarity with 
 
 ### Install Dependencies
 
-Firstly, clone the repository where we store our database data and schema. Install all Python libraries listed in the `requirements.txt` file. You would also need to download the spacy model used in the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py). Finally, install the library.
+Firstly, clone the repository where we store our database data and schema. Install all Python libraries listed in the `requirements.txt` file. You would also need to download the spacy model if you're using the NER heuristic for our [metadata-pruning method](https://github.com/defog-ai/sql-eval/blob/main/utils/pruning.py) (set by c=0, more below). Finally, install the library.
 ```bash
 git clone https://github.com/defog-ai/defog-data.git
 cd defog-data
