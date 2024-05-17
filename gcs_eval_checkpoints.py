@@ -2,6 +2,8 @@ import os
 import subprocess
 import time
 
+from transformers import AutoTokenizer
+
 # Alternate version of gcs_eval if you're working with nested checkpoint folders
 # with model weights instead of model weight folders directly
 
@@ -11,9 +13,9 @@ import time
 # GCS_MODEL_EVAL_DIR: gcs path where the evaluated models will be shifted to
 # LOCAL_MODEL_DIR: local path where the models will be downloaded
 # SQL_EVAL_DIR: local path where the sql-eval repo is cloned
-GCS_MODEL_DIR = "gs://defog-finetuning/fsdp_hpp"
-GCS_MODEL_EVAL_DIR = "gs://defog-finetuning/fsdp_evaluated"
-LOCAL_MODEL_DIR = os.path.expanduser("/models/fsdp")
+GCS_MODEL_DIR = "gs://defog-finetuning/fft"
+GCS_MODEL_EVAL_DIR = "gs://defog-finetuning/fft_evaluated"
+LOCAL_MODEL_DIR = os.path.expanduser("/models/fft")
 SQL_EVAL_DIR = os.path.expanduser("~/sql-eval")
 # edit the question files, prompt files and output files as you desire.
 # they should have the same length, as they will be zipped and iterated through
@@ -22,6 +24,14 @@ os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
 os.chdir(SQL_EVAL_DIR)  # for executing sql-eval commands
 # edit the run configs as per your requirements
 NUM_BEAMS = 1
+TOKENIZER_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
+
+
+def check_and_save_tokenizer(dir: str):
+    if not os.path.exists(os.path.join(dir, "tokenizer_config.json")):
+        print(f"Saving tokenizer in {dir}")
+        tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL)
+        tokenizer.save_pretrained(dir)
 
 
 def download_evaluate():
@@ -43,7 +53,11 @@ def download_evaluate():
             for path in results:
                 if path.startswith(GCS_MODEL_DIR) and "checkpoint" in path:
                     existing_checkpoints.append(path)
-        print(existing_checkpoints)
+        print("Existing checkpoints:")
+        for ec in existing_checkpoints:
+            print(ec)
+        # sort existing checkpoints lexically
+        existing_checkpoints.sort()
         for gcs_model_checkpoint_path in existing_checkpoints:
             run_name_checkpoint = gcs_model_checkpoint_path.replace(
                 GCS_MODEL_DIR, ""
@@ -73,6 +87,7 @@ def download_evaluate():
                 )
             else:
                 print(f"Model folder exists: {run_name_checkpoint}")
+            check_and_save_tokenizer(local_model_path)
             try:
                 # run evaluation
                 # python3 main.py \
@@ -121,6 +136,14 @@ def download_evaluate():
                     ],
                     check=True,
                 )
+                # make model directory in gcs
+                subprocess.run(
+                    [
+                        "gsutil",
+                        "mkdir",
+                        f"{GCS_MODEL_EVAL_DIR}/{run_name}",
+                    ]
+                )
                 # move the model to the evaluated directory once evaluated successfully
                 subprocess.run(
                     [
@@ -128,7 +151,7 @@ def download_evaluate():
                         "-m",
                         "mv",
                         gcs_model_checkpoint_path,
-                        GCS_MODEL_EVAL_DIR,
+                        f"{GCS_MODEL_EVAL_DIR}/{run_name}",
                     ],
                     check=True,
                 )
