@@ -175,7 +175,28 @@ def query_postgres_db(
     if db_creds is None:
         db_creds = db_creds_all["postgres"]
     try:
-        db_url = f"postgresql://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
+        try:
+            import psycopg
+
+            has_psycopg = True
+        except ImportError:
+            has_psycopg = False
+        try:
+            import psycopg2
+
+            has_psycopg2 = True
+        except ImportError:
+            has_psycopg2 = False
+        if not has_psycopg2 and not has_psycopg:
+            print(
+                "You do not have psycopg2 or psycopg installed. Please install either."
+            )
+            exit(1)
+        if has_psycopg2:
+            dialect_prefix = "postgresql"
+        elif has_psycopg:
+            dialect_prefix = "postgresql+psycopg"
+        db_url = f"{dialect_prefix}://{db_creds['user']}:{db_creds['password']}@{db_creds['host']}:{db_creds['port']}/{db_name}"
         engine = create_engine(db_url)
         escaped_query = re.sub(
             LIKE_PATTERN, escape_percent, query, flags=re.IGNORECASE
