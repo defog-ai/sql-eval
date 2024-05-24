@@ -51,9 +51,7 @@ async def generate(request: Request) -> Response:
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
     tokenizer = await engine.get_tokenizer()
-    prompt_token_ids = tokenizer.encode(
-                text=prompt,
-                add_special_tokens=False)
+    prompt_token_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
     print(f"prompt_token_ids: {prompt_token_ids}")
     if prompt_token_ids[0] != tokenizer.bos_token_id:
         prompt_token_ids = [tokenizer.bos_token_id] + prompt_token_ids
@@ -62,7 +60,7 @@ async def generate(request: Request) -> Response:
         prompt=None,
         sampling_params=sampling_params,
         request_id=request_id,
-        prompt_token_ids=prompt_token_ids
+        prompt_token_ids=prompt_token_ids,
     )
 
     # Streaming case
