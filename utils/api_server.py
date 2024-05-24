@@ -88,7 +88,23 @@ async def generate(request: Request) -> Response:
     text_outputs = []
     for output in final_output.outputs:
         text_outputs.append(output.text)
-    ret = {"text": text_outputs}
+    
+    try:
+        logprobs = [output.logprobs for output in final_output.outputs]
+    except Exception as e:
+        logprobs = []
+        print(e)
+        print("Could not extract logprobs")
+
+    logprobs = logprobs[0]
+    logprobs_json = []
+    if logprobs:
+        for item in logprobs:
+            # do this to make our response JSON serializable
+            item = {key: value.__dict__ for key, value in item.items()}
+            logprobs_json.append(item)
+
+    ret = {"text": text_outputs, "logprobs": logprobs_json}
     return JSONResponse(ret)
 
 
