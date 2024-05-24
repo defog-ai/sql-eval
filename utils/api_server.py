@@ -18,6 +18,7 @@ engine = None
 # This is a fork of https://github.com/vllm-project/vllm/blob/0650e5935b0f6af35fb2acf71769982c47b804d7/vllm/entrypoints/api_server.py
 # with the following changes:
 # - remove the prompt from response. we only return the generated output to avoid parsing errors when including the prompt.
+# - don't add special_tokens (bos/eos) and only add it if it's missing from the prompt
 # You can start it similar to how you would with the usual vllm api server:
 # ```
 # python3 -m utils/api_server.py \
@@ -46,13 +47,22 @@ async def generate(request: Request) -> Response:
     """
     request_dict = await request.json()
     prompt = request_dict.pop("prompt")
-    prefix_pos = request_dict.pop("prefix_pos", None)
     stream = request_dict.pop("stream", False)
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
+    tokenizer = await engine.get_tokenizer()
+    prompt_token_ids = tokenizer.encode(
+                text=prompt,
+                add_special_tokens=False)
+    print(f"prompt_token_ids: {prompt_token_ids}")
+    if prompt_token_ids[0] != tokenizer.bos_token_id:
+        prompt_token_ids = [tokenizer.bos_token_id] + prompt_token_ids
 
     results_generator = engine.generate(
-        prompt, sampling_params, request_id, prefix_pos=prefix_pos
+        prompt=None,
+        sampling_params=sampling_params,
+        request_id=request_id,
+        prompt_token_ids=prompt_token_ids
     )
 
     # Streaming case
