@@ -88,7 +88,7 @@ async def generate(request: Request) -> Response:
     text_outputs = []
     for output in final_output.outputs:
         text_outputs.append(output.text)
-    
+
     try:
         logprobs = [output.logprobs for output in final_output.outputs]
     except Exception as e:
