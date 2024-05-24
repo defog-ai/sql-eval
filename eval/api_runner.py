@@ -14,8 +14,8 @@ import requests
 from utils.reporting import upload_results
 
 
-def mk_vllm_json(prompt, num_beams):
-    return {
+def mk_vllm_json(prompt, num_beams, logprobs=False):
+    payload = {
         "prompt": prompt,
         "n": 1,
         "use_beam_search": num_beams > 1,
@@ -23,7 +23,11 @@ def mk_vllm_json(prompt, num_beams):
         "temperature": 0,
         "stop": [";", "```"],
         "max_tokens": 4000,
+        "seed": 42,
     }
+    if logprobs:
+        payload["logprobs"] = 2
+    return payload
 
 
 def mk_tgi_json(prompt, num_beams):
@@ -40,12 +44,19 @@ def mk_tgi_json(prompt, num_beams):
     }
 
 
-def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points: int):
+def process_row(
+    row,
+    api_url: str,
+    api_type: str,
+    num_beams: int,
+    decimal_points: int,
+    logprobs: bool = False,
+):
     start_time = time()
     if api_type == "tgi":
         json_data = mk_tgi_json(row["prompt"], num_beams)
     elif api_type == "vllm":
-        json_data = mk_vllm_json(row["prompt"], num_beams)
+        json_data = mk_vllm_json(row["prompt"], num_beams, logprobs)
     else:
         # add any custom JSON data here, e.g. for a custom API
         json_data = {
@@ -57,11 +68,21 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
             "stop": [";", "```"],
             "max_tokens": 4000,
         }
-    r = requests.post(
-        api_url,
-        json=json_data,
-    )
+    try:
+        r = requests.post(
+            api_url,
+            json=json_data,
+            timeout=30,
+        )
+    except:
+        row["generated_query"] = ""
+        row["exact_match"] = 0
+        row["correct"] = 0
+        row["error_db_exec"] = 1
+        row["error_msg"] = "API TIMEOUT"
+        return row
     end_time = time()
+    logprobs = []
     if api_type == "tgi":
         # we do not return the original prompt in tgi
         try:
@@ -85,7 +106,31 @@ def process_row(row, api_url: str, api_type: str, num_beams: int, decimal_points
         else:
             generated_query = generated_query.strip()
 
+    if "logprobs" in r.json():
+        logprobs = r.json()["logprobs"]
+
     row["generated_query"] = generated_query
+    logprobs_display = []
+    for item in logprobs:
+        probs = list(item.values())
+        probs_to_append = {}
+        for prob in probs:
+            rank = prob["rank"]
+            logprob = prob["logprob"]
+            token = prob["decoded_token"]
+            probs_to_append.update(
+                {
+                    f"rank_{rank}_token": token,
+                    f"rank_{rank}_logprob": logprob,
+                    f"rank_{rank}_prob": 10**logprob,
+                }
+            )
+
+        probs_to_append["prob_diff"] = (
+            probs_to_append["rank_1_prob"] - probs_to_append["rank_2_prob"]
+        )
+        logprobs_display.append(probs_to_append)
+    row["logprobs"] = logprobs_display
     row["latency_seconds"] = end_time - start_time
     row["tokens_used"] = None
     golden_query = row["query"]
@@ -132,6 +177,7 @@ def run_api_eval(args):
     max_workers = args.parallel_threads
     db_type = args.db_type
     decimal_points = args.decimal_points
+    logprobs = args.logprobs
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -190,7 +236,13 @@ def run_api_eval(args):
             for row in df.to_dict("records"):
                 futures.append(
                     executor.submit(
-                        process_row, row, api_url, api_type, num_beams, decimal_points
+                        process_row,
+                        row,
+                        api_url,
+                        api_type,
+                        num_beams,
+                        decimal_points,
+                        logprobs,
                     )
                 )
 
@@ -214,20 +266,32 @@ def run_api_eval(args):
         output_dir = os.path.dirname(output_file)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+
+        with open(output_file.replace(".csv", ".json"), "w") as f:
+            json.dump(output_df.to_dict("records"), f)
+
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
             output_df.to_pickle(output_file)
 
-        results = output_df.to_dict("records")
+        if logprobs:
+            results = output_df.to_dict("records")
+            with open(
+                f"../eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}",
+                "w",
+            ) as f:
+                json.dump(results, f)
+
         # upload results
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="api_runner",
-                prompt=prompt,
-                args=args,
-            )
+        # with open(prompt_file, "r") as f:
+        #     prompt = f.read()
+
+        # if args.upload_url is not None:
+        #     upload_results(
+        #         results=results,
+        #         url=args.upload_url,
+        #         runner_type="api_runner",
+        #         prompt=prompt,
+        #         args=args,
+        #     )
