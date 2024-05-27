@@ -179,6 +179,17 @@ def run_api_eval(args):
     decimal_points = args.decimal_points
     logprobs = args.logprobs
 
+    if logprobs:
+        # check that the eval-visualizer/public directory exists
+        if not os.path.exists("./eval-visualizer"):
+            # thorow error
+            raise Exception(
+                "The eval-visualizer directory does not exist. Please clone it with `git clone https://github.com/defog-ai/eval-visualizer/` before running sql-eval with the --logprobs flag."
+            )
+
+        if not os.path.exists("./eval-visualizer/public"):
+            os.makedirs("./eval-visualizer/public")
+
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
