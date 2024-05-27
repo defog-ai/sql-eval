@@ -32,11 +32,11 @@ def run_vllm_eval(args):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
     if not args.quantized:
-        llm = LLM(model=model_name, tensor_parallel_size=torch.cuda.device_count())
+        llm = LLM(model=model_name, tensor_parallel_size=1)
     else:
         llm = LLM(
             model=model_name,
-            tensor_parallel_size=torch.cuda.device_count(),
+            tensor_parallel_size=1,
             quantization="AWQ",
         )
 
@@ -136,7 +136,9 @@ def run_vllm_eval(args):
             start_time = time.time()
             # outputs = llm.generate(prompts, sampling_params) # if you prefer to use prompts instead of token_ids
             outputs = llm.generate(
-                sampling_params=sampling_params, prompt_token_ids=prompt_tokens
+                sampling_params=sampling_params,
+                prompt_token_ids=prompt_tokens,
+                use_tqdm=False,
             )
             print(
                 f"Generated {len(outputs)} completions in {time.time() - start_time:.2f} seconds"
