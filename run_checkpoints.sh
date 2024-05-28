@@ -34,17 +34,7 @@ for model_name in "${model_names[@]}"; do
     done
 
     # then run sql-eval
-    python3 main.py \  
--db postgres \
--q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
--o "results/${model_name}/c${checkpoint_num}_v1_api.csv" "results/${model_name}/c${checkpoint_num}_v1_basic.csv" "results/${model_name}/c${checkpoint_num}_v1_advanced.csv"
--g api \
--b 1 \
--f prompts/prompt.md \
---api_url "http://localhost:8080/generate" \
---api_type "vllm" \
--p 10 \
--c 0
+    python3 main.py -db postgres -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" -o "results/${model_name}/c${checkpoint_num}_v1_api.csv" "results/${model_name}/c${checkpoint_num}_v1_basic.csv" "results/${model_name}/c${checkpoint_num}_v1_advanced.csv" -g api -b 1 -f prompts/prompt.md --api_url "http://localhost:8080/generate" --api_type "vllm" -p 10 -c 0
     # finally, kill the api server
     pkill -9 -f utils/api_server.py
   done
