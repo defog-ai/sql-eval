@@ -17,3 +17,6 @@ results_fn_postgres/*.json
 *env/
 
 .vscode
+
+# all eda notebooks
+eda_*.ipynb
