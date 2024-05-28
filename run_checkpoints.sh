@@ -5,7 +5,7 @@ model_names=("sqlcoder_8b_fullft_ds_008_llama3_mgn1_b1_0900_b2_0990")
 # Loop over model names
 for model_name in "${model_names[@]}"; do
   # list the folder names in /models/combined/${model_name}
-  model_dir="/home/ubuntu/.cache/huggingface/hub/${model_name}"
+  model_dir="/workspace/finetuning/models/${model_name}"
   echo "Model directory: ${model_dir}"
   checkpoints=($(ls $model_dir))
   echo "Checkpoints: ${checkpoints}"
