@@ -525,7 +525,7 @@ def compare_query_results(
                 raise ValueError(
                     f"Invalid db_type: {db_type}. Only postgres is supported for temporary databases."
                 )
-        
+
         if compare_df(
             results_gold, results_gen, query_category, question, query_gold, query_gen
         ):
