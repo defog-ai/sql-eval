@@ -367,13 +367,17 @@ def compare_df(
     query_gold and query_gen are the original queries that generated the respective dataframes.
     """
     # drop duplicates to ensure equivalence
-    is_equal = df_gold.values == df_gen.values
     try:
+        is_equal = df_gold.values == df_gen.values
         if is_equal.all():
             return True
     except:
-        if is_equal:
-            return True
+        try:
+            is_equal = df_gold.values == df_gen.values
+            if is_equal:
+                return True
+        except:
+            pass
 
     df_gold = normalize_table(df_gold, query_category, question, query_gold)
     df_gen = normalize_table(df_gen, query_category, question, query_gen)
