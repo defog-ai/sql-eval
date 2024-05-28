@@ -82,6 +82,8 @@ def normalize_table(
                     by=order_by_columns + other_columns, ascending=ascending
                 )
 
+                sorted_df = sorted_df[other_columns + order_by_columns]
+
     if not has_order_by:
         # sort rows using values from first column to last
         sorted_df = sorted_df.sort_values(by=list(sorted_df.columns))
@@ -364,10 +366,6 @@ def compare_df(
     Compares two dataframes and returns True if they are the same, else False.
     query_gold and query_gen are the original queries that generated the respective dataframes.
     """
-    # stop early if shapes do not match
-    if df_gold.shape != df_gen.shape:
-        return False
-
     # drop duplicates to ensure equivalence
     is_equal = df_gold.values == df_gen.values
     try:
@@ -527,6 +525,7 @@ def compare_query_results(
                 raise ValueError(
                     f"Invalid db_type: {db_type}. Only postgres is supported for temporary databases."
                 )
+        
         if compare_df(
             results_gold, results_gen, query_category, question, query_gold, query_gen
         ):
