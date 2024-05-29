@@ -114,6 +114,7 @@ def run_bedrock_eval(args):
             [
                 "question",
                 "db_name",
+                "db_type",
                 "instructions",
                 "k_shot_prompt",
                 "glossary",
@@ -130,6 +131,7 @@ def run_bedrock_eval(args):
                 prompt_file,
                 row["question"],
                 row["db_name"],
+                row["db_type"],
                 row["instructions"],
                 row["k_shot_prompt"],
                 row["glossary"],

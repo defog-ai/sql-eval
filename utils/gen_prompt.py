@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional
 import numpy as np
+from utils.dialects import ddl_to_bigquery, ddl_to_mysql, ddl_to_sqlite, ddl_to_tsql
 
 
 def to_prompt_schema(
@@ -53,6 +54,7 @@ def generate_prompt(
     prompt_file,
     question,
     db_name,
+    db_type="postgres",
     instructions="",
     k_shot_prompt="",
     glossary="",
@@ -110,7 +112,19 @@ def generate_prompt(
                 join_list = ""
 
             md = dbs[db_name]["table_metadata"]
-            table_metadata_string = to_prompt_schema(md, shuffle_metadata) + join_list
+            table_metadata_string = to_prompt_schema(md, shuffle_metadata)
+            if db_type in ["postgres", "snowflake"]:
+                table_metadata_string = table_metadata_string + join_list
+            elif db_type == "bigquery":
+                table_metadata_string = ddl_to_bigquery(table_metadata_string, "postgres", db_name, "")[0] + join_list
+            elif db_type == "mysql":
+                table_metadata_string = ddl_to_mysql(table_metadata_string, "postgres", db_name, "")[0] + join_list
+            elif db_type == "sqlite":
+                table_metadata_string = ddl_to_sqlite(table_metadata_string, "postgres", db_name, "")[0] + join_list
+            elif db_type == "tsql":
+                table_metadata_string = ddl_to_tsql(table_metadata_string, "postgres", db_name, "")[0] + join_list
+            else:
+                raise ValueError("db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql")
         else:
             raise ValueError("columns_to_keep must be >= 0")
     if glossary == "":
@@ -118,6 +132,7 @@ def generate_prompt(
 
     prompt = prompt.format(
         user_question=question,
+        db_type=db_type,
         instructions=instructions,
         table_metadata_string=table_metadata_string,
         k_shot_prompt=k_shot_prompt,
