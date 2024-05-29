@@ -259,21 +259,24 @@ else:
 
 ############################ Post-Processing ############################
 
-# remove rows where sql is invalid
-merged_df = merged_df[merged_df["valid"] == True]
-print(
-    f"Final no. of valid rows that have been translated to {dialect}: ", len(merged_df)
+# count no. of invalid rows
+n_invalid = len(merged_df[merged_df["valid"] == False])
+print("No. of invalid rows remaining: ", n_invalid)
+if n_invalid > 0:
+    print("Please manually correct the invalid SQL(s) in the output file.")
+
+# prefix all invalid sql with "INVALID: err_msg"
+merged_df[f"sql_{dialect}"] = merged_df.apply(
+    lambda x: f"INVALID: {x['err_msg']} {x[f'sql_{dialect}']}-----------------Original postgres: {x['query']}-----------------"
+    if x["valid"] == False
+    else x[f"sql_{dialect}"],
+    axis=1,
 )
+
 merged_df.fillna("", inplace=True)
 
 # change all db_type to dialect
 merged_df["db_type"] = dialect
-
-# replace Snowflake with dialect in instructions
-if "instructions" in merged_df.columns:
-    merged_df["instructions"] = merged_df["instructions"].apply(
-        lambda x: x.replace("Snowflake", dialect.capitalize())
-    )
 
 # drop original query col and table_metadata_string col
 merged_df.drop(columns=["query", "table_metadata_string"], inplace=True)
