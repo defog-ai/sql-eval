@@ -13,6 +13,15 @@ db_creds_all = {
         "account": os.environ.get("SFDBACCOUNT"),
         "warehouse": os.environ.get("SFDBWAREHOUSE"),
     },
+    "mysql": {
+        "user": "root",
+        "password": "password",
+        "host": "localhost",
+    },
+    "bigquery": {
+        "project": os.environ.get("BIGQUERY_PROJECT"),
+        "creds": os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+    },
 }
 
 bq_project = os.environ.get("BQ_PROJECT")

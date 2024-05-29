@@ -55,13 +55,15 @@ def get_sql_tables(sql, db_type):
 
 def get_all_tables_md(table_metadata_string):
     """
-    Get all tables in the table metadata string
+    Get all tables in the table metadata string. This is only used for BigQuery.
     """
     all_tables = set()
     for table in table_metadata_string.split("CREATE TABLE"):
         if "(" in table:
             table_name = table.split("(")[0].strip()
             all_tables.add(table_name.lower())
+    # remove schema names
+    all_tables = set([table.split(".")[-1] for table in all_tables])
     return all_tables
 
 
@@ -282,6 +284,14 @@ def ddl_to_bigquery(ddl, db_type, db_name, row_idx):
 
     translated = ddl_to_dialect(ddl, db_type, "bigquery")
     translated = translated.replace(")\nCREATE", ");\nCREATE")
+    translated = re.sub(
+        r"SERIAL(PRIMARY KEY)?", "INT64", translated
+    )
+    translated = re.sub(
+        r"NOT NULL DEFAULT CURRENT_TIMESTAMP\(\)",
+        "DEFAULT CAST(CURRENT_TIMESTAMP() AS DATETIME) NOT NULL",
+        translated,
+    )
     translated += ";"
     reserved_keywords = ["long"]
     # if any of reserved keywords in the ddl, enclose them with backticks
@@ -564,7 +574,7 @@ def test_valid_md_mysql(sql_test, db_name, table_metadata_string_test, row_idx):
                 tries += 1
                 time.sleep(2)
             else:
-                print("Error running sql:", e)
+                # print("Error running sql:", e)
                 delete_mysql_db(db_name, row_idx)
                 return False, error_msg
 

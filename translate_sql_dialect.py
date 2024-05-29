@@ -22,8 +22,8 @@ import os
 
 tqdm.pandas()
 
-dataset_file = "data/instruct_basic_postgres.csv"
-dialect = "mysql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
+dataset_file = "data/instruct_basic_postgres.csv" # Postgres dataset file to translate
+dialect = "bigquery"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 bigquery_proj = os.getenv(
     "BIGQUERY_PROJ"
 )  # Set this to your BigQuery project ID, leave empty if dialect is not BigQuery
@@ -267,7 +267,7 @@ if n_invalid > 0:
 
 # prefix all invalid sql with "INVALID: err_msg"
 merged_df[f"sql_{dialect}"] = merged_df.apply(
-    lambda x: f"INVALID: {x['err_msg']} {x[f'sql_{dialect}']}-----------------Original postgres: {x['query']}-----------------"
+    lambda x: f"INVALID: {x['err_msg']}-----------------{x[f'sql_{dialect}']}-----------------Original postgres: {x['query']}"
     if x["valid"] == False
     else x[f"sql_{dialect}"],
     axis=1,
