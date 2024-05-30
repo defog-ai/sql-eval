@@ -50,9 +50,11 @@ else:
 
 # if db_name is empty, use "dbname"
 df["db_name"] = df.apply(
-    lambda x: "dbname"
-    if (pd.isna(x.get("db_name")) and x.get("db_name") != "")
-    else (x["db_name"]),
+    lambda x: (
+        "dbname"
+        if (pd.isna(x.get("db_name")) and x.get("db_name") != "")
+        else (x["db_name"])
+    ),
     axis=1,
 )
 
@@ -324,9 +326,11 @@ if n_invalid > 0:
 # prefix all invalid sql with "INVALID: err_msg"
 merged_df[f"sql_{dialect}_list"] = merged_df.apply(
     lambda row: [
-        f"<INVALID ERR MSG>: {row['err_msg_list'][index]}-----------------<INVALID TRANSLATION>: {item}-----------------<ORIG POSTGRES>: {row['query_list'][index]}-----------------"
-        if row["valid_list"][index] == False
-        else item
+        (
+            f"<INVALID ERR MSG>: {row['err_msg_list'][index]}-----------------<INVALID TRANSLATION>: {item}-----------------<ORIG POSTGRES>: {row['query_list'][index]}-----------------"
+            if row["valid_list"][index] == False
+            else item
+        )
         for index, item in enumerate(row[f"sql_{dialect}_list"])
     ],
     axis=1,
