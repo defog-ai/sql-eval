@@ -147,7 +147,7 @@ def process_row(
             query_gen=generated_query,
             db_name=db_name,
             db_type=db_type,
-            db_creds=db_creds_all[row["db_type"]],
+            db_creds=db_creds_all.get(row["db_type"], {}),
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,

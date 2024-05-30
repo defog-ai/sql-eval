@@ -119,8 +119,17 @@ Do not include any other information before and after the JSON string.
     try:
         completion_dict = json.loads(completion)
     except:
-        print(f"Error parsing completion {completion}", flush=True)
-        completion_dict = {"sql": None, "reason": None}
+        print(f"Error parsing completion {completion}. Retrying...", flush=True)
+        # retry
+        return await amend_invalid_sql(
+            model=model,
+            question=question,
+            sql=sql,
+            err_msg=err_msg,
+            db_ddl=db_ddl,
+            instructions=instructions,
+            db_type=db_type,
+        )
     return completion_dict
 
 
@@ -284,9 +293,7 @@ def ddl_to_bigquery(ddl, db_type, db_name, row_idx):
 
     translated = ddl_to_dialect(ddl, db_type, "bigquery")
     translated = translated.replace(")\nCREATE", ");\nCREATE")
-    translated = re.sub(
-        r"SERIAL(PRIMARY KEY)?", "INT64", translated
-    )
+    translated = re.sub(r"SERIAL(PRIMARY KEY)?", "INT64", translated)
     translated = re.sub(
         r"NOT NULL DEFAULT CURRENT_TIMESTAMP\(\)",
         "DEFAULT CAST(CURRENT_TIMESTAMP() AS DATETIME) NOT NULL",
@@ -726,7 +733,7 @@ def test_valid_md_sqlite(sql_test, db_name, table_metadata_string_test, row_idx)
                 tries += 1
                 time.sleep(2)
             else:
-                print("Error running sql:", e)
+                # print("Error running sql:", e)
                 delete_sqlite_db(db_name, row_idx)
                 return False, error_msg
 
@@ -792,6 +799,7 @@ def ddl_to_tsql(ddl, db_type, db_name, row_idx):
     """
     translated = ddl_to_dialect(ddl, db_type, "tsql")
     translated = translated.replace(")\nCREATE", ");\nCREATE")
+    translated = re.sub(r"SERIAL(PRIMARY KEY)?", "INT IDENTITY(1,1)", translated)
     translated += ";"
     return translated, translated
 
@@ -834,6 +842,11 @@ def create_tsql_db(creds, db_name, table_metadata_string_test, row_idx):
     except Exception as e:
         print(f"Error creating tables for `{test_db_name}`: {e}")
         raise
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "conn" in locals():
+            conn.close()
 
 
 def delete_tsql_db(db_name, row_idx):
@@ -901,7 +914,7 @@ def test_valid_md_tsql(sql_test, db_name, table_metadata_string_test, row_idx):
             if "Invalid table" in error_msg or "Invalid column" in error_msg:
                 tries += 1
             else:
-                print("Error running sql:", e)
+                # print("Error running sql:", e)
                 delete_tsql_db(db_name, row_idx)
                 return False, error_msg
 

@@ -22,6 +22,15 @@ db_creds_all = {
         "project": os.environ.get("BIGQUERY_PROJECT"),
         "creds": os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
     },
+    "sqlite": {
+        "path_to_folder": f"{os.path.expanduser('~')}/workspace/defog-data/sqlite_dbs/",  # Path to folder containing sqlite dbs
+    },
+    "tsql": {
+        "server": os.getenv("TSQL_SERVER"),
+        "user": "test_user",
+        "password": "password",
+        "driver": "{ODBC Driver 17 for SQL Server}",
+    },
 }
 
 bq_project = os.environ.get("BQ_PROJECT")

@@ -363,8 +363,8 @@ def query_bq_db(
 ) -> pd.DataFrame:
     """
     Runs query on BigQuery db and returns results as a dataframe.
-    This assumes that you have the evaluation project and databases already set up.
-    If you don't, you can following the instructions in the README (Start BigQuery Instance) to set it up.
+    This assumes that you have the evaluation databases already set up in a BigQuery project.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
 
     timeout: time in seconds to wait for query to finish before timing out
     decimal_points: number of decimal points to round floats to
@@ -406,8 +406,8 @@ def query_mysql_db(
 ) -> pd.DataFrame:
     """
     Runs query on mysql db and returns results as a dataframe.
-    This assumes that you have the evaluation database running locally.
-    If you don't, you can following the instructions in the README (Start MySQL Instance) to set it up.
+    This assumes that you have the evaluation database running locally on MySQL.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
 
     timeout: time in seconds to wait for query to finish before timing out
     decimal_points: number of decimal points to round floats to
@@ -437,6 +437,94 @@ def query_mysql_db(
             df = df.round(decimal_points)
 
         return df
+    except Exception as e:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+        raise e
+
+
+def query_sqlite_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    decimal_points: int = None,
+) -> pd.DataFrame:
+    """
+    Runs query on sqlite db and returns results as a dataframe.
+    This assumes that you have the evaluation databases set up in defog_data/sqlite_dbs/.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    decimal_points: number of decimal points to round floats to
+    """
+    import sqlite3
+
+    conn = None
+    cur = None
+    if db_creds is None:
+        db_creds = db_creds_all["sqlite"]
+    try:
+        db_file = f"{db_creds['path_to_folder']}{db_name}.db"
+        conn = sqlite3.connect(db_file)
+        cur = conn.cursor()
+        cur.execute(query)
+        results = cur.fetchall()
+        colnames = [desc[0] for desc in cur.description]
+        cur.close()
+        conn.close()
+        # make into a dataframe
+        df = pd.DataFrame(results, columns=colnames)
+
+        # round floats to decimal_points
+        if decimal_points:
+            df = df.round(decimal_points)
+        print(df)
+        return df
+    except Exception as e:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+        raise e
+
+
+def query_tsql_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    decimal_points: int = None,
+) -> pd.DataFrame:
+    """
+    Runs query on SQL Server db and returns results as a dataframe.
+    This assumes that you have the evaluation databases set up in SQL Server.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    decimal_points: number of decimal points to round floats to
+    """
+    import pyodbc
+
+    conn = None
+    cur = None
+    if db_creds is None:
+        db_creds = db_creds_all["tsql"]
+    try:
+        with pyodbc.connect(
+            f"DRIVER={db_creds['driver']};SERVER={db_creds['server']};DATABASE={db_name};UID={db_creds['user']};PWD={db_creds['password']}"
+        ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                results = cursor.fetchall()
+                colnames = [desc[0] for desc in cursor.description]
+                # make into a dataframe
+                df = pd.DataFrame(results, columns=colnames)
+
+                # round floats to decimal_points
+                if decimal_points:
+                    df = df.round(decimal_points)
+                return df
     except Exception as e:
         if cur:
             cur.close()
@@ -585,9 +673,23 @@ def compare_query_results(
                 db_creds,
                 decimal_points=decimal_points,
             )
+        elif db_type == "sqlite":
+            results_gen = query_sqlite_db(
+                query_gen,
+                db_name,
+                db_creds,
+                decimal_points=decimal_points,
+            )
+        elif db_type == "tsql":
+            results_gen = query_tsql_db(
+                query_gen,
+                db_name,
+                db_creds,
+                decimal_points=decimal_points,
+            )
         else:
             raise ValueError(
-                f"Invalid db_type: {db_type}. Only postgres, snowflake, mysql and bigquery are supported."
+                f"Invalid db_type: {db_type}. Only postgres, snowflake, bigquery, mysql, sqlite and tsql are supported."
             )
     else:
         if db_type == "postgres":
@@ -626,9 +728,23 @@ def compare_query_results(
                     db_creds,
                     decimal_points=decimal_points,
                 )
+            elif db_type == "sqlite":
+                results_gold = query_sqlite_db(
+                    q,
+                    db_name,
+                    db_creds,
+                    decimal_points=decimal_points,
+                )
+            elif db_type == "tsql":
+                results_gold = query_tsql_db(
+                    q,
+                    db_name,
+                    db_creds,
+                    decimal_points=decimal_points,
+                )
             else:
                 raise ValueError(
-                    f"Invalid db_type: {db_type}. Only postgres, snowflake, mysql and bigquery are supported."
+                    f"Invalid db_type: {db_type}. Only postgres, snowflake, bigquery, mysql, sqlite and tsql are supported."
                 )
         else:
             if db_type == "postgres":
