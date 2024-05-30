@@ -2,11 +2,13 @@ anthropic
 argparse
 func_timeout
 mistralai
+mysql-connector-python
 openai>=1.1.0
 pandas
 pandas-gbq
 peft
 psycopg2-binary
+pyodbc
 pytest
 pyyaml
 sentence-transformers
