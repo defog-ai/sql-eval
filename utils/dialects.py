@@ -410,7 +410,9 @@ def test_valid_md_bq(
                 validity_added = True
             except Exception as e:
                 error_msg = str(e)
-                if any(x in error_msg for x in ["Not found: Table", "Not found: Dataset"]):
+                if any(
+                    x in error_msg for x in ["Not found: Table", "Not found: Dataset"]
+                ):
                     # print(f"Retrying...{e}")
                     tries += 1
                     time.sleep(4)
@@ -763,7 +765,7 @@ def test_valid_md_sqlite(sql_test_list, db_name, table_metadata_string_test, row
                 validity_added = True
             except Exception as e:
                 error_msg = str(e)
-                
+
                 if (
                     "no such table" in error_msg
                     or "unable to open database file" in error_msg
@@ -960,7 +962,7 @@ def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_i
                 validity_added = True
             except Exception as e:
                 error_msg = str(e)
-                
+
                 time.sleep(2)
                 if "Invalid table" in error_msg or "Invalid column" in error_msg:
                     tries += 1

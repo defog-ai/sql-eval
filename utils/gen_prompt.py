@@ -1,6 +1,12 @@
 from typing import Dict, List, Optional
 import numpy as np
-from utils.dialects import ddl_to_bigquery, ddl_to_mysql, ddl_to_sqlite, ddl_to_tsql, get_schema_names
+from utils.dialects import (
+    ddl_to_bigquery,
+    ddl_to_mysql,
+    ddl_to_sqlite,
+    ddl_to_tsql,
+    get_schema_names,
+)
 
 
 def to_prompt_schema(
@@ -118,20 +124,37 @@ def generate_prompt(
             if schema_names:
                 # add CREATE SCHEMA statements
                 for schema_name in schema_names:
-                    table_metadata_string = f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_string
+                    table_metadata_string = (
+                        f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n"
+                        + table_metadata_string
+                    )
 
             if db_type in ["postgres", "snowflake"]:
                 table_metadata_string = table_metadata_string + join_list
             elif db_type == "bigquery":
-                table_metadata_string = ddl_to_bigquery(table_metadata_string, "postgres", db_name, "")[0] + join_list
+                table_metadata_string = (
+                    ddl_to_bigquery(table_metadata_string, "postgres", db_name, "")[0]
+                    + join_list
+                )
             elif db_type == "mysql":
-                table_metadata_string = ddl_to_mysql(table_metadata_string, "postgres", db_name, "")[0] + join_list
+                table_metadata_string = (
+                    ddl_to_mysql(table_metadata_string, "postgres", db_name, "")[0]
+                    + join_list
+                )
             elif db_type == "sqlite":
-                table_metadata_string = ddl_to_sqlite(table_metadata_string, "postgres", db_name, "")[0] + join_list
+                table_metadata_string = (
+                    ddl_to_sqlite(table_metadata_string, "postgres", db_name, "")[0]
+                    + join_list
+                )
             elif db_type == "tsql":
-                table_metadata_string = ddl_to_tsql(table_metadata_string, "postgres", db_name, "")[0] + join_list
+                table_metadata_string = (
+                    ddl_to_tsql(table_metadata_string, "postgres", db_name, "")[0]
+                    + join_list
+                )
             else:
-                raise ValueError("db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql")
+                raise ValueError(
+                    "db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql"
+                )
         else:
             raise ValueError("columns_to_keep must be >= 0")
     if glossary == "":
