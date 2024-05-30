@@ -19,12 +19,13 @@ from utils.dialects import (
 )
 from utils.gen_prompt import to_prompt_schema
 from tqdm import tqdm
+from eval.eval import get_all_minimal_queries
 import os
 
 tqdm.pandas()
 
-dataset_file = "data/questions_gen_postgres.csv" # Postgres dataset file to translate
-dialect = "tsql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
+dataset_file = "data/instruct_advanced_postgres.csv" # Postgres dataset file to translate
+dialect = "mysql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 bigquery_proj = os.getenv(
     "BIGQUERY_PROJ"
 )  # Set this to your BigQuery project ID, leave empty if dialect is not BigQuery
@@ -73,50 +74,70 @@ df["table_metadata_string"] = df.progress_apply(
     lambda x: get_md_string(x["db_name"]), axis=1
 )
 
+# get all minimal queries for all rows
+df["query_list"] = df.progress_apply(
+    lambda x: get_all_minimal_queries(x["query"]), axis=1
+
+)
+
 ############################ Translation ############################
 
 # translate query col to dialect with sqlglot
 print(f"Translating all SQL to {dialect} with sqlglot...")
 if dialect == "bigquery":
-    df[f"sql_tuple"] = df.progress_apply(
-        lambda x: sql_to_bigquery(
-            x["query"],
+    df["sql_tuple_list"] = df.progress_apply(
+    lambda x: [
+        sql_to_bigquery(
+            query,
             x["db_type"],
             x["table_metadata_string"],
             x["db_name"],
             str(x.name),
-        ),
-        axis=1,
-    )
+        )
+        for query in x["query_list"]
+    ],
+    axis=1,
+)
 elif dialect == "mysql":
-    df[f"sql_tuple"] = df.progress_apply(
-        lambda x: sql_to_mysql(
-            x["query"],
+    df["sql_tuple_list"] = df.progress_apply(
+    lambda x: [
+        sql_to_mysql(
+            query,
             x["db_type"],
             x["table_metadata_string"],
-        ),
-        axis=1,
-    )
+        )
+        for query in x["query_list"]
+    ],
+    axis=1,
+)
+
 elif dialect == "sqlite":
-    df[f"sql_tuple"] = df.progress_apply(
-        lambda x: sql_to_sqlite(
-            x["query"],
+    df["sql_tuple_list"] = df.progress_apply(
+    lambda x: [
+        sql_to_sqlite(
+            query,
             x["db_type"],
             x["table_metadata_string"],
-        ),
-        axis=1,
-    )
+        )
+        for query in x["query_list"]
+    ],
+    axis=1,
+)
 elif dialect == "tsql":
-    df[f"sql_tuple"] = df.progress_apply(
-        lambda x: sql_to_tsql(
-            x["query"],
+    df["sql_tuple_list"] = df.progress_apply(
+    lambda x: [
+        sql_to_tsql(
+            query,
             x["db_type"],
-        ),
-        axis=1,
-    )
-df[f"sql_{dialect}"], df[f"sql_{dialect}_test"] = zip(*df["sql_tuple"])
-# df = df[df[f"sql_{dialect}"].notnull()]  # drop rows where sql_dialect is None
-df.drop(columns=["sql_tuple"], inplace=True)
+        )
+        for query in x["query_list"]
+    ],
+    axis=1,
+)
+# create sql_dialect_list (list of first items in tuple) and sql_dialect_test_list (list of second items in tuple) cols
+df[f'sql_{dialect}_list'] = df['sql_tuple_list'].apply(lambda x: [item[0] for item in x])
+df[f'sql_{dialect}_test_list'] = df['sql_tuple_list'].apply(lambda x: [item[1] for item in x])
+df.drop(columns=["sql_tuple_list"], inplace=True)
 
 # translate ddl col to dialect
 print(f"Translating all DDL to {dialect}...")
@@ -169,22 +190,27 @@ df.drop(columns=["table_metadata_string_tuple"], inplace=True)
 
 # run test_valid_md_bq_concurr concurrently on the DataFrame
 print(f"Checking validity of all translated SQL and DDL in {dialect}...")
-sql_col = f"sql_{dialect}_test"
+sql_col = f"sql_{dialect}_test_list"
 table_metadata_col = f"table_metadata_{dialect}_test"
 if dialect == "bigquery":
-    df["result_tuple"] = test_valid_md_bq_concurr(
+    df["result_tuple_list"] = test_valid_md_bq_concurr(
         df, bigquery_proj, sql_col, table_metadata_col
     )
 elif dialect == "mysql":
-    df["result_tuple"] = test_valid_md_mysql_concurr(df, sql_col, table_metadata_col)
+    df["result_tuple_list"] = test_valid_md_mysql_concurr(df, sql_col, table_metadata_col)
 elif dialect == "sqlite":
-    df["result_tuple"] = test_valid_md_sqlite_concurr(df, sql_col, table_metadata_col)
+    df["result_tuple_list"] = test_valid_md_sqlite_concurr(df, sql_col, table_metadata_col)
 elif dialect == "tsql":
-    df["result_tuple"] = test_valid_md_tsql_concurr(df, sql_col, table_metadata_col)
-df["valid"], df["err_msg"] = zip(*df["result_tuple"])
-df.drop(columns=["result_tuple"], inplace=True)
+    df["result_tuple_list"] = test_valid_md_tsql_concurr(df, sql_col, table_metadata_col)
+
+df[f'valid_list'] = df['result_tuple_list'].apply(lambda x: [item[0] for item in x])
+df[f'err_msg_list'] = df['result_tuple_list'].apply(lambda x: [item[1] for item in x])
+
+df.drop(columns=["result_tuple_list"], inplace=True)
 df.reset_index(inplace=True)
-df_invalid = df[df["valid"] == False].copy()
+
+# get rows with at least one invalid SQL
+df_invalid = df[df["valid_list"].apply(lambda x: False in x)].copy()
 print("No. of invalid rows: ", len(df_invalid))
 
 ############################ Correction ############################
@@ -197,57 +223,59 @@ if df_invalid.shape[0] > 0:
         results = await amend_invalid_sql_concurr(
             df_invalid, model, max_concurrent, dialect
         )
-        df_invalid["corrected_sql"] = results
+        df_invalid["corrected_sql_list"] = results
 
     asyncio.run(main())
 
     # extract corrected SQL and add to DataFrame
-    df_invalid[f"sql_{dialect}_test_corrected"] = df_invalid["corrected_sql"].apply(
-        lambda x: x.get("sql")
+    df_invalid[f"sql_{dialect}_test_corrected_list"] = df_invalid["corrected_sql_list"].apply(
+        lambda x: [item.get("sql") for item in x]
     )
-    df_invalid[f"sql_{dialect}_corrected"] = df_invalid.apply(
-        lambda row: row[f"sql_{dialect}_test_corrected"].replace(
-            f"test{row.get('index', row.name)}_", ""
-        ),
-        axis=1,
+
+    # remove "test{index}_" prefix from corrected SQL
+    df_invalid[f"sql_{dialect}_corrected_list"] = df_invalid.apply(
+        lambda row: [item.replace(f"test{row.get('index', row.name)}_", "") for item in row[f"sql_{dialect}_test_corrected_list"]],
+        axis=1
     )
-    df_invalid.drop(columns=["corrected_sql"], inplace=True)
+ 
+    df_invalid.drop(columns=["corrected_sql_list"], inplace=True)
 
     # check validity of corrected SQL
     print(f"Checking validity of corrected SQL in {dialect}...")
-    sql_col = f"sql_{dialect}_test_corrected"
+    sql_col = f"sql_{dialect}_test_corrected_list"
     table_metadata_col = f"table_metadata_{dialect}_test"
     if dialect == "bigquery":
-        df_invalid["result_tuple"] = test_valid_md_bq_concurr(
+        df_invalid["result_tuple_list"] = test_valid_md_bq_concurr(
             df_invalid, bigquery_proj, sql_col, table_metadata_col
         )
     elif dialect == "mysql":
-        df_invalid["result_tuple"] = test_valid_md_mysql_concurr(
+        df_invalid["result_tuple_list"] = test_valid_md_mysql_concurr(
             df_invalid, sql_col, table_metadata_col
         )
     elif dialect == "sqlite":
-        df_invalid["result_tuple"] = test_valid_md_sqlite_concurr(
+        df_invalid["result_tuple_list"] = test_valid_md_sqlite_concurr(
             df_invalid, sql_col, table_metadata_col
         )
     elif dialect == "tsql":
-        df_invalid["result_tuple"] = test_valid_md_tsql_concurr(
+        df_invalid["result_tuple_list"] = test_valid_md_tsql_concurr(
             df_invalid, sql_col, table_metadata_col
         )
-    df_invalid["valid"], df_invalid["err_msg"] = zip(*df_invalid["result_tuple"])
-    df_invalid.drop(columns=["result_tuple"], inplace=True)
+    df_invalid[f'valid_list'] = df_invalid['result_tuple_list'].apply(lambda x: [item[0] for item in x])
+    df_invalid[f'err_msg_list'] = df_invalid['result_tuple_list'].apply(lambda x: [item[1] for item in x])
+    df_invalid.drop(columns=["result_tuple_list"], inplace=True)
 
-    # get valid from df_invalid
-    df_corrected_valid = df_invalid[df_invalid["valid"] == True].copy()
+    # get corrected valid rows where all SQLs are valid
+    df_corrected_valid = df_invalid[df_invalid["valid_list"].apply(lambda x: False not in x)].copy()
     print("No. of corrected valid rows: ", len(df_corrected_valid))
 
     # replace sqlglot translated columns with LLM corrected columns
     df_corrected_valid.drop(
-        columns=[f"sql_{dialect}", f"sql_{dialect}_test"], inplace=True
+        columns=[f"sql_{dialect}_list", f"sql_{dialect}_test_list"], inplace=True
     )
     df_corrected_valid.rename(
         columns={
-            f"sql_{dialect}_corrected": f"sql_{dialect}",
-            f"sql_{dialect}_test_corrected": f"sql_{dialect}_test",
+            f"sql_{dialect}_corrected_list": f"sql_{dialect}_list",
+            f"sql_{dialect}_test_corrected_list": f"sql_{dialect}_test_list",
         },
         inplace=True,
     )
@@ -263,19 +291,24 @@ else:
 
 ############################ Post-Processing ############################
 
-# count no. of invalid rows
-n_invalid = len(merged_df[merged_df["valid"] == False])
+# count no. of invalid rows where there is at least one invalid SQL
+n_invalid = len(merged_df[merged_df["valid_list"].apply(lambda x: False in x)])
 print("No. of invalid rows remaining: ", n_invalid)
 if n_invalid > 0:
     print("Please manually correct the invalid SQL(s) in the output file.")
 
 # prefix all invalid sql with "INVALID: err_msg"
-merged_df[f"sql_{dialect}"] = merged_df.apply(
-    lambda x: f"INVALID: {x['err_msg']}-----------------{x[f'sql_{dialect}']}-----------------Original postgres: {x['query']}"
-    if x["valid"] == False
-    else x[f"sql_{dialect}"],
+merged_df[f"sql_{dialect}_list"] = merged_df.apply(
+    lambda row: [
+        f"<INVALID ERR MSG>: {row['err_msg_list'][index]}-----------------<INVALID TRANSLATION>: {item}-----------------<ORIG POSTGRES>: {row['query_list'][index]}-----------------"
+        if row["valid_list"][index] == False
+        else item
+        for index, item in enumerate(row[f"sql_{dialect}_list"])
+    ],
     axis=1,
 )
+# join all SQLs in the list to a single string and add "; to the last SQL
+merged_df[f"sql_{dialect}_list"] = merged_df[f"sql_{dialect}_list"].apply(lambda x: ";".join(x) + ";")
 
 merged_df.fillna("", inplace=True)
 
@@ -283,21 +316,21 @@ merged_df.fillna("", inplace=True)
 merged_df["db_type"] = dialect
 
 # drop original query col and table_metadata_string col
-merged_df.drop(columns=["query", "table_metadata_string"], inplace=True)
+merged_df.drop(columns=["query", "query_list", "table_metadata_string"], inplace=True)
 
 # rename sql_{dialect} to sql
 merged_df.rename(
     columns={
-        f"sql_{dialect}": "query",
+        f"sql_{dialect}_list": "query",
     },
     inplace=True,
 )
 
 # drop cols
 drop_columns = [
-    "valid",
-    "err_msg",
-    f"sql_{dialect}_test",
+    "valid_list",
+    "err_msg_list",
+    f"sql_{dialect}_test_list",
     f"table_metadata_{dialect}_test",
     f"table_metadata_{dialect}",
     "index",

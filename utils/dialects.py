@@ -70,67 +70,81 @@ def get_all_tables_md(table_metadata_string):
 async def amend_invalid_sql(
     model: str,
     question: str,
-    sql: str,
-    err_msg: str,
+    sql_list: list,
+    err_msg_list: list,
     db_ddl: str,
     instructions: str,
     db_type: str = "postgres",
 ) -> str:
     """
-    Use LLM to correct an invalid SQL query given a question, error message and the database schema
+    Use LLM to correct a list of invalid SQL queries given a common question, specific error message and the database schema
     """
-    messages = [
-        {
-            "role": "system",
-            "content": f"""Your task is to correct an invalid SQL query given a question, instructions and the database schema.""",
-        },
-        {
-            "role": "user",
-            "content": f"""The query would run on a `{db_type}` database whose schema is represented in this string:
-{db_ddl}
+    completion_dict_list = []
+    for i in range(len(sql_list)):
+        sql = sql_list[i]
+        err_msg = err_msg_list[i]
+        if err_msg == "":
+            completion_dict_list.append(
+                {
+                    "reason": "Already valid SQL",
+                    "sql": sql,
+                }
+            )
+            continue
+        else:
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""Your task is to correct an invalid SQL query given a question, instructions and the database schema.""",
+                },
+                {
+                    "role": "user",
+                    "content": f"""The query would run on a `{db_type}` database whose schema is represented in this string:
+        {db_ddl}
 
-Instructions for the task:
-{instructions}
+        Instructions for the task:
+        {instructions}
 
-Question: {question}
-Invalid SQL: {sql}
-Error message: {err_msg}
+        Question: {question}
+        Invalid SQL: {sql}
+        Error message: {err_msg}
 
-Format your response as a valid JSON string with reason and sql keys. 
-Your response should look like the string below:
-{{ "reason": "Your reasoning for the response",
-    "sql": "The corrected SQL query that is valid on {db_type}",
-}}
+        Format your response as a valid JSON string with reason and sql keys. 
+        Your response should look like the string below:
+        {{ "reason": "Your reasoning for the response",
+            "sql": "The corrected SQL query that is valid on {db_type}",
+        }}
 
-Do not include any other information before and after the JSON string.
-""",
-        },
-    ]
+        Do not include any other information before and after the JSON string.
+        """,
+                },
+            ]
 
-    completion = await openai.chat.completions.create(
-        model=model,
-        messages=messages,
-        max_tokens=2000,
-        temperature=0,
-        # top_p=0.5,
-        response_format={"type": "json_object"},
-    )
-    completion = completion.choices[0].message.content
-    try:
-        completion_dict = json.loads(completion)
-    except:
-        print(f"Error parsing completion {completion}. Retrying...", flush=True)
-        # retry
-        return await amend_invalid_sql(
-            model=model,
-            question=question,
-            sql=sql,
-            err_msg=err_msg,
-            db_ddl=db_ddl,
-            instructions=instructions,
-            db_type=db_type,
-        )
-    return completion_dict
+            completion = await openai.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=2000,
+                temperature=0,
+                # top_p=0.5,
+                response_format={"type": "json_object"},
+            )
+            completion = completion.choices[0].message.content
+            try:
+                completion_dict = json.loads(completion)
+            except:
+                print(f"Error parsing completion {completion}. Retrying...", flush=True)
+                # retry
+                return await amend_invalid_sql(
+                    model=model,
+                    question=question,
+                    sql_list=sql_list,
+                    err_msg_list=err_msg_list,
+                    db_ddl=db_ddl,
+                    instructions=instructions,
+                    db_type=db_type,
+                )
+            completion_dict_list.append(completion_dict)
+    return completion_dict_list
 
 
 async def amend_invalid_sql_concurr(df, model, max_concurrent, dialect):
@@ -142,8 +156,8 @@ async def amend_invalid_sql_concurr(df, model, max_concurrent, dialect):
         result = await amend_invalid_sql(
             model=model,
             question=row["question"],
-            sql=row[f"sql_{dialect}_test"],
-            err_msg=row["err_msg"],
+            sql_list=row[f"sql_{dialect}_test_list"],
+            err_msg_list=row["err_msg_list"],
             db_ddl=row[f"table_metadata_{dialect}_test"],
             instructions=row.get("instructions", ""),
             db_type=dialect,
@@ -230,6 +244,9 @@ def ddl_remove_schema(translated_ddl):
     for schema_name in schema_names:
         translated_ddl = translated_ddl.replace(
             f"CREATE TABLE {schema_name}.", "CREATE TABLE "
+        )
+        translated_ddl = translated_ddl.replace(
+            f"CREATE SCHEMA IF NOT EXISTS {schema_name}", ""
         )
     return translated_ddl
 
@@ -359,12 +376,13 @@ def delete_bq_db(client, bigquery_proj, db_name, row_idx):
 
 
 def test_valid_md_bq(
-    bigquery_proj, sql_test, db_name, table_metadata_string_test, row_idx
+    bigquery_proj, sql_test_list, db_name, table_metadata_string_test, row_idx
 ):
     """
-    Test the validity of the metadata and sql in BigQuery.
-    This will create a test dataset and tables, run the sql and delete the test dataset.
+    Test the validity of the metadata and list of sql in BigQuery.
+    This will create a test dataset and tables, run the test sqls and delete the test dataset.
     """
+    validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     client = bigquery.Client(project=bigquery_proj)
     # create a test db
@@ -374,32 +392,39 @@ def test_valid_md_bq(
         )
     except Exception as e:
         delete_bq_db(client, bigquery_proj, db_name, row_idx)
-        return False, "Error creating test db: " + str(e)
+        error_tuple = (False, "Error creating test db: " + str(e))
+        validity_tuple_list.extend([error_tuple] * len(sql_test_list))
+        return validity_tuple_list
     time.sleep(2)
 
-    # run the sql
-    tries = 0
-    error_msg = ""
-    while tries < 3:
-        try:
-            query_job = client.query(sql_test)
-            results = query_job.result()
-            delete_bq_db(client, bigquery_proj, db_name, row_idx)
-            return True, ""
-        except Exception as e:
-            error_msg = str(e)
-            if any(x in error_msg for x in ["Not found: Table", "Not found: Dataset"]):
-                tries += 1
-                time.sleep(4)
-            else:
-                delete_bq_db(client, bigquery_proj, db_name, row_idx)
-                return False, error_msg
+    # run the sqls
+    for sql_test in sql_test_list:
+        tries = 0
+        error_msg = ""
+        validity_added = False
+        while tries < 5 and not validity_added:
+            try:
+                query_job = client.query(sql_test)
+                results = query_job.result()
+                validity_tuple_list.append((True, ""))
+                validity_added = True
+            except Exception as e:
+                error_msg = str(e)
+                if any(x in error_msg for x in ["Not found: Table", "Not found: Dataset"]):
+                    # print(f"Retrying...{e}")
+                    tries += 1
+                    time.sleep(4)
+                else:
+                    validity_tuple_list.append((False, error_msg))
+                    validity_added = True
+        if not validity_added:
+            validity_tuple_list.append((False, error_msg))
 
     delete_bq_db(client, bigquery_proj, db_name, row_idx)
-    return False, error_msg
+    return validity_tuple_list
 
 
-def test_valid_md_bq_concurr(df, bigquery_proj, sql_col, table_metadata_col):
+def test_valid_md_bq_concurr(df, bigquery_proj, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_bq concurrently on a DataFrame
     """
@@ -412,7 +437,7 @@ def test_valid_md_bq_concurr(df, bigquery_proj, sql_col, table_metadata_col):
             executor.submit(
                 test_valid_md_bq,
                 bigquery_proj,
-                row[sql_col],
+                row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
                 row.get("index", str(index)),
@@ -441,7 +466,7 @@ def test_valid_md_bq_concurr(df, bigquery_proj, sql_col, table_metadata_col):
 def sql_to_mysql(sql, db_type, table_metadata_string):
     """
     Translates sql of db_type to MySQL dialect.
-    For MySQL, no extra post-processing is needed. No need to prefix tables with db_name.
+    For MySQL, there's no need to prefix tables with db_name so translated and translated test sql are the same.
     Returns translated sql and translated test sql for testing.
     """
     translated = sql_to_dialect(sql, db_type, "mysql")
@@ -540,56 +565,67 @@ def delete_mysql_db(db_name, row_idx):
             conn.close()
 
 
-def test_valid_md_mysql(sql_test, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_mysql(sql_test_list, db_name, table_metadata_string_test, row_idx):
     """
     Test the validity of the metadata and sql in MySQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
     """
+    validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     # create a test db
     try:
         create_mysql_db(creds, db_name, table_metadata_string_test, row_idx)
     except Exception as e:
-        delete_mysql_db(db_name, row_idx)
-        return False, "Error creating test db: " + str(e)
-
-    # run the sql
-    tries = 0
-    error_msg = ""
-    while tries < 3:
-        try:
-            conn = mysql.connector.connect(**creds["mysql"])
-            cursor = conn.cursor()
-
-            use_db = f"USE {test_db};"
-            cursor.execute(use_db)
-            cursor.execute(sql_test)
-            results = cursor.fetchall()
+        if "cursor" in locals():
             cursor.close()
+        if "conn" in locals():
             conn.close()
-            delete_mysql_db(db_name, row_idx)
-            return True, ""
-        except Exception as e:
-            error_msg = str(e)
-            if "cursor" in locals():
+        delete_mysql_db(db_name, row_idx)
+        error_tuple = (False, "Error creating test db: " + str(e))
+        validity_tuple_list.extend([error_tuple] * len(sql_test_list))
+        return validity_tuple_list
+
+    # run the sqls
+    for sql_test in sql_test_list:
+        tries = 0
+        error_msg = ""
+        validity_added = False
+        while tries < 3 and not validity_added:
+            try:
+                conn = mysql.connector.connect(**creds["mysql"])
+                cursor = conn.cursor()
+
+                use_db = f"USE {test_db};"
+                cursor.execute(use_db)
+                cursor.execute(sql_test)
+                results = cursor.fetchall()
                 cursor.close()
-            if "conn" in locals():
                 conn.close()
-            if (
-                "doesn't exist" in error_msg and "Table" in error_msg
-            ) or "Lost connection" in error_msg:
-                tries += 1
-                time.sleep(2)
-            else:
-                # print("Error running sql:", e)
-                delete_mysql_db(db_name, row_idx)
-                return False, error_msg
+                validity_tuple_list.append((True, ""))
+                validity_added = True
+            except Exception as e:
+                error_msg = str(e)
+                if (
+                    "doesn't exist" in error_msg and "Table" in error_msg
+                ) or "Lost connection" in error_msg:
+                    tries += 1
+                    time.sleep(2)
+                else:
+                    # print("Error running sql:", e)
+                    validity_tuple_list.append((False, error_msg))
+                    validity_added = True
+        if not validity_added:
+            validity_tuple_list.append((False, error_msg))
 
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
     delete_mysql_db(db_name, row_idx)
-    return False, error_msg
+    return validity_tuple_list
 
 
-def test_valid_md_mysql_concurr(df, sql_col, table_metadata_col):
+def test_valid_md_mysql_concurr(df, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_mysql concurrently on a DataFrame
     """
@@ -601,7 +637,7 @@ def test_valid_md_mysql_concurr(df, sql_col, table_metadata_col):
         futures = [
             executor.submit(
                 test_valid_md_mysql,
-                row[sql_col],
+                row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
                 row.get("index", str(index)),
@@ -690,58 +726,68 @@ def delete_sqlite_db(db_name, row_idx):
         raise
 
 
-def test_valid_md_sqlite(sql_test, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_sqlite(sql_test_list, db_name, table_metadata_string_test, row_idx):
     """
     Test the validity of the metadata and sql in SQLite.
     This will create a test dataset and tables, run the sql and delete the test dataset.
     """
+    validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     test_db_file = f"{test_db}.db"
     # create a test db
     try:
         create_sqlite_db(db_name, table_metadata_string_test, row_idx)
     except Exception as e:
+        if "cursor" in locals():
+            cursor.close()
+        if "conn" in locals():
+            conn.close()
         delete_sqlite_db(db_name, row_idx)
-        return False, "Error creating test db: " + str(e)
+        error_tuple = (False, "Error creating test db: " + str(e))
+        validity_tuple_list.extend([error_tuple] * len(sql_test_list))
+        return validity_tuple_list
 
     # run the sql
-    tries = 0
-    error_msg = ""
-    while tries < 3:
-        try:
-            conn = sqlite3.connect(test_db_file)
-            cursor = conn.cursor()
+    for sql_test in sql_test_list:
+        tries = 0
+        error_msg = ""
+        validity_added = False
+        while tries < 3 and not validity_added:
+            try:
+                conn = sqlite3.connect(test_db_file)
+                cursor = conn.cursor()
 
-            cursor.execute(sql_test)
-            results = cursor.fetchall()
-            cursor.close()
-            conn.close()
-            delete_sqlite_db(db_name, row_idx)
-            return True, ""
-        except Exception as e:
-            error_msg = str(e)
-            if "cursor" in locals():
-                cursor.close()
-            if "conn" in locals():
-                conn.close()
-            if (
-                "no such table" in error_msg
-                or "unable to open database file" in error_msg
-            ):
-                print("Error that will lead to retry:", e)
-                print("Retrying...")
-                tries += 1
-                time.sleep(2)
-            else:
-                # print("Error running sql:", e)
-                delete_sqlite_db(db_name, row_idx)
-                return False, error_msg
+                cursor.execute(sql_test)
+                results = cursor.fetchall()
+                validity_tuple_list.append((True, ""))
+                validity_added = True
+            except Exception as e:
+                error_msg = str(e)
+                
+                if (
+                    "no such table" in error_msg
+                    or "unable to open database file" in error_msg
+                ):
+                    print("Error that will lead to retry:", e)
+                    print("Retrying...")
+                    tries += 1
+                    time.sleep(2)
+                else:
+                    # print("Error running sql:", e)
+                    validity_tuple_list.append((False, error_msg))
+                    validity_added = True
+        if not validity_added:
+            validity_tuple_list.append((False, error_msg))
 
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
     delete_sqlite_db(db_name, row_idx)
-    return False, error_msg
+    return validity_tuple_list
 
 
-def test_valid_md_sqlite_concurr(df, sql_col, table_metadata_col):
+def test_valid_md_sqlite_concurr(df, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_sqlite concurrently on a DataFrame
     """
@@ -753,7 +799,7 @@ def test_valid_md_sqlite_concurr(df, sql_col, table_metadata_col):
         futures = [
             executor.submit(
                 test_valid_md_sqlite,
-                row[sql_col],
+                row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
                 row.get("index", str(index)),
@@ -872,57 +918,69 @@ def delete_tsql_db(db_name, row_idx):
             print(f"Unexpected error deleting `{test_db_name}`: {err}")
 
 
-def test_valid_md_tsql(sql_test, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_idx):
     """
     Test the validity of the metadata and sql in T-SQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
     """
+    validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     # create a test db
     try:
         create_tsql_db(creds, db_name, table_metadata_string_test, row_idx)
     except Exception as e:
+        if "cursor" in locals():
+            cursor.close()
+        if "conn" in locals():
+            conn.close()
+        time.sleep(2)
         delete_tsql_db(db_name, row_idx)
-        return False, "Error creating test db: " + str(e)
+        error_tuple = (False, "Error creating test db: " + str(e))
+        validity_tuple_list.extend([error_tuple] * len(sql_test_list))
+        return validity_tuple_list
 
     # run the sql
-    tries = 0
-    error_msg = ""
-    while tries < 3:
-        try:
-            conn = pyodbc.connect(
-                f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE={test_db};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
-            )
-            cursor = conn.cursor()
+    for sql_test in sql_test_list:
+        tries = 0
+        error_msg = ""
+        validity_added = False
+        while tries < 3 and not validity_added:
+            try:
+                conn = pyodbc.connect(
+                    f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE={test_db};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
+                )
+                cursor = conn.cursor()
 
-            use_db = f"USE {test_db};"
-            cursor.execute(use_db)
-            cursor.execute(sql_test)
-            results = cursor.fetchall()
-            cursor.close()
-            conn.close()
-            time.sleep(2)
-            delete_tsql_db(db_name, row_idx)
-            return True, ""
-        except Exception as e:
-            error_msg = str(e)
-            if "cursor" in locals():
-                cursor.close()
-            if "conn" in locals():
-                conn.close()
-            time.sleep(2)
-            if "Invalid table" in error_msg or "Invalid column" in error_msg:
-                tries += 1
-            else:
-                # print("Error running sql:", e)
-                delete_tsql_db(db_name, row_idx)
-                return False, error_msg
+                use_db = f"USE {test_db};"
+                cursor.execute(use_db)
+                cursor.execute(sql_test)
+                results = cursor.fetchall()
+                time.sleep(2)
+                validity_tuple_list.append((True, ""))
+                validity_added = True
+            except Exception as e:
+                error_msg = str(e)
+                
+                time.sleep(2)
+                if "Invalid table" in error_msg or "Invalid column" in error_msg:
+                    tries += 1
+                else:
+                    # print("Error running sql:", e)
+                    validity_tuple_list.append((False, error_msg))
+                    validity_added = True
+        if not validity_added:
+            validity_tuple_list.append((False, error_msg))
 
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    time.sleep(2)
     delete_tsql_db(db_name, row_idx)
-    return False, error_msg
+    return validity_tuple_list
 
 
-def test_valid_md_tsql_concurr(df, sql_col, table_metadata_col):
+def test_valid_md_tsql_concurr(df, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_tsql concurrently on a DataFrame
     """
@@ -934,7 +992,7 @@ def test_valid_md_tsql_concurr(df, sql_col, table_metadata_col):
         futures = [
             executor.submit(
                 test_valid_md_tsql,
-                row[sql_col],
+                row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
                 row.get("index", str(index)),

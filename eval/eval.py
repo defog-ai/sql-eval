@@ -480,7 +480,6 @@ def query_sqlite_db(
         # round floats to decimal_points
         if decimal_points:
             df = df.round(decimal_points)
-        print(df)
         return df
     except Exception as e:
         if cur:
