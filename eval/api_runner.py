@@ -270,7 +270,7 @@ def run_api_eval(args):
                     )
 
         output_df = pd.DataFrame(output_rows)
-        
+
         print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
         # get directory of output_file and create if not exist
@@ -288,7 +288,7 @@ def run_api_eval(args):
                 "w",
             ) as f:
                 json.dump(results, f)
-        
+
         del output_df["prompt"]
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
