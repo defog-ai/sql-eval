@@ -20,4 +20,5 @@ torch
 tqdm
 transformers
 sqlparse
+sqlglot
 vllm; sys_platform != 'darwin'
