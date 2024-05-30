@@ -270,21 +270,13 @@ def run_api_eval(args):
                     )
 
         output_df = pd.DataFrame(output_rows)
-        del output_df["prompt"]
+        
         print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
         # get directory of output_file and create if not exist
         output_dir = os.path.dirname(output_file)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-
-        with open(output_file.replace(".csv", ".json"), "w") as f:
-            json.dump(output_df.to_dict("records"), f)
-
-        try:
-            output_df.to_csv(output_file, index=False, float_format="%.2f")
-        except:
-            output_df.to_pickle(output_file)
 
         if logprobs:
             print(
@@ -296,6 +288,12 @@ def run_api_eval(args):
                 "w",
             ) as f:
                 json.dump(results, f)
+        
+        del output_df["prompt"]
+        try:
+            output_df.to_csv(output_file, index=False, float_format="%.2f")
+        except:
+            output_df.to_pickle(output_file)
 
         # upload results
         # with open(prompt_file, "r") as f:
