@@ -15,7 +15,7 @@ from utils.dialects import (
     sql_to_tsql,
     ddl_to_tsql,
     test_valid_md_tsql_concurr,
-    get_schema_names
+    get_schema_names,
 )
 from utils.gen_prompt import to_prompt_schema
 from tqdm import tqdm
@@ -24,7 +24,9 @@ import os
 
 tqdm.pandas()
 
-dataset_file = "data/instruct_advanced_postgres.csv" # Postgres dataset file to translate
+dataset_file = (
+    "data/instruct_advanced_postgres.csv"  # Postgres dataset file to translate
+)
 dialect = "mysql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 bigquery_proj = os.getenv(
     "BIGQUERY_PROJ"
@@ -54,6 +56,7 @@ df["db_name"] = df.apply(
     axis=1,
 )
 
+
 # get full table_metadata_string for all rows
 def get_md_string(db_name):
     """
@@ -67,8 +70,11 @@ def get_md_string(db_name):
     schema_names = get_schema_names(table_metadata_string)
     if schema_names:
         for schema_name in schema_names:
-            table_metadata_string = f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_string
+            table_metadata_string = (
+                f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_string
+            )
     return table_metadata_string
+
 
 df["table_metadata_string"] = df.progress_apply(
     lambda x: get_md_string(x["db_name"]), axis=1
@@ -77,7 +83,6 @@ df["table_metadata_string"] = df.progress_apply(
 # get all minimal queries for all rows
 df["query_list"] = df.progress_apply(
     lambda x: get_all_minimal_queries(x["query"]), axis=1
-
 )
 
 ############################ Translation ############################
@@ -86,57 +91,61 @@ df["query_list"] = df.progress_apply(
 print(f"Translating all SQL to {dialect} with sqlglot...")
 if dialect == "bigquery":
     df["sql_tuple_list"] = df.progress_apply(
-    lambda x: [
-        sql_to_bigquery(
-            query,
-            x["db_type"],
-            x["table_metadata_string"],
-            x["db_name"],
-            str(x.name),
-        )
-        for query in x["query_list"]
-    ],
-    axis=1,
-)
+        lambda x: [
+            sql_to_bigquery(
+                query,
+                x["db_type"],
+                x["table_metadata_string"],
+                x["db_name"],
+                str(x.name),
+            )
+            for query in x["query_list"]
+        ],
+        axis=1,
+    )
 elif dialect == "mysql":
     df["sql_tuple_list"] = df.progress_apply(
-    lambda x: [
-        sql_to_mysql(
-            query,
-            x["db_type"],
-            x["table_metadata_string"],
-        )
-        for query in x["query_list"]
-    ],
-    axis=1,
-)
+        lambda x: [
+            sql_to_mysql(
+                query,
+                x["db_type"],
+                x["table_metadata_string"],
+            )
+            for query in x["query_list"]
+        ],
+        axis=1,
+    )
 
 elif dialect == "sqlite":
     df["sql_tuple_list"] = df.progress_apply(
-    lambda x: [
-        sql_to_sqlite(
-            query,
-            x["db_type"],
-            x["table_metadata_string"],
-        )
-        for query in x["query_list"]
-    ],
-    axis=1,
-)
+        lambda x: [
+            sql_to_sqlite(
+                query,
+                x["db_type"],
+                x["table_metadata_string"],
+            )
+            for query in x["query_list"]
+        ],
+        axis=1,
+    )
 elif dialect == "tsql":
     df["sql_tuple_list"] = df.progress_apply(
-    lambda x: [
-        sql_to_tsql(
-            query,
-            x["db_type"],
-        )
-        for query in x["query_list"]
-    ],
-    axis=1,
-)
+        lambda x: [
+            sql_to_tsql(
+                query,
+                x["db_type"],
+            )
+            for query in x["query_list"]
+        ],
+        axis=1,
+    )
 # create sql_dialect_list (list of first items in tuple) and sql_dialect_test_list (list of second items in tuple) cols
-df[f'sql_{dialect}_list'] = df['sql_tuple_list'].apply(lambda x: [item[0] for item in x])
-df[f'sql_{dialect}_test_list'] = df['sql_tuple_list'].apply(lambda x: [item[1] for item in x])
+df[f"sql_{dialect}_list"] = df["sql_tuple_list"].apply(
+    lambda x: [item[0] for item in x]
+)
+df[f"sql_{dialect}_test_list"] = df["sql_tuple_list"].apply(
+    lambda x: [item[1] for item in x]
+)
 df.drop(columns=["sql_tuple_list"], inplace=True)
 
 # translate ddl col to dialect
@@ -197,14 +206,20 @@ if dialect == "bigquery":
         df, bigquery_proj, sql_col, table_metadata_col
     )
 elif dialect == "mysql":
-    df["result_tuple_list"] = test_valid_md_mysql_concurr(df, sql_col, table_metadata_col)
+    df["result_tuple_list"] = test_valid_md_mysql_concurr(
+        df, sql_col, table_metadata_col
+    )
 elif dialect == "sqlite":
-    df["result_tuple_list"] = test_valid_md_sqlite_concurr(df, sql_col, table_metadata_col)
+    df["result_tuple_list"] = test_valid_md_sqlite_concurr(
+        df, sql_col, table_metadata_col
+    )
 elif dialect == "tsql":
-    df["result_tuple_list"] = test_valid_md_tsql_concurr(df, sql_col, table_metadata_col)
+    df["result_tuple_list"] = test_valid_md_tsql_concurr(
+        df, sql_col, table_metadata_col
+    )
 
-df[f'valid_list'] = df['result_tuple_list'].apply(lambda x: [item[0] for item in x])
-df[f'err_msg_list'] = df['result_tuple_list'].apply(lambda x: [item[1] for item in x])
+df[f"valid_list"] = df["result_tuple_list"].apply(lambda x: [item[0] for item in x])
+df[f"err_msg_list"] = df["result_tuple_list"].apply(lambda x: [item[1] for item in x])
 
 df.drop(columns=["result_tuple_list"], inplace=True)
 df.reset_index(inplace=True)
@@ -228,16 +243,19 @@ if df_invalid.shape[0] > 0:
     asyncio.run(main())
 
     # extract corrected SQL and add to DataFrame
-    df_invalid[f"sql_{dialect}_test_corrected_list"] = df_invalid["corrected_sql_list"].apply(
-        lambda x: [item.get("sql") for item in x]
-    )
+    df_invalid[f"sql_{dialect}_test_corrected_list"] = df_invalid[
+        "corrected_sql_list"
+    ].apply(lambda x: [item.get("sql") for item in x])
 
     # remove "test{index}_" prefix from corrected SQL
     df_invalid[f"sql_{dialect}_corrected_list"] = df_invalid.apply(
-        lambda row: [item.replace(f"test{row.get('index', row.name)}_", "") for item in row[f"sql_{dialect}_test_corrected_list"]],
-        axis=1
+        lambda row: [
+            item.replace(f"test{row.get('index', row.name)}_", "")
+            for item in row[f"sql_{dialect}_test_corrected_list"]
+        ],
+        axis=1,
     )
- 
+
     df_invalid.drop(columns=["corrected_sql_list"], inplace=True)
 
     # check validity of corrected SQL
@@ -260,12 +278,18 @@ if df_invalid.shape[0] > 0:
         df_invalid["result_tuple_list"] = test_valid_md_tsql_concurr(
             df_invalid, sql_col, table_metadata_col
         )
-    df_invalid[f'valid_list'] = df_invalid['result_tuple_list'].apply(lambda x: [item[0] for item in x])
-    df_invalid[f'err_msg_list'] = df_invalid['result_tuple_list'].apply(lambda x: [item[1] for item in x])
+    df_invalid[f"valid_list"] = df_invalid["result_tuple_list"].apply(
+        lambda x: [item[0] for item in x]
+    )
+    df_invalid[f"err_msg_list"] = df_invalid["result_tuple_list"].apply(
+        lambda x: [item[1] for item in x]
+    )
     df_invalid.drop(columns=["result_tuple_list"], inplace=True)
 
     # get corrected valid rows where all SQLs are valid
-    df_corrected_valid = df_invalid[df_invalid["valid_list"].apply(lambda x: False not in x)].copy()
+    df_corrected_valid = df_invalid[
+        df_invalid["valid_list"].apply(lambda x: False not in x)
+    ].copy()
     print("No. of corrected valid rows: ", len(df_corrected_valid))
 
     # replace sqlglot translated columns with LLM corrected columns
@@ -308,7 +332,9 @@ merged_df[f"sql_{dialect}_list"] = merged_df.apply(
     axis=1,
 )
 # join all SQLs in the list to a single string and add "; to the last SQL
-merged_df[f"sql_{dialect}_list"] = merged_df[f"sql_{dialect}_list"].apply(lambda x: ";".join(x) + ";")
+merged_df[f"sql_{dialect}_list"] = merged_df[f"sql_{dialect}_list"].apply(
+    lambda x: ";".join(x) + ";"
+)
 
 merged_df.fillna("", inplace=True)
 
