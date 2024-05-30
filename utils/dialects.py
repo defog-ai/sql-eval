@@ -19,7 +19,6 @@ import pyodbc
 
 # Suppress all logs from sqlglot
 logging.getLogger("sqlglot").setLevel(logging.CRITICAL)
-openai = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 creds = {
     "mysql": {
@@ -79,6 +78,7 @@ async def amend_invalid_sql(
     """
     Use LLM to correct a list of invalid SQL queries given a common question, specific error message and the database schema
     """
+    openai = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY", "ADD_YOUR_OPENAI_KEY_HERE"))
     completion_dict_list = []
     for i in range(len(sql_list)):
         sql = sql_list[i]
