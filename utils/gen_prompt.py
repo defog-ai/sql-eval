@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 import numpy as np
-from utils.dialects import ddl_to_bigquery, ddl_to_mysql, ddl_to_sqlite, ddl_to_tsql
+from utils.dialects import ddl_to_bigquery, ddl_to_mysql, ddl_to_sqlite, ddl_to_tsql, get_schema_names
 
 
 def to_prompt_schema(
@@ -113,6 +113,13 @@ def generate_prompt(
 
             md = dbs[db_name]["table_metadata"]
             table_metadata_string = to_prompt_schema(md, shuffle_metadata)
+
+            schema_names = get_schema_names(table_metadata_string)
+            if schema_names:
+                # add CREATE SCHEMA statements
+                for schema_name in schema_names:
+                    table_metadata_string = f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_string
+
             if db_type in ["postgres", "snowflake"]:
                 table_metadata_string = table_metadata_string + join_list
             elif db_type == "bigquery":

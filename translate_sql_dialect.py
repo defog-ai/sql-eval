@@ -15,6 +15,7 @@ from utils.dialects import (
     sql_to_tsql,
     ddl_to_tsql,
     test_valid_md_tsql_concurr,
+    get_schema_names
 )
 from utils.gen_prompt import to_prompt_schema
 from tqdm import tqdm
@@ -22,8 +23,8 @@ import os
 
 tqdm.pandas()
 
-dataset_file = "data/instruct_basic_postgres.csv" # Postgres dataset file to translate
-dialect = "bigquery"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
+dataset_file = "data/questions_gen_postgres.csv" # Postgres dataset file to translate
+dialect = "tsql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 bigquery_proj = os.getenv(
     "BIGQUERY_PROJ"
 )  # Set this to your BigQuery project ID, leave empty if dialect is not BigQuery
@@ -52,7 +53,6 @@ df["db_name"] = df.apply(
     axis=1,
 )
 
-
 # get full table_metadata_string for all rows
 def get_md_string(db_name):
     """
@@ -62,8 +62,12 @@ def get_md_string(db_name):
 
     md = dbs[db_name]["table_metadata"]
     table_metadata_string = to_prompt_schema(md)
+    # add CREATE SCHEMA statements if schema names are present
+    schema_names = get_schema_names(table_metadata_string)
+    if schema_names:
+        for schema_name in schema_names:
+            table_metadata_string = f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_string
     return table_metadata_string
-
 
 df["table_metadata_string"] = df.progress_apply(
     lambda x: get_md_string(x["db_name"]), axis=1
@@ -281,7 +285,7 @@ merged_df["db_type"] = dialect
 # drop original query col and table_metadata_string col
 merged_df.drop(columns=["query", "table_metadata_string"], inplace=True)
 
-# rename sql_{dialect} to sql, table_metadata_{dialect} to table_metadata_string
+# rename sql_{dialect} to sql
 merged_df.rename(
     columns={
         f"sql_{dialect}": "query",
@@ -313,6 +317,6 @@ cols = list(merged_df.columns)
 cols = first_cols + [col for col in cols if col not in first_cols]
 merged_df = merged_df[cols]
 
-# save to json
+# save to csv
 merged_df.to_csv(output_file, index=False)
 print(f"Saved to {output_file}")
