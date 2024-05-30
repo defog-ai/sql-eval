@@ -78,7 +78,6 @@ def run_llama_cpp_eval(args):
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
-
         print(f"Using prompt file {prompt_file}")
         # get questions
         print("Preparing questions...")
@@ -91,6 +90,7 @@ def run_llama_cpp_eval(args):
             [
                 "question",
                 "db_name",
+                "db_type",
                 "instructions",
                 "k_shot_prompt",
                 "glossary",
@@ -107,6 +107,7 @@ def run_llama_cpp_eval(args):
                 prompt_file,
                 row["question"],
                 row["db_name"],
+                row["db_type"],
                 row["instructions"],
                 row["k_shot_prompt"],
                 row["glossary"],

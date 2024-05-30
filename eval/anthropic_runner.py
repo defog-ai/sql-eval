@@ -13,7 +13,6 @@ from utils.reporting import upload_results
 
 
 def run_anthropic_eval(args):
-
     # get params from args
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
@@ -25,7 +24,6 @@ def run_anthropic_eval(args):
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
-
         print(f"Using prompt file {prompt_file}")
         # get questions
         print("Preparing questions...")

@@ -7,6 +7,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 from sqlalchemy import create_engine, text
 from utils.creds import db_creds_all
+import time
 
 LIKE_PATTERN = r"LIKE[\s\S]*'"
 
@@ -354,6 +355,183 @@ def query_snowflake_db(
         raise e
 
 
+def query_bq_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    decimal_points: int = None,
+) -> pd.DataFrame:
+    """
+    Runs query on BigQuery db and returns results as a dataframe.
+    This assumes that you have the evaluation databases already set up in a BigQuery project.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    decimal_points: number of decimal points to round floats to
+    """
+    from google.cloud import bigquery
+
+    if db_creds is None:
+        db_creds = db_creds_all["bigquery"]
+    bigquery_proj = db_creds["project"]
+    tries = 0
+    error_msg = ""
+    while tries < 3:
+        try:
+            client = bigquery.Client(project=bigquery_proj)
+            query_job = client.query(query)
+            results = query_job.result()
+            # make into a dataframe
+            df = results.to_dataframe()
+
+            # round floats to decimal_points
+            if decimal_points:
+                df = df.round(decimal_points)
+            return df
+        except Exception as e:
+            error_msg = str(e)
+            if any(x in error_msg for x in ["Not found: Table", "Not found: Dataset"]):
+                tries += 1
+                time.sleep(4)
+            else:
+                raise e
+    raise Exception(f"BigQuery error: {error_msg}")
+
+
+def query_mysql_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    decimal_points: int = None,
+) -> pd.DataFrame:
+    """
+    Runs query on mysql db and returns results as a dataframe.
+    This assumes that you have the evaluation database running locally on MySQL.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    decimal_points: number of decimal points to round floats to
+    """
+    import mysql.connector
+
+    conn = None
+    cur = None
+    if db_creds is None:
+        db_creds = db_creds_all["mysql"]
+
+    try:
+        conn = mysql.connector.connect(**db_creds)
+        cursor = conn.cursor()
+
+        use_db = f"USE {db_name};"
+        cursor.execute(use_db)
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        # make into a dataframe
+        df = pd.DataFrame(results)
+
+        # round floats to decimal_points
+        if decimal_points:
+            df = df.round(decimal_points)
+
+        return df
+    except Exception as e:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+        raise e
+
+
+def query_sqlite_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    decimal_points: int = None,
+) -> pd.DataFrame:
+    """
+    Runs query on sqlite db and returns results as a dataframe.
+    This assumes that you have the evaluation databases set up in defog_data/sqlite_dbs/.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    decimal_points: number of decimal points to round floats to
+    """
+    import sqlite3
+
+    conn = None
+    cur = None
+    if db_creds is None:
+        db_creds = db_creds_all["sqlite"]
+    try:
+        db_file = f"{db_creds['path_to_folder']}{db_name}.db"
+        conn = sqlite3.connect(db_file)
+        cur = conn.cursor()
+        cur.execute(query)
+        results = cur.fetchall()
+        colnames = [desc[0] for desc in cur.description]
+        cur.close()
+        conn.close()
+        # make into a dataframe
+        df = pd.DataFrame(results, columns=colnames)
+
+        # round floats to decimal_points
+        if decimal_points:
+            df = df.round(decimal_points)
+        return df
+    except Exception as e:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+        raise e
+
+
+def query_tsql_db(
+    query: str,
+    db_name: str,
+    db_creds: dict = None,
+    decimal_points: int = None,
+) -> pd.DataFrame:
+    """
+    Runs query on SQL Server db and returns results as a dataframe.
+    This assumes that you have the evaluation databases set up in SQL Server.
+    If you don't, you can follow the instructions in the README of the defog-data repo to set it up.
+
+    timeout: time in seconds to wait for query to finish before timing out
+    decimal_points: number of decimal points to round floats to
+    """
+    import pyodbc
+
+    conn = None
+    cur = None
+    if db_creds is None:
+        db_creds = db_creds_all["tsql"]
+    try:
+        with pyodbc.connect(
+            f"DRIVER={db_creds['driver']};SERVER={db_creds['server']};DATABASE={db_name};UID={db_creds['user']};PWD={db_creds['password']}"
+        ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                results = cursor.fetchall()
+                colnames = [desc[0] for desc in cursor.description]
+                # make into a dataframe
+                df = pd.DataFrame(results, columns=colnames)
+
+                # round floats to decimal_points
+                if decimal_points:
+                    df = df.round(decimal_points)
+                return df
+    except Exception as e:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+        raise e
+
+
 def compare_df(
     df_gold: pd.DataFrame,
     df_gen: pd.DataFrame,
@@ -385,7 +563,9 @@ def compare_df(
     # perform same checks again for normalized tables
     if df_gold.shape != df_gen.shape:
         return False
-
+    # fill NaNs with -99999 to handle NaNs in the dataframes for comparison
+    df_gen.fillna(-99999, inplace=True)
+    df_gold.fillna(-99999, inplace=True)
     is_equal = df_gold.values == df_gen.values
     try:
         return is_equal.all()
@@ -481,9 +661,34 @@ def compare_query_results(
             results_gen = query_snowflake_db(
                 query_gen, db_name, db_creds, timeout, decimal_points=decimal_points
             )
+        elif db_type == "bigquery":
+            results_gen = query_bq_db(
+                query_gen, db_name, db_creds, decimal_points=decimal_points
+            )
+        elif db_type == "mysql":
+            results_gen = query_mysql_db(
+                query_gen,
+                db_name,
+                db_creds,
+                decimal_points=decimal_points,
+            )
+        elif db_type == "sqlite":
+            results_gen = query_sqlite_db(
+                query_gen,
+                db_name,
+                db_creds,
+                decimal_points=decimal_points,
+            )
+        elif db_type == "tsql":
+            results_gen = query_tsql_db(
+                query_gen,
+                db_name,
+                db_creds,
+                decimal_points=decimal_points,
+            )
         else:
             raise ValueError(
-                f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
+                f"Invalid db_type: {db_type}. Only postgres, snowflake, bigquery, mysql, sqlite and tsql are supported."
             )
     else:
         if db_type == "postgres":
@@ -511,9 +716,34 @@ def compare_query_results(
                 results_gold = query_snowflake_db(
                     q, db_name, db_creds, timeout, decimal_points=decimal_points
                 )
+            elif db_type == "bigquery":
+                results_gold = query_bq_db(
+                    q, db_name, db_creds, decimal_points=decimal_points
+                )
+            elif db_type == "mysql":
+                results_gold = query_mysql_db(
+                    q,
+                    db_name,
+                    db_creds,
+                    decimal_points=decimal_points,
+                )
+            elif db_type == "sqlite":
+                results_gold = query_sqlite_db(
+                    q,
+                    db_name,
+                    db_creds,
+                    decimal_points=decimal_points,
+                )
+            elif db_type == "tsql":
+                results_gold = query_tsql_db(
+                    q,
+                    db_name,
+                    db_creds,
+                    decimal_points=decimal_points,
+                )
             else:
                 raise ValueError(
-                    f"Invalid db_type: {db_type}. Only postgres and snowflake are supported."
+                    f"Invalid db_type: {db_type}. Only postgres, snowflake, bigquery, mysql, sqlite and tsql are supported."
                 )
         else:
             if db_type == "postgres":
