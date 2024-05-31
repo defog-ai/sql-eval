@@ -84,6 +84,12 @@ export SFDBWAREHOUSE="your_warehouse"
 
 Note that during evaluation you'll have to use the `_snowflake` question files in `/data`. The queries been modified to be valid on Snowflake databases.
 
+### Import Data into BigQuery, MySQL, SQLite, SQL Server
+The setup instructions for these database management systems are found in the `defog-data` repository. Configure your credentials accordingly, set up your environment variables, then translate and import the eval databases with the command:
+```python
+python translate_ddl_dialect.py
+```
+
 ### Using Private Data (Optional)
 
 If you have a private dataset that you do not want to make publicly available but would still like to repurpose the code here for evaluations, you can do so by following the steps below.
