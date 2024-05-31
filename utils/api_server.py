@@ -52,7 +52,7 @@ async def generate(request: Request) -> Response:
     request_id = random_uuid()
     tokenizer = await engine.get_tokenizer()
     prompt_token_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
-    print(f"prompt_token_ids: {prompt_token_ids}")
+    # print(f"prompt_token_ids: {prompt_token_ids}")
     if prompt_token_ids[0] != tokenizer.bos_token_id:
         prompt_token_ids = [tokenizer.bos_token_id] + prompt_token_ids
 
