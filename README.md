@@ -89,6 +89,7 @@ The setup instructions for these database management systems are found in the `d
 ```python
 python translate_ddl_dialect.py
 ```
+During evaluation, you'll have to set the right `--db_type` flag and use the corresponding `_{dialect}` question files in `/data`.
 
 ### Using Private Data (Optional)
 
