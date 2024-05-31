@@ -12,10 +12,7 @@ import asyncio
 import json
 import pandas as pd
 import logging
-import mysql.connector
-from mysql.connector import errorcode
 import sqlite3
-import pyodbc
 
 # Suppress all logs from sqlglot
 logging.getLogger("sqlglot").setLevel(logging.CRITICAL)
@@ -508,6 +505,9 @@ def create_mysql_db(creds, db_name, table_metadata_string_test, row_idx):
     """
     Create a test MySQL database and tables from the table_metadata_string
     """
+    import mysql.connector
+    from mysql.connector import errorcode
+
     test_db_name = f"test{row_idx}_" + db_name
     try:
         conn = mysql.connector.connect(**creds["mysql"])
@@ -545,11 +545,12 @@ def delete_mysql_db(db_name, row_idx):
     """
     Delete a test MySQL database
     """
+    import mysql.connector
+    from mysql.connector import errorcode
 
     test_db_name = f"test{row_idx}_" + db_name
 
     # Delete the test database
-
     try:
         conn = mysql.connector.connect(**creds["mysql"])
         cursor = conn.cursor()
@@ -574,6 +575,8 @@ def test_valid_md_mysql(sql_test_list, db_name, table_metadata_string_test, row_
     Test the validity of the metadata and sql in MySQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
     """
+    import mysql.connector
+
     validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     # create a test db
@@ -633,7 +636,6 @@ def test_valid_md_mysql_concurr(df, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_mysql concurrently on a DataFrame
     """
-
     futures_to_index = {}
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -858,6 +860,8 @@ def create_tsql_db(creds, db_name, table_metadata_string_test, row_idx):
     """
     Create a test T-SQL database and tables from the table_metadata_string
     """
+    import pyodbc
+
     test_db_name = f"test{row_idx}_" + db_name
     try:
         with pyodbc.connect(
@@ -903,6 +907,8 @@ def delete_tsql_db(db_name, row_idx):
     """
     Delete a test T-SQL database
     """
+    import pyodbc
+
     test_db_name = f"test{row_idx}_{db_name}"
     try:
         with pyodbc.connect(
