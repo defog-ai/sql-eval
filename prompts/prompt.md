@@ -6,5 +6,5 @@ Generate a valid {db_type} query to answer this question: `{user_question}`
 DDL statements:
 {table_metadata_string}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
-The following {db_type} query best answers the question `{user_question}`:
+The following {db_type} query best answers the question `{user_question}`
 ```sql
