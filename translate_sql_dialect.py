@@ -380,6 +380,10 @@ cols = list(merged_df.columns)
 cols = first_cols + [col for col in cols if col not in first_cols]
 merged_df = merged_df[cols]
 
+# drop valid and err_msg cols if n_invalid = 0
+if n_invalid == 0:
+    merged_df.drop(columns=["valid", "err_msg"], inplace=True)
+
 # save to csv
 merged_df.to_csv(output_file, index=False)
 print(f"Saved to {output_file}")
