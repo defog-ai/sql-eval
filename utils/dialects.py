@@ -691,6 +691,7 @@ def ddl_to_sqlite(ddl, db_type, db_name, row_idx):
     translated = ddl_to_dialect(ddl, db_type, "sqlite")
     translated = ddl_remove_schema(translated)
     translated = translated.replace(")\nCREATE", ");\nCREATE")
+    translated = re.sub(r"SERIAL", "INTEGER PRIMARY KEY", translated)
     translated += ";"
     return translated, translated
 

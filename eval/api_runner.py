@@ -282,7 +282,7 @@ def run_api_eval(args):
 
         if logprobs:
             print(
-                f"Writing logprobs to JSON file at {output_file.replace('.csv', '.json')}"
+                f"Writing logprobs to JSON file at eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}"
             )
             results = output_df.to_dict("records")
             with open(
