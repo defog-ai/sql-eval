@@ -12,16 +12,20 @@ import collections
 
 LIKE_PATTERN = r"LIKE[\s\S]*'"
 
+
 def deduplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
     cols = df.columns.tolist()
     if len(cols) != len(set(cols)):
-        duplicates = [item for item, count in collections.Counter(cols).items() if count > 1]
+        duplicates = [
+            item for item, count in collections.Counter(cols).items() if count > 1
+        ]
         for dup in duplicates:
             indices = [i for i, x in enumerate(cols) if x == dup]
             for i in indices:
                 cols[i] = f"{dup}_{i}"
         df.columns = cols
     return df
+
 
 def normalize_table(
     df: pd.DataFrame, query_category: str, question: str, sql: str = None
