@@ -98,6 +98,7 @@ def run_bedrock_eval(args):
     db_type = args.db_type
     decimal_points = args.decimal_points
     model_id = args.model
+    cot_table_alias = args.cot_table_alias
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -108,7 +109,9 @@ def run_bedrock_eval(args):
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
         )
-        df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
+        df = prepare_questions_df(
+            questions_file, db_type, num_questions, k_shot, cot_table_alias
+        )
         # create a prompt for each question
         df["prompt"] = df[
             [
@@ -125,6 +128,7 @@ def run_bedrock_eval(args):
                 "query_0",
                 "question_1",
                 "query_1",
+                "cot_instructions",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -142,6 +146,7 @@ def run_bedrock_eval(args):
                 row["query_0"],
                 row["question_1"],
                 row["query_1"],
+                row["cot_instructions"],
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,

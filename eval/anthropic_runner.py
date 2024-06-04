@@ -20,6 +20,7 @@ def run_anthropic_eval(args):
     num_questions = args.num_questions
     k_shot = args.k_shot
     db_type = args.db_type
+    cot_table_alias = args.cot_table_alias
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -31,7 +32,7 @@ def run_anthropic_eval(args):
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
         )
         question_query_df = prepare_questions_df(
-            questions_file, db_type, num_questions, k_shot
+            questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
         input_rows = question_query_df.to_dict("records")
         output_rows = []
@@ -62,6 +63,7 @@ def run_anthropic_eval(args):
                     table_metadata_string=row["table_metadata_string"],
                     prev_invalid_sql=row["prev_invalid_sql"],
                     prev_error_msg=row["prev_error_msg"],
+                    cot_instructions=row["cot_instructions"],
                     columns_to_keep=args.num_columns,
                     shuffle=args.shuffle_metadata,
                 )
