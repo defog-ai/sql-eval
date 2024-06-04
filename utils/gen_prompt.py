@@ -55,6 +55,30 @@ def to_prompt_schema(
         md_create += ");\n"
     return md_create
 
+def generate_aliases(table_names: list) -> str:
+    """
+    Generate aliases for table names
+    """
+    aliases = {}
+    for table_name in table_names:
+        alias = table_name[0]
+        if alias in aliases.values() and "_" in table_name:
+            alias = table_name.split("_")[0] + table_name.split("_")[1]
+        if alias in aliases.values():
+            alias = table_name[:2]
+        if alias in aliases.values():
+            alias = table_name[:3]
+        num = 2
+        while alias in aliases.values():
+            alias = table_name[0] + str(num)
+            num += 1
+
+        aliases[table_name] = alias
+    
+    aliases_str = ""
+    for table_name, alias in aliases.items():
+        aliases_str += f"-- {table_name} AS {alias}, "
+    return aliases
 
 def generate_prompt(
     prompt_file,
@@ -81,6 +105,7 @@ def generate_prompt(
     with open(prompt_file, "r") as f:
         prompt = f.read()
     question_instructions = question + " " + instructions
+    table_names = []
 
     if table_metadata_string == "":
         if columns_to_keep > 0:
@@ -119,6 +144,7 @@ def generate_prompt(
                 join_list = ""
 
             md = dbs[db_name]["table_metadata"]
+            table_names = list(md.keys())
             table_metadata_string = to_prompt_schema(md, shuffle_metadata)
 
             schema_names = get_schema_names(table_metadata_string)
@@ -174,6 +200,10 @@ def generate_prompt(
         query_0=query_0,
         question_1=question_1,
         query_1=query_1,
-        cot_instructions=cot_instructions,
+        cot_instructions="",
     )
+
+    if "cot_instructions" in prompt:
+        table_aliases = generate_aliases(table_names)
+        prompt = prompt + table_aliases
     return prompt
