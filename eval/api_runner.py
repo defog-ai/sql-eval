@@ -80,6 +80,10 @@ def process_row(
         row["correct"] = 0
         row["error_db_exec"] = 1
         row["error_msg"] = "API TIMEOUT"
+        row["tokens_used"] = None
+        if logprobs:
+            row["logprobs"] = []
+
         return row
     end_time = time()
     logprobs = []
@@ -105,6 +109,9 @@ def process_row(
             generated_query = generated_query.split("[SQL]", 1)[1].strip()
         else:
             generated_query = generated_query.strip()
+
+    # remove extra spaces around brackets especially for MySQL
+    generated_query = generated_query.replace(" ( ", "(").replace(" )", ")")
 
     if "logprobs" in r.json():
         logprobs = r.json()["logprobs"]

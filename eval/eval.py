@@ -516,6 +516,7 @@ def query_tsql_db(
             with conn.cursor() as cursor:
                 cursor.execute(query)
                 results = cursor.fetchall()
+                results = [list(row) for row in results]
                 colnames = [desc[0] for desc in cursor.description]
                 # make into a dataframe
                 df = pd.DataFrame(results, columns=colnames)
