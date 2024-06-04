@@ -47,6 +47,6 @@ for model_name in "${model_names[@]}"; do
       --api_type "vllm" \
       -p 10
     # finally, kill the api server
-    pkill -9 -f utils/api_server.py
+    pkill -9 -f "python3 utils/api_server.py.*--port ${PORT}"
   done
 done

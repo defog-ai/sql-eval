@@ -48,6 +48,6 @@ for model_name in "${model_names[@]}"; do
       -p 10 \
       --cot_table_alias
     # finally, kill the api server
-    pkill -9 -f utils/api_server.py
+    pkill -9 -f "python3 utils/api_server.py.*--port ${PORT}"
   done
 done
