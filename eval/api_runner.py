@@ -178,6 +178,7 @@ def run_api_eval(args):
     db_type = args.db_type
     decimal_points = args.decimal_points
     logprobs = args.logprobs
+    cot_table_alias = args.cot_table_alias
 
     if logprobs:
         # check that the eval-visualizer/public directory exists
@@ -199,7 +200,9 @@ def run_api_eval(args):
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
         )
-        df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
+        df = prepare_questions_df(
+            questions_file, db_type, num_questions, k_shot, cot_table_alias
+        )
         # create a prompt for each question
         df["prompt"] = df[
             [
@@ -216,6 +219,7 @@ def run_api_eval(args):
                 "query_0",
                 "question_1",
                 "query_1",
+                "cot_instructions",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -233,6 +237,7 @@ def run_api_eval(args):
                 row["query_0"],
                 row["question_1"],
                 row["query_1"],
+                row["cot_instructions"],
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,

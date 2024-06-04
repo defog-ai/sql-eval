@@ -71,6 +71,7 @@ def generate_prompt(
     query_0="",
     question_1="",
     query_1="",
+    cot_instructions="",
     public_data=True,
     columns_to_keep=40,
     shuffle_metadata=False,
@@ -173,5 +174,6 @@ def generate_prompt(
         query_0=query_0,
         question_1=question_1,
         query_1=query_1,
+        cot_instructions=cot_instructions,
     )
     return prompt

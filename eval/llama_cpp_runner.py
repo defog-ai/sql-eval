@@ -72,6 +72,7 @@ def run_llama_cpp_eval(args):
     k_shot = args.k_shot
     max_workers = args.parallel_threads
     db_type = args.db_type
+    cot_table_alias = args.cot_table_alias
 
     llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=2048)
 
@@ -84,7 +85,9 @@ def run_llama_cpp_eval(args):
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
         )
-        df = prepare_questions_df(questions_file, db_type, num_questions, k_shot)
+        df = prepare_questions_df(
+            questions_file, db_type, num_questions, k_shot, cot_table_alias
+        )
         # create a prompt for each question
         df["prompt"] = df[
             [
@@ -101,6 +104,7 @@ def run_llama_cpp_eval(args):
                 "query_0",
                 "question_1",
                 "query_1",
+                "cot_instructions",
             ]
         ].apply(
             lambda row: generate_prompt(
@@ -118,6 +122,7 @@ def run_llama_cpp_eval(args):
                 row["query_0"],
                 row["question_1"],
                 row["query_1"],
+                row["cot_instructions"],
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,

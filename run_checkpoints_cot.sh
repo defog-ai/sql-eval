@@ -1,8 +1,8 @@
 #!/bin/zsh
 
 model_names=("sqlcoder_8b_fullft_ds_003_llama3_mgn1_b1_0900_b2_0990")
-PORT=8082 # avoid 8081 as it's used by nginx
-export CUDA_VISIBLE_DEVICES=0 # set gpu you want to use (just 1 will do)
+PORT=8083 # avoid 8081 as it's used by nginx
+export CUDA_VISIBLE_DEVICES=1 # set gpu you want to use (just 1 will do)
 
 # Loop over model names
 for model_name in "${model_names[@]}"; do
@@ -37,15 +37,16 @@ for model_name in "${model_names[@]}"; do
 
     # then run sql-eval
     python3 main.py -db postgres \
-      -f prompts/prompt.md \
+      -f prompts/prompt_cot.md \
       -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" "data/idk.csv" \
-      -o "results/${model_name}/c${checkpoint_num}_api_v1.csv" "results/${model_name}/c${checkpoint_num}_api_basic.csv" "results/${model_name}/c${checkpoint_num}_api_advanced.csv" "results/${model_name}/c${checkpoint_num}_api_idk.csv" \
+      -o "results/${model_name}/c${checkpoint_num}_api_v1_cot.csv" "results/${model_name}/c${checkpoint_num}_api_basic_cot.csv" "results/${model_name}/c${checkpoint_num}_api_advanced_cot.csv" "results/${model_name}/c${checkpoint_num}_api_idk_cot.csv" \
       -g api \
       -b 1 \
       -c 0 \
       --api_url "http://localhost:${PORT}/generate" \
       --api_type "vllm" \
-      -p 10
+      -p 10 \
+      --cot_table_alias
     # finally, kill the api server
     pkill -9 -f utils/api_server.py
   done

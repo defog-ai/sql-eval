@@ -86,6 +86,7 @@ class AnthropicQueryGenerator(QueryGenerator):
         table_metadata_string: str,
         prev_invalid_sql: str,
         prev_error_msg: str,
+        cot_instructions: str,
         columns_to_keep: int,
         shuffle: bool,
     ) -> dict:
@@ -115,6 +116,7 @@ class AnthropicQueryGenerator(QueryGenerator):
             glossary=glossary,
             prev_invalid_sql=prev_invalid_sql,
             prev_error_msg=prev_error_msg,
+            cot_instructions=cot_instructions,
         )
         function_to_run = self.get_completion
         package = prompt

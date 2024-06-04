@@ -7,6 +7,7 @@ def prepare_questions_df(
     db_type: str,
     num_questions: Optional[int] = None,
     k_shot: bool = False,
+    cot_table_alias: bool = False,
 ):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
     question_query_df["db_type"] = db_type
@@ -111,5 +112,13 @@ def prepare_questions_df(
         question_query_df["query_1"] = question_query_df["query_1"].fillna("")
     else:
         question_query_df["query_1"] = ""
+
+    # add all cot instructions to the `cot_instructions` column
+    if cot_table_alias:
+        question_query_df["cot_instructions"] = (
+            "List the table aliases for each table as comments, starting with the most relevant tables to the question."
+        )
+    else:
+        question_query_df["cot_instructions"] = ""
 
     return question_query_df

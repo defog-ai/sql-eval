@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--num_columns", type=int, default=20)
     parser.add_argument("-s", "--shuffle_metadata", action="store_true")
     parser.add_argument("-k", "--k_shot", action="store_true")
+    parser.add_argument("--cot_table_alias", action="store_true")
     # execution-related parameters
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
@@ -44,7 +45,7 @@ if __name__ == "__main__":
 
     # check that questions_file matches db_type
     for questions_file in args.questions_file:
-        if args.db_type not in questions_file:
+        if args.db_type not in questions_file and questions_file != "data/idk.csv":
             print(
                 f"WARNING: Check that questions_file {questions_file} is compatible with db_type {args.db_type}"
             )
