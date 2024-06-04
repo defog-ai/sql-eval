@@ -3,7 +3,7 @@
 Generate a SQL query to answer this question: `{user_question}`
 {instructions}
 DDL statements:
-{table_metadata_string}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+{table_metadata_string}
 
-The following SQL query best answers the question `{user_question}`
-```sql
+Generate a valid SQL query that answers the question `{user_question}`, and only references the tables and columns in the DDL statements.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
