@@ -83,7 +83,7 @@ def process_row(
         row["tokens_used"] = None
         if logprobs:
             row["logprobs"] = []
-        
+
         return row
     end_time = time()
     logprobs = []
