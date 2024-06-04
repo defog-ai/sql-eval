@@ -94,8 +94,8 @@ def generate_aliases(table_names: list) -> str:
 
     aliases_str = ""
     for table_name, alias in aliases.items():
-        aliases_str += f"-- {table_name} AS {alias}, "
-    return aliases
+        aliases_str += f"-- {table_name} AS {alias}\n"
+    return aliases_str
 
 
 def generate_prompt(
@@ -221,7 +221,7 @@ def generate_prompt(
         cot_instructions="",
     )
 
-    if "cot_instructions" in prompt:
+    if "cot_instructions":
         table_aliases = generate_aliases(table_names)
         prompt = prompt + table_aliases
     return prompt
