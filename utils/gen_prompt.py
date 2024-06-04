@@ -60,16 +60,17 @@ def generate_aliases(table_names: list) -> str:
     Generate aliases for table names
     """
     aliases = {}
+    reserved_keywords = ['all', 'and', 'any', 'as', 'asc', 'do', 'end', 'for', 'in', 'is', 'not', 'to']
     for table_name in table_names:
         alias = table_name[0]
-        if alias in aliases.values() and "_" in table_name:
+        if (alias in aliases.values() and "_" in table_name) or alias.lower() in reserved_keywords:
             alias = table_name.split("_")[0] + table_name.split("_")[1]
-        if alias in aliases.values():
+        if alias in aliases.values() or alias.lower() in reserved_keywords:
             alias = table_name[:2]
-        if alias in aliases.values():
+        if alias in aliases.values() or alias.lower() in reserved_keywords:
             alias = table_name[:3]
         num = 2
-        while alias in aliases.values():
+        while (alias in aliases.values() or alias.lower() in reserved_keywords):
             alias = table_name[0] + str(num)
             num += 1
 
