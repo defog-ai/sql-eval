@@ -76,6 +76,8 @@ def generate_aliases(table_names: list) -> str:
         "to",
     ]
     for table_name in table_names:
+        if "." in table_name:
+            table_name = table_name.split(".", 1)[1]
         alias = table_name[0]
         if (
             alias in aliases.values() and "_" in table_name
