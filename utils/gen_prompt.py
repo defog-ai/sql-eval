@@ -55,31 +55,48 @@ def to_prompt_schema(
         md_create += ");\n"
     return md_create
 
+
 def generate_aliases(table_names: list) -> str:
     """
     Generate aliases for table names
     """
     aliases = {}
-    reserved_keywords = ['all', 'and', 'any', 'as', 'asc', 'do', 'end', 'for', 'in', 'is', 'not', 'to']
+    reserved_keywords = [
+        "all",
+        "and",
+        "any",
+        "as",
+        "asc",
+        "do",
+        "end",
+        "for",
+        "in",
+        "is",
+        "not",
+        "to",
+    ]
     for table_name in table_names:
         alias = table_name[0]
-        if (alias in aliases.values() and "_" in table_name) or alias.lower() in reserved_keywords:
+        if (
+            alias in aliases.values() and "_" in table_name
+        ) or alias.lower() in reserved_keywords:
             alias = table_name.split("_")[0] + table_name.split("_")[1]
         if alias in aliases.values() or alias.lower() in reserved_keywords:
             alias = table_name[:2]
         if alias in aliases.values() or alias.lower() in reserved_keywords:
             alias = table_name[:3]
         num = 2
-        while (alias in aliases.values() or alias.lower() in reserved_keywords):
+        while alias in aliases.values() or alias.lower() in reserved_keywords:
             alias = table_name[0] + str(num)
             num += 1
 
         aliases[table_name] = alias
-    
+
     aliases_str = ""
     for table_name, alias in aliases.items():
         aliases_str += f"-- {table_name} AS {alias}, "
     return aliases
+
 
 def generate_prompt(
     prompt_file,
