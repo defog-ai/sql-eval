@@ -8,9 +8,20 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from sqlalchemy import create_engine, text
 from utils.creds import db_creds_all
 import time
+import collections
 
 LIKE_PATTERN = r"LIKE[\s\S]*'"
 
+def deduplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
+    cols = df.columns.tolist()
+    if len(cols) != len(set(cols)):
+        duplicates = [item for item, count in collections.Counter(cols).items() if count > 1]
+        for dup in duplicates:
+            indices = [i for i, x in enumerate(cols) if x == dup]
+            for i in indices:
+                cols[i] = f"{dup}_{i}"
+        df.columns = cols
+    return df
 
 def normalize_table(
     df: pd.DataFrame, query_category: str, question: str, sql: str = None
@@ -90,6 +101,7 @@ def normalize_table(
         sorted_df = sorted_df.sort_values(by=list(sorted_df.columns))
 
     # reset index
+    sorted_df = deduplicate_columns(sorted_df)
     sorted_df = sorted_df.reset_index(drop=True)
     return sorted_df
 
@@ -592,6 +604,8 @@ def subset_df(
     # make a copy of df_super so we don't modify the original while keeping track of matches
     df_super_temp = df_super.copy(deep=True)
     matched_columns = []
+    df_sub = deduplicate_columns(df_sub)
+    df_super_temp = deduplicate_columns(df_super_temp)
     for col_sub_name in df_sub.columns:
         col_match = False
         for col_super_name in df_super_temp.columns:
