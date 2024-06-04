@@ -80,7 +80,7 @@ def generate_aliases(table_names: list) -> str:
         if (
             alias in aliases.values() and "_" in table_name
         ) or alias.lower() in reserved_keywords:
-            alias = table_name.split("_")[0] + table_name.split("_")[1]
+            alias = table_name.split("_")[0][0] + table_name.split("_")[1][0]
         if alias in aliases.values() or alias.lower() in reserved_keywords:
             alias = table_name[:2]
         if alias in aliases.values() or alias.lower() in reserved_keywords:
