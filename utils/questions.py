@@ -120,7 +120,7 @@ def prepare_questions_df(
         )
     else:
         question_query_df["cot_instructions"] = ""
-    
+
     if cot_table_alias == "pregen":
         question_query_df["cot_pregen"] = True
     else:
