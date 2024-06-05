@@ -114,11 +114,16 @@ def prepare_questions_df(
         question_query_df["query_1"] = ""
 
     # add all cot instructions to the `cot_instructions` column
-    if cot_table_alias:
+    if cot_table_alias == "instruct":
         question_query_df["cot_instructions"] = (
             "List the table aliases for each table as comments, starting with the most relevant tables to the question."
         )
     else:
         question_query_df["cot_instructions"] = ""
+    
+    if cot_table_alias == "pregen":
+        question_query_df["cot_pregen"] = True
+    else:
+        question_query_df["cot_pregen"] = False
 
     return question_query_df
