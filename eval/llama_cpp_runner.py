@@ -89,24 +89,7 @@ def run_llama_cpp_eval(args):
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
         # create a prompt for each question
-        df["prompt"] = df[
-            [
-                "question",
-                "db_name",
-                "db_type",
-                "instructions",
-                "k_shot_prompt",
-                "glossary",
-                "table_metadata_string",
-                "prev_invalid_sql",
-                "prev_error_msg",
-                "question_0",
-                "query_0",
-                "question_1",
-                "query_1",
-                "cot_instructions",
-            ]
-        ].apply(
+        df["prompt"] = df.apply(
             lambda row: generate_prompt(
                 prompt_file,
                 row["question"],
@@ -123,6 +106,7 @@ def run_llama_cpp_eval(args):
                 row["question_1"],
                 row["query_1"],
                 row["cot_instructions"],
+                row["cot_pregen"],
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,

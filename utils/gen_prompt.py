@@ -116,6 +116,7 @@ def generate_prompt(
     question_1="",
     query_1="",
     cot_instructions="",
+    cot_pregen=False,
     public_data=True,
     columns_to_keep=40,
     shuffle_metadata=False,
@@ -220,10 +221,10 @@ def generate_prompt(
         query_0=query_0,
         question_1=question_1,
         query_1=query_1,
-        cot_instructions="",
+        cot_instructions=cot_instructions,
     )
 
-    if "cot_instructions":
+    if cot_pregen:
         table_aliases = generate_aliases(table_names)
         prompt = prompt + table_aliases
     return prompt
