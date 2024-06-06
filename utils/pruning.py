@@ -113,8 +113,22 @@ def get_md_emb(
     topk_table_columns = {}
     table_column_names = set()
     for score, index in zip(top_k_scores, top_k_indices):
-        table_name, column_info = column_info_csv[index].split(".", 1)
-        column_tuple = tuple(column_info.split(",", 2))
+        table_col_name, column_info = column_info_csv[index].split(",", 1)
+        # if count of "." is more than 1, then split into schema, table, column
+        if table_col_name.count(".") > 1:
+            schema, table_name, column_name = table_col_name.split(".", 2)
+            table_name = f"{schema}.{table_name}"
+        else:
+            table_name, column_name = table_col_name.split(".", 1)
+        # check if column_info has numeric or decimal in it
+        if "numeric" in column_info.lower() or "decimal" in column_info.lower():
+            column_type, col_desc = column_info.split("),", 1)
+            column_type += ")"
+        else:
+            column_type, col_desc = tuple(column_info.split(",", 1))
+        column_tuple = (column_name, column_type, col_desc)
+        column_tuple = tuple(filter(None, column_tuple))
+
         if table_name not in topk_table_columns:
             topk_table_columns[table_name] = []
         topk_table_columns[table_name].append(column_tuple)

@@ -128,6 +128,8 @@ def generate_prompt(
     question_instructions = question + " " + instructions
     table_names = []
 
+    column_join = {}
+    # retrieve metadata, either pruned or full
     if table_metadata_string == "":
         if columns_to_keep > 0:
             from utils.pruning import prune_metadata_str
@@ -139,6 +141,8 @@ def generate_prompt(
                 columns_to_keep,
                 shuffle_metadata,
             )
+            # remove triple backticks
+            table_metadata_string = table_metadata_string.replace("```", "").strip()
         elif columns_to_keep == 0:
             if public_data:
                 import defog_data.supplementary as sup
@@ -149,62 +153,63 @@ def generate_prompt(
 
                 column_join = sup.columns_join.get(db_name, {})
 
-            join_list = []
-            for values in column_join.values():
-                col_1, col_2 = values[0]
-                # add to join_list
-                join_str = f"{col_1} can be joined with {col_2}"
-                if join_str not in join_list:
-                    join_list.append(join_str)
-
-            if len(join_list) > 0:
-                join_list = "\nHere is a list of joinable columns:\n" + "\n".join(
-                    join_list
-                )
-            else:
-                join_list = ""
-
             md = dbs[db_name]["table_metadata"]
             table_names = list(md.keys())
             table_metadata_string = to_prompt_schema(md, shuffle_metadata)
-
-            schema_names = get_schema_names(table_metadata_string)
-            if schema_names:
-                # add CREATE SCHEMA statements
-                for schema_name in schema_names:
-                    table_metadata_string = (
-                        f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n"
-                        + table_metadata_string
-                    )
-
-            if db_type in ["postgres", "snowflake"]:
-                table_metadata_string = table_metadata_string + join_list
-            elif db_type == "bigquery":
-                table_metadata_string = (
-                    ddl_to_bigquery(table_metadata_string, "postgres", db_name, "")[0]
-                    + join_list
-                )
-            elif db_type == "mysql":
-                table_metadata_string = (
-                    ddl_to_mysql(table_metadata_string, "postgres", db_name, "")[0]
-                    + join_list
-                )
-            elif db_type == "sqlite":
-                table_metadata_string = (
-                    ddl_to_sqlite(table_metadata_string, "postgres", db_name, "")[0]
-                    + join_list
-                )
-            elif db_type == "tsql":
-                table_metadata_string = (
-                    ddl_to_tsql(table_metadata_string, "postgres", db_name, "")[0]
-                    + join_list
-                )
-            else:
-                raise ValueError(
-                    "db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql"
-                )
         else:
             raise ValueError("columns_to_keep must be >= 0")
+        
+        # get join list if retrieving full metadata
+        join_list = []
+        for values in column_join.values():
+            col_1, col_2 = values[0]
+            # add to join_list
+            join_str = f"{col_1} can be joined with {col_2}"
+            if join_str not in join_list:
+                join_list.append(join_str)
+
+        if len(join_list) > 0:
+            join_list = "\nHere is a list of joinable columns:\n" + "\n".join(
+                join_list
+            )
+        else:
+            join_list = ""
+
+        # add schema creation statements if relevant
+        schema_names = get_schema_names(table_metadata_string)
+        if schema_names:
+            for schema_name in schema_names:
+                table_metadata_string = (
+                    f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n"
+                    + table_metadata_string
+                )
+        # transform metadata string to target dialect if necessary
+        if db_type in ["postgres", "snowflake"]:
+            table_metadata_string = table_metadata_string + join_list
+        elif db_type == "bigquery":
+            table_metadata_string = (
+                ddl_to_bigquery(table_metadata_string, "postgres", db_name, "")[0]
+                + join_list
+            )
+        elif db_type == "mysql":
+            table_metadata_string = (
+                ddl_to_mysql(table_metadata_string, "postgres", db_name, "")[0]
+                + join_list
+            )
+        elif db_type == "sqlite":
+            table_metadata_string = (
+                ddl_to_sqlite(table_metadata_string, "postgres", db_name, "")[0]
+                + join_list
+            )
+        elif db_type == "tsql":
+            table_metadata_string = (
+                ddl_to_tsql(table_metadata_string, "postgres", db_name, "")[0]
+                + join_list
+            )
+        else:
+            raise ValueError(
+                "db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql"
+            )
     if glossary == "":
         glossary = dbs[db_name]["glossary"]
 
