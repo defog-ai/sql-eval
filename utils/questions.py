@@ -2,12 +2,26 @@ from typing import Optional
 import pandas as pd
 
 
+def get_table_aliases(db_name: str) -> str:
+    from defog_data.metadata import dbs
+    from defog_utils.utils_db import generate_aliases
+
+    metadata = dbs[db_name]["table_metadata"]
+    table_names = list(metadata.keys())
+    aliases = generate_aliases(table_names)
+    aliases_instruction = (
+        "Use the following table aliases when referencing tables in the query:\n"
+        + aliases
+    )
+    return aliases_instruction
+
+
 def prepare_questions_df(
     questions_file: str,
     db_type: str,
     num_questions: Optional[int] = None,
     k_shot: bool = False,
-    cot_table_alias: bool = False,
+    cot_table_alias: str = "",
 ):
     question_query_df = pd.read_csv(questions_file, nrows=num_questions)
     question_query_df["db_type"] = db_type
@@ -117,6 +131,10 @@ def prepare_questions_df(
     if cot_table_alias == "instruct":
         question_query_df["cot_instructions"] = (
             "List the table aliases for each table as comments, starting with the most relevant tables to the question."
+        )
+    elif cot_table_alias == "prealias":
+        question_query_df["cot_instructions"] = question_query_df["db_name"].apply(
+            get_table_aliases
         )
     else:
         question_query_df["cot_instructions"] = ""
