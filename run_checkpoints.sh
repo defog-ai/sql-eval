@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-model_names=("sqlcoder_8b_fullft_ds_003_llama3_mgn1_b1_0900_b2_0990")
+model_names=("sqlcoder_8b_fullft_ds_011_llama3_mgn1_b1_0900_b2_0990")
 PORT=8082 # avoid 8081 as it's used by nginx
 export CUDA_VISIBLE_DEVICES=0 # set gpu you want to use (just 1 will do)
 

@@ -371,7 +371,7 @@ You can use the following flags in the command line to change the configurations
 | -c, --num_columns        | Number of columns, default 20. To not prune the columns, set it to 0. |
 | -s, --shuffle_metadata   | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database). |
 | -k, --k_shot             | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.                                                                                                    |
-| --cot_table_alias        | Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct` and `pregen`. If using `instruct`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. |                                                                                                    |
+| --cot_table_alias        | Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct`, `prealias` and `pregen`. If using `instruct` or `prealias`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. `instruct` will get your model generate the chain-of-thought table aliases, while `prealias` would already generate the aliases in the prompt. |                                                                                                    |
 
 ### Execution-related parameters
 
