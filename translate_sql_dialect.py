@@ -24,17 +24,18 @@ import os
 
 tqdm.pandas()
 
-dataset_file = (
-    "data/instruct_advanced_postgres.csv"  # Postgres dataset file to translate
-)
-dialect = "mysql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
+dataset_file = "data/idk.csv"  # Postgres dataset file to translate
+dialect = "bigquery"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 bigquery_proj = os.getenv(
     "BIGQUERY_PROJ"
 )  # Set this to your BigQuery project ID, leave empty if dialect is not BigQuery
 
 model = "gpt-4o"  # Model to use for translation of invalid SQL
 max_concurrent = 5  # Maximum number of concurrent coroutines when querying openai
-output_file = dataset_file.replace("postgres", dialect)
+if "postgres" in dataset_file:
+    output_file = dataset_file.replace("postgres", dialect)
+else:
+    output_file = dataset_file.replace(".csv", f"_{dialect}.csv")
 
 df = pd.read_csv(dataset_file)
 

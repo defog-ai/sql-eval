@@ -16,6 +16,7 @@ import sqlite3
 
 # Suppress all logs from sqlglot
 logging.getLogger("sqlglot").setLevel(logging.CRITICAL)
+idk_list = list(pd.read_csv("data/idk.csv")["query"].unique())
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 creds = {
     "mysql": {
@@ -279,10 +280,11 @@ def sql_to_bigquery(sql, db_type, table_metadata_string, db_name, row_idx):
     final_table_list = set(
         [table for table in sql_tables if table.lower() in table_list]
     )
-    if final_table_list == set():
+    if (final_table_list == set()) and (sql + ";" not in idk_list):
         print("No tables found in sql. Skipping...")
         print(sql)
         return None, None
+
     # remove schema names if any
     translated = sql_remove_schema(translated, table_metadata_string)
     translated_test = translated
