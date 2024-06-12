@@ -678,7 +678,7 @@ def sql_to_sqlite(sql, db_type, table_metadata_string):
     Returns translated sql and translated test sql for testing.
     For SQLite, both the translated sql and test sql are the same.
     """
-    translated = sql_to_dialect(sql, db_type, "mysql")
+    translated = sql_to_dialect(sql, db_type, "sqlite")
     translated = sql_remove_schema(translated, table_metadata_string)
     translated_test = translated
     return translated, translated_test
