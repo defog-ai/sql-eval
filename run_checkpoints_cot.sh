@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-model_names=("sqlcoder_8b_fullft_ds_011_llama3_mgn1_b1_0900_b2_0990")
+model_names=("sqlcoder_8b_fullft_ds_012_llama3_mgn1_b1_0900_b2_0990_steps_600")
 PORT=8083 # avoid 8081 as it's used by nginx
 export CUDA_VISIBLE_DEVICES=1 # set gpu you want to use (just 1 will do)
 
@@ -46,7 +46,8 @@ for model_name in "${model_names[@]}"; do
       --api_url "http://localhost:${PORT}/generate" \
       --api_type "vllm" \
       -p 10 \
-      --cot_table_alias "prealias"
+      --cot_table_alias "prealias" \
+      --logprobs
     # finally, kill the api server
     pkill -9 -f "python3 utils/api_server.py.*--port ${PORT}"
   done
