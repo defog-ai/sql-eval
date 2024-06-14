@@ -10,6 +10,7 @@ from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.sampling_params import SamplingParams
 from vllm.utils import random_uuid
+from vllm import __version__ as vllm_version
 
 TIMEOUT_KEEP_ALIVE = 5  # seconds.
 app = FastAPI()
@@ -56,12 +57,19 @@ async def generate(request: Request) -> Response:
     if prompt_token_ids[0] != tokenizer.bos_token_id:
         prompt_token_ids = [tokenizer.bos_token_id] + prompt_token_ids
 
-    results_generator = engine.generate(
-        prompt=None,
-        sampling_params=sampling_params,
-        request_id=request_id,
-        prompt_token_ids=prompt_token_ids,
-    )
+    if vllm_version >= "0.4.2":
+        results_generator = engine.generate(
+            inputs={"prompt_token_ids": prompt_token_ids},
+            sampling_params=sampling_params,
+            request_id=request_id,
+        )
+    else:
+        results_generator = engine.generate(
+            prompt=None,
+            sampling_params=sampling_params,
+            request_id=request_id,
+            prompt_token_ids=prompt_token_ids,
+        )
 
     # Streaming case
     async def stream_results() -> AsyncGenerator[bytes, None]:
