@@ -134,7 +134,7 @@ def generate_prompt(
         if columns_to_keep > 0:
             from utils.pruning import prune_metadata_str
 
-            table_metadata_string, join_str = prune_metadata_str(
+            table_metadata_ddl, join_str = prune_metadata_str(
                 question_instructions,
                 db_name,
                 public_data,
@@ -142,7 +142,7 @@ def generate_prompt(
                 shuffle_metadata,
             )
             # remove triple backticks
-            table_metadata_string = table_metadata_string.replace("```", "").strip()
+            table_metadata_ddl = table_metadata_ddl.replace("```", "").strip()
         elif columns_to_keep == 0:
             if public_data:
                 import defog_data.supplementary as sup
@@ -155,7 +155,7 @@ def generate_prompt(
 
             md = dbs[db_name]["table_metadata"]
             table_names = list(md.keys())
-            table_metadata_string = to_prompt_schema(md, shuffle_metadata)
+            table_metadata_ddl = to_prompt_schema(md, shuffle_metadata)
 
             # get join_str from column_join
             join_list = []
@@ -173,34 +173,34 @@ def generate_prompt(
             raise ValueError("columns_to_keep must be >= 0")
 
         # add schema creation statements if relevant
-        schema_names = get_schema_names(table_metadata_string)
+        schema_names = get_schema_names(table_metadata_ddl)
         if schema_names:
             for schema_name in schema_names:
-                table_metadata_string = (
+                table_metadata_ddl = (
                     f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n"
-                    + table_metadata_string
+                    + table_metadata_ddl
                 )
         # transform metadata string to target dialect if necessary
         if db_type in ["postgres", "snowflake"]:
-            table_metadata_string = table_metadata_string + join_str
+            table_metadata_string = table_metadata_ddl + join_str
         elif db_type == "bigquery":
             table_metadata_string = (
-                ddl_to_bigquery(table_metadata_string, "postgres", db_name, "")[0]
+                ddl_to_bigquery(table_metadata_ddl, "postgres", db_name, "")[0]
                 + join_str
             )
         elif db_type == "mysql":
             table_metadata_string = (
-                ddl_to_mysql(table_metadata_string, "postgres", db_name, "")[0]
+                ddl_to_mysql(table_metadata_ddl, "postgres", db_name, "")[0]
                 + join_str
             )
         elif db_type == "sqlite":
             table_metadata_string = (
-                ddl_to_sqlite(table_metadata_string, "postgres", db_name, "")[0]
+                ddl_to_sqlite(table_metadata_ddl, "postgres", db_name, "")[0]
                 + join_str
             )
         elif db_type == "tsql":
             table_metadata_string = (
-                ddl_to_tsql(table_metadata_string, "postgres", db_name, "")[0]
+                ddl_to_tsql(table_metadata_ddl, "postgres", db_name, "")[0]
                 + join_str
             )
         else:

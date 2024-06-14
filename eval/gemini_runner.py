@@ -42,9 +42,10 @@ def generate_prompt(
     question_instructions = question + " " + instructions
 
     if table_metadata_string == "":
-        pruned_metadata_str = prune_metadata_str(
+        pruned_metadata_ddl, join_str = prune_metadata_str(
             question_instructions, db_name, public_data, num_columns_to_keep, shuffle
         )
+        pruned_metadata_str = pruned_metadata_ddl + join_str
     else:
         pruned_metadata_str = table_metadata_string
 

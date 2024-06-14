@@ -212,7 +212,7 @@ def prune_metadata_str(
     emb = emb_tuple[0]
     csv_descriptions = emb_tuple[1]
     try:
-        table_metadata_csv, join_str = get_md_emb(
+        table_metadata_ddl, join_str = get_md_emb(
             question,
             emb[db_name],
             csv_descriptions[db_name],
@@ -226,4 +226,4 @@ def prune_metadata_str(
             raise ValueError(f"DB name `{db_name}` not found in public data")
         else:
             raise ValueError(f"DB name `{db_name}` not found in private data")
-    return table_metadata_csv, join_str
+    return table_metadata_ddl, join_str

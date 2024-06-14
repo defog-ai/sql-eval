@@ -140,13 +140,14 @@ class OpenAIQueryGenerator(QueryGenerator):
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
             if columns_to_keep > 0:
-                table_metadata_string = prune_metadata_str(
+                table_metadata_ddl, join_str = prune_metadata_str(
                     question_instructions,
                     self.db_name,
                     self.use_public_data,
                     columns_to_keep,
                     shuffle,
                 )
+                table_metadata_string = table_metadata_ddl + join_str
             elif columns_to_keep == 0:
                 md = dbs[self.db_name]["table_metadata"]
                 table_metadata_string = to_prompt_schema(md, shuffle)
