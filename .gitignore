@@ -20,3 +20,6 @@ results_fn_postgres/*.json
 
 # all eda notebooks
 eda_*.ipynb
+
+# wandb output (created when running upload_wandb.ipynb)
+wandb/
