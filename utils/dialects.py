@@ -326,13 +326,18 @@ def ddl_to_bigquery(ddl, db_type, db_name, row_idx):
 
     # if any of reserved keywords in the non-comments section of ddl, enclose them with backticks
     reserved_keywords = ["long"]
-    segments = re.split(r'(/\*.*?\*/)', translated)
+    segments = re.split(r"(/\*.*?\*/)", translated)
     for i, segment in enumerate(segments):
-        if not segment.startswith('/*'):
+        if not segment.startswith("/*"):
             for keyword in reserved_keywords:
-                segment = re.sub(rf'(?<!")\b{keyword}\b(?!")', f"`{keyword}`", segment, flags=re.IGNORECASE)
+                segment = re.sub(
+                    rf'(?<!")\b{keyword}\b(?!")',
+                    f"`{keyword}`",
+                    segment,
+                    flags=re.IGNORECASE,
+                )
             segments[i] = segment
-    translated = ''.join(segments)
+    translated = "".join(segments)
 
     translated = translated.replace(")\nCREATE", ");\nCREATE")
     translated = re.sub(r"SERIAL(PRIMARY KEY)?", "INT64", translated)
@@ -503,14 +508,19 @@ def ddl_to_mysql(ddl, db_type, db_name, row_idx):
 
     # if any of reserved keywords in the non-comments section of ddl, enclose them with backticks
     reserved_keywords = ["long"]
-    segments = re.split(r'(/\*.*?\*/)', translated)
+    segments = re.split(r"(/\*.*?\*/)", translated)
     for i, segment in enumerate(segments):
-        if not segment.startswith('/*'):
+        if not segment.startswith("/*"):
             for keyword in reserved_keywords:
-                segment = re.sub(rf'(?<!")\b{keyword}\b(?!")', f"`{keyword}`", segment, flags=re.IGNORECASE)
+                segment = re.sub(
+                    rf'(?<!")\b{keyword}\b(?!")',
+                    f"`{keyword}`",
+                    segment,
+                    flags=re.IGNORECASE,
+                )
             segments[i] = segment
-                
-    translated = ''.join(segments)
+
+    translated = "".join(segments)
 
     translated = translated.replace(")\nCREATE", ");\nCREATE")
     translated = re.sub(r"VARCHAR(?!\()", "VARCHAR(255)", translated)
@@ -711,16 +721,21 @@ def ddl_to_sqlite(ddl, db_type, db_name, row_idx):
     """
     translated = ddl_to_dialect(ddl, db_type, "sqlite")
     translated = ddl_remove_schema(translated)
-    
+
     # if any of reserved keywords in the non-comments section of ddl, enclose them with backticks
     reserved_keywords = ["transaction", "order"]
-    segments = re.split(r'(/\*.*?\*/)', translated)
+    segments = re.split(r"(/\*.*?\*/)", translated)
     for i, segment in enumerate(segments):
-        if not segment.startswith('/*'):
+        if not segment.startswith("/*"):
             for keyword in reserved_keywords:
-                segment = re.sub(rf'(?<!")\b{keyword}\b(?!")', f"`{keyword}`", segment, flags=re.IGNORECASE)
+                segment = re.sub(
+                    rf'(?<!")\b{keyword}\b(?!")',
+                    f"`{keyword}`",
+                    segment,
+                    flags=re.IGNORECASE,
+                )
             segments[i] = segment
-    translated = ''.join(segments)
+    translated = "".join(segments)
 
     translated = translated.replace(")\nCREATE", ");\nCREATE")
     translated = re.sub(r"SERIAL", "INTEGER PRIMARY KEY", translated)

@@ -166,7 +166,9 @@ def generate_prompt(
                 if join_str not in join_list:
                     join_list.append(join_str)
             if len(join_list) > 0:
-                join_str = "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
+                join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
+                    join_list
+                )
             else:
                 join_str = ""
         else:
@@ -177,8 +179,7 @@ def generate_prompt(
         if schema_names:
             for schema_name in schema_names:
                 table_metadata_ddl = (
-                    f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n"
-                    + table_metadata_ddl
+                    f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_ddl
                 )
         # transform metadata string to target dialect if necessary
         if db_type in ["postgres", "snowflake"]:
@@ -190,18 +191,15 @@ def generate_prompt(
             )
         elif db_type == "mysql":
             table_metadata_string = (
-                ddl_to_mysql(table_metadata_ddl, "postgres", db_name, "")[0]
-                + join_str
+                ddl_to_mysql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
             )
         elif db_type == "sqlite":
             table_metadata_string = (
-                ddl_to_sqlite(table_metadata_ddl, "postgres", db_name, "")[0]
-                + join_str
+                ddl_to_sqlite(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
             )
         elif db_type == "tsql":
             table_metadata_string = (
-                ddl_to_tsql(table_metadata_ddl, "postgres", db_name, "")[0]
-                + join_str
+                ddl_to_tsql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
             )
         else:
             raise ValueError(
