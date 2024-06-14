@@ -85,7 +85,7 @@ def test_get_md_emb_no_shuffle(test_metadata):
     threshold = 0.0
 
     # Call the function and get the result
-    result = get_md_emb(
+    result, join_str = get_md_emb(
         question,
         column_emb,
         column_csv,
@@ -112,11 +112,13 @@ CREATE TABLE country (
   id integer, --unique id for country, not iso code
 );
 ```
-
+"""
+    expected_join_str = """
 Here is a list of joinable columns:
 airport.country_id can be joined with country.id
 """
     assert result == expected
+    assert join_str == expected_join_str
 
 
 def test_get_md_emb_shuffle(test_metadata):
@@ -127,7 +129,7 @@ def test_get_md_emb_shuffle(test_metadata):
     threshold = 0.0
 
     # Call the function and get the result
-    result = get_md_emb(
+    result, join_str = get_md_emb(
         question,
         column_emb,
         column_csv,
@@ -154,11 +156,14 @@ CREATE TABLE flight (
   airport_name text, --name of the airport
 );
 ```
-
+"""
+    expected_join_str = """
 Here is a list of joinable columns:
 airport.country_id can be joined with country.id
 """
+
     assert result == expected
+    assert join_str == expected_join_str
 
 
 def test_get_md_emb_sql_emb_empty(test_metadata):
@@ -168,7 +173,7 @@ def test_get_md_emb_sql_emb_empty(test_metadata):
     threshold = 1.0  # arbitrarily high threshold to test empty results
 
     # Call the function and get the result
-    result = get_md_emb(
+    result, join_str = get_md_emb(
         question,
         column_emb,
         column_csv,
@@ -179,6 +184,7 @@ def test_get_md_emb_sql_emb_empty(test_metadata):
         threshold,
     )
     assert result == ""
+    assert join_str == ""
 
 
 def test_get_md_emb_coldesc(test_metadata_diff_coldesc):
@@ -189,7 +195,7 @@ def test_get_md_emb_coldesc(test_metadata_diff_coldesc):
     threshold = 0.0
 
     # Call the function and get the result
-    result = get_md_emb(
+    result, join_str = get_md_emb(
         question,
         column_emb,
         column_csv,
