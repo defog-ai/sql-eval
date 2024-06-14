@@ -121,7 +121,7 @@ def get_md_emb(
         else:
             table_name, column_name = table_col_name.split(".", 1)
         # check if column_info has numeric or decimal in it
-        if "numeric" in column_info.lower() or "decimal" in column_info.lower():
+        if "numeric(" in column_info.lower() or "decimal(" in column_info.lower():
             column_type, col_desc = column_info.split("),", 1)
             column_type += ")"
         else:
@@ -188,10 +188,12 @@ def get_md_emb(
     md_str = format_topk_sql(topk_table_columns, shuffle)
 
     if len(join_list) > 0:
-        md_str += "\nHere is a list of joinable columns:\n"
-        md_str += "\n".join(join_list)
-        md_str += "\n"
-    return md_str
+        join_str = "\nHere is a list of joinable columns:\n"
+        join_str += "\n".join(join_list)
+        join_str += "\n"
+    else:
+        join_str = ""
+    return md_str, join_str
 
 
 def prune_metadata_str(
@@ -210,7 +212,7 @@ def prune_metadata_str(
     emb = emb_tuple[0]
     csv_descriptions = emb_tuple[1]
     try:
-        table_metadata_csv = get_md_emb(
+        table_metadata_csv, join_str = get_md_emb(
             question,
             emb[db_name],
             csv_descriptions[db_name],
@@ -224,4 +226,4 @@ def prune_metadata_str(
             raise ValueError(f"DB name `{db_name}` not found in public data")
         else:
             raise ValueError(f"DB name `{db_name}` not found in private data")
-    return table_metadata_csv
+    return table_metadata_csv, join_str
