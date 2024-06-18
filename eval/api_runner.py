@@ -14,7 +14,7 @@ import requests
 from utils.reporting import upload_results
 
 
-def mk_vllm_json(prompt, num_beams, logprobs=False):
+def mk_vllm_json(prompt, num_beams, logprobs=False, sql_lora_path=None):
     payload = {
         "prompt": prompt,
         "n": 1,
@@ -24,7 +24,10 @@ def mk_vllm_json(prompt, num_beams, logprobs=False):
         "stop": [";", "```"],
         "max_tokens": 4000,
         "seed": 42,
+        "sql_lora_path": sql_lora_path,
     }
+    if sql_lora_path:
+        print("Using LoRA adapter at:", sql_lora_path)
     if logprobs:
         payload["logprobs"] = 2
     return payload
@@ -51,12 +54,13 @@ def process_row(
     num_beams: int,
     decimal_points: int,
     logprobs: bool = False,
+    sql_lora_path: Optional[str] = None,
 ):
     start_time = time()
     if api_type == "tgi":
         json_data = mk_tgi_json(row["prompt"], num_beams)
     elif api_type == "vllm":
-        json_data = mk_vllm_json(row["prompt"], num_beams, logprobs)
+        json_data = mk_vllm_json(row["prompt"], num_beams, logprobs, sql_lora_path)
     else:
         # add any custom JSON data here, e.g. for a custom API
         json_data = {
@@ -186,6 +190,7 @@ def run_api_eval(args):
     decimal_points = args.decimal_points
     logprobs = args.logprobs
     cot_table_alias = args.cot_table_alias
+    sql_lora_path = args.adapter if args.adapter else None
 
     if logprobs:
         # check that the eval-visualizer/public directory exists
@@ -252,6 +257,7 @@ def run_api_eval(args):
                         num_beams,
                         decimal_points,
                         logprobs,
+                        sql_lora_path,
                     )
                 )
 

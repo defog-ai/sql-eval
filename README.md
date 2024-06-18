@@ -174,7 +174,7 @@ We also support loading a peft adapter here as well via the `-a` flag. Note that
 
 ### vLLM
 
-We also have a [vllm](https://blog.vllm.ai/) runner which uses the vLLM engine to run the inference altogether as a single batch. It is much faster to do so especially when `num_beams` > 1. You would have to pass in a single set of merged model weights, and the model architecture needs to be supported by vLLM. Here's a sample command:
+We also have a [vllm](https://blog.vllm.ai/) runner which uses the vLLM engine to run the inference altogether as a single batch. It is much faster to do so especially when `num_beams` > 1. You would have to pass in a single set of merged model weights, path to LoRA adapters if applicable, and the model architecture needs to be supported by vLLM. Here's a sample command:
 ```bash
 python -W ignore main.py \
   -db postgres \
@@ -183,6 +183,7 @@ python -W ignore main.py \
   -g vllm \
   -f "prompts/prompt.md" \
   -m defog/llama-3-sqlcoder-8b \
+  -a path/to_adapter \
   -c 0
 ```
 
@@ -200,7 +201,16 @@ We also provide our custom modification of the vllm api server, which only retur
 python -m vllm.entrypoints.api_server \
     --model defog/sqlcoder-7b-2 \
     --tensor-parallel-size 4 \
-    --dtype float16
+    --dtype float16 
+
+# to set up a vllm server that supports LoRA adapters
+python -m vllm.entrypoints.api_server \
+    --model defog/sqlcoder-7b-2 \
+    --tensor-parallel-size 1 \
+    --dtype float16 \
+    --max-model-len 4096 \
+    --enable-lora \
+    --max-lora-rank 64 
 
 # to use our modified api server
 python utils/api_server.py \
@@ -218,6 +228,7 @@ python main.py \
   -f prompts/prompt.md \
   --api_url "http://localhost:8000/generate" \
   --api_type "vllm" \
+  -a path/to_adapter_if_applicable \
   -p 8
 ```
 
