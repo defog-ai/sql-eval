@@ -53,7 +53,9 @@ async def generate(request: Request) -> Response:
     prompt = request_dict.pop("prompt")
     stream = request_dict.pop("stream", False)
     sql_lora_path = request_dict.pop("sql_lora_path", None)
-    lora_request = LoRARequest("sql_adapter", 1, sql_lora_path) if sql_lora_path else None
+    lora_request = (
+        LoRARequest("sql_adapter", 1, sql_lora_path) if sql_lora_path else None
+    )
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
     tokenizer = await engine.get_tokenizer()
@@ -75,7 +77,7 @@ async def generate(request: Request) -> Response:
             sampling_params=sampling_params,
             request_id=request_id,
             prompt_token_ids=prompt_token_ids,
-            lora_request=LoRARequest("sql_adapter", 1, sql_lora_path)
+            lora_request=LoRARequest("sql_adapter", 1, sql_lora_path),
         )
 
     # Streaming case
