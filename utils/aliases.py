@@ -26,10 +26,11 @@ reserved_keywords = [
     "to",
 ]
 
+
 def get_table_names(md: str) -> List[str]:
     """
     Given a string of metadata formatted as a series of
-    CREATE TABLE statements, return a list of table names in the same order as 
+    CREATE TABLE statements, return a list of table names in the same order as
     they appear in the metadata.
     """
     table_names = []
