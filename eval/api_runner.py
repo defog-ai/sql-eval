@@ -76,7 +76,7 @@ def process_row(
         r = requests.post(
             api_url,
             json=json_data,
-            timeout=30,
+            timeout=15,
         )
     except:
         row["generated_query"] = ""
