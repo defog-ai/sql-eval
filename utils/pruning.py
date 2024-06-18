@@ -1,6 +1,5 @@
-import logging
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
