@@ -4,7 +4,7 @@ import pandas as pd
 
 def get_table_aliases(db_name: str) -> str:
     from defog_data.metadata import dbs
-    from defog_utils.utils_db import generate_aliases
+    from utils.aliases import generate_aliases
 
     metadata = dbs[db_name]["table_metadata"]
     table_names = list(metadata.keys())
