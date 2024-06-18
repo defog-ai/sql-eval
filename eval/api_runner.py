@@ -26,8 +26,6 @@ def mk_vllm_json(prompt, num_beams, logprobs=False, sql_lora_path=None):
         "seed": 42,
         "sql_lora_path": sql_lora_path,
     }
-    if sql_lora_path:
-        print("Using LoRA adapter at:", sql_lora_path)
     if logprobs:
         payload["logprobs"] = 2
     return payload
@@ -191,7 +189,8 @@ def run_api_eval(args):
     logprobs = args.logprobs
     cot_table_alias = args.cot_table_alias
     sql_lora_path = args.adapter if args.adapter else None
-
+    if sql_lora_path:
+        print("Using LoRA adapter at:", sql_lora_path)
     if logprobs:
         # check that the eval-visualizer/public directory exists
         if not os.path.exists("./eval-visualizer"):
