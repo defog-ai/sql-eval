@@ -10,6 +10,7 @@ from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.sampling_params import SamplingParams
 from vllm.utils import random_uuid
+from vllm.lora.request import LoRARequest
 from vllm import __version__ as vllm_version
 
 TIMEOUT_KEEP_ALIVE = 5  # seconds.
@@ -22,13 +23,15 @@ engine = None
 # - don't add special_tokens (bos/eos) and only add it if it's missing from the prompt
 # You can start it similar to how you would with the usual vllm api server:
 # ```
-# python3 -m utils/api_server.py \
+# python3 utils/api_server.py \
 #   --model "${model_path}" \
 #   --tensor-parallel-size 4 \
 #   --dtype float16 \
 #   --max-model-len 4096 \
 #   --port 5000 \
-#   --gpu-memory-utilization 0.90
+#   --gpu-memory-utilization 0.90 \
+#   --enable-lora \
+#   --max-lora-rank 64 \
 
 
 @app.get("/health")
@@ -49,6 +52,8 @@ async def generate(request: Request) -> Response:
     request_dict = await request.json()
     prompt = request_dict.pop("prompt")
     stream = request_dict.pop("stream", False)
+    sql_lora_path = request_dict.pop("sql_lora_path", None)
+    lora_request = LoRARequest("sql_adapter", 1, sql_lora_path) if sql_lora_path else None
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
     tokenizer = await engine.get_tokenizer()
@@ -62,6 +67,7 @@ async def generate(request: Request) -> Response:
             inputs={"prompt_token_ids": prompt_token_ids},
             sampling_params=sampling_params,
             request_id=request_id,
+            lora_request=lora_request,
         )
     else:
         results_generator = engine.generate(
@@ -69,6 +75,7 @@ async def generate(request: Request) -> Response:
             sampling_params=sampling_params,
             request_id=request_id,
             prompt_token_ids=prompt_token_ids,
+            lora_request=LoRARequest("sql_adapter", 1, sql_lora_path)
         )
 
     # Streaming case

@@ -3,6 +3,7 @@ import os
 from typing import List
 import sqlparse
 from vllm import LLM, SamplingParams
+from vllm.lora.request import LoRARequest
 from eval.eval import compare_query_results
 import pandas as pd
 from utils.gen_prompt import generate_prompt
@@ -27,18 +28,29 @@ def run_vllm_eval(args):
     k_shot = args.k_shot
     db_type = args.db_type
     cot_table_alias = args.cot_table_alias
+    enable_lora = True if args.adapter else False
+    lora_request = LoRARequest("sql_adapter", 1, args.adapter) if args.adapter else None
 
     # initialize model only once as it takes a while
     print(f"Preparing {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
     if not args.quantized:
-        llm = LLM(model=model_name, tensor_parallel_size=1)
+        llm = LLM(
+            model=model_name,
+            tensor_parallel_size=1,
+            enable_lora=enable_lora,
+            max_model_len=4096,
+            max_lora_rank=64,
+        )
     else:
         llm = LLM(
             model=model_name,
             tensor_parallel_size=1,
             quantization="AWQ",
+            enable_lora=enable_lora,
+            max_model_len=4096,
+            max_lora_rank=64,
         )
 
     sampling_params = SamplingParams(
@@ -129,6 +141,7 @@ def run_vllm_eval(args):
                 sampling_params=sampling_params,
                 prompt_token_ids=prompt_tokens,
                 use_tqdm=False,
+                lora_request=lora_request,
             )
             print(
                 f"Generated {len(outputs)} completions in {time.time() - start_time:.2f} seconds"
