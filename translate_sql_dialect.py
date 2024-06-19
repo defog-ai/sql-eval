@@ -52,9 +52,11 @@ else:
 # if ILIKE in instructions col, and db_type is in ["sqlite", "bigquery", "tsql"], replace ILIKE with LIKE
 if "instructions" in df.columns:
     df["instructions"] = df["instructions"].apply(
-        lambda x: x.replace("ILIKE", "LIKE")
-        if "ILIKE" in x and dialect in ["sqlite", "bigquery", "tsql"]
-        else x
+        lambda x: (
+            x.replace("ILIKE", "LIKE")
+            if "ILIKE" in x and dialect in ["sqlite", "bigquery", "tsql"]
+            else x
+        )
     )
 
 # if db_name is empty, use "dbname"
