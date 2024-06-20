@@ -209,7 +209,7 @@ EXAMPLE QUESTION 2: Which organizations have authors who have written publicatio
 EXAMPLE QUERY 2: SELECT DISTINCT organization.name FROM organization JOIN author ON organization.oid = author.oid JOIN writes ON author.aid = writes.aid JOIN domain_publication ON writes.pid = domain_publication.pid JOIN DOMAIN ON domain_publication.did = domain.did WHERE domain.name ILIKE '%Machine Learning%'
 
 "
-What month were most students admitted?,"SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How long has it been in days since the last admitted student?
+What month were most students admitted? Return the month as a date,"SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How long has it been in days since the last admitted student?
 EXAMPLE QUERY 1: SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student
 
 EXAMPLE QUESTION 2: How many students were predicted to graduate in the last 10 years?
@@ -219,25 +219,25 @@ EXAMPLE QUERY 2: SELECT count(*) AS num_students_graduated FROM student WHERE pr
 What's the average predicted time to graduation since admission in no. of days?,SELECT avg(predicted_graduation_semester - admit_term) AS average_predicted_time_to_graduation FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: How many students were predicted to graduate in the last 10 years?
 EXAMPLE QUERY 1: SELECT count(*) AS num_students_graduated FROM student WHERE predicted_graduation_semester >= DATE_TRUNC('year', CURRENT_DATE) - interval '10 year'
 
-EXAMPLE QUESTION 2: Subtract 2 weeks from the most recent predicted graduation date and give the month.
+EXAMPLE QUESTION 2: Subtract 2 weeks from the most recent predicted graduation date and give the month as an integer.
 EXAMPLE QUERY 2: SELECT extract(MONTH FROM date_trunc('month', predicted_graduation_semester) - interval '2 weeks') AS MONTH FROM student ORDER BY predicted_graduation_semester DESC LIMIT 1
 
 "
 How many students were predicted to graduate in the last 10 years?,"SELECT count(*) AS num_students_graduated FROM student WHERE predicted_graduation_semester >= DATE_TRUNC('year', CURRENT_DATE) - interval '10 year';",advising,date_functions,"EXAMPLE QUESTION 1: What's the average predicted time to graduation since admission in no. of days?
 EXAMPLE QUERY 1: SELECT avg(predicted_graduation_semester - admit_term) AS average_predicted_time_to_graduation FROM student
 
-EXAMPLE QUESTION 2: What month were most students admitted?
+EXAMPLE QUESTION 2: What month were most students admitted? Return the month as a date
 EXAMPLE QUERY 2: SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1
 
 "
-How long has it been in days since the last admitted student?,SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: What month were most students admitted?
+How long has it been in days since the last admitted student?,SELECT CURRENT_DATE - max(admit_term) AS duration_since_last_admitted_student FROM student;,advising,date_functions,"EXAMPLE QUESTION 1: What month were most students admitted? Return the month as a date
 EXAMPLE QUERY 1: SELECT date_trunc('month', s.admit_term) AS MONTH, COUNT(*) AS total_students FROM student s GROUP BY MONTH ORDER BY total_students DESC LIMIT 1
 
 EXAMPLE QUESTION 2: What's the average predicted time to graduation since admission in no. of days?
 EXAMPLE QUERY 2: SELECT avg(predicted_graduation_semester - admit_term) AS average_predicted_time_to_graduation FROM student
 
 "
-Subtract 2 weeks from the most recent predicted graduation date and give the month.,"SELECT extract(MONTH FROM date_trunc('month', predicted_graduation_semester) - interval '2 weeks') AS MONTH FROM student ORDER BY predicted_graduation_semester DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How many students were predicted to graduate in the last 10 years?
+Subtract 2 weeks from the most recent predicted graduation date and give the month as an integer.,"SELECT extract(MONTH FROM date_trunc('month', predicted_graduation_semester) - interval '2 weeks') AS MONTH FROM student ORDER BY predicted_graduation_semester DESC LIMIT 1;",advising,date_functions,"EXAMPLE QUESTION 1: How many students were predicted to graduate in the last 10 years?
 EXAMPLE QUERY 1: SELECT count(*) AS num_students_graduated FROM student WHERE predicted_graduation_semester >= DATE_TRUNC('year', CURRENT_DATE) - interval '10 year'
 
 EXAMPLE QUESTION 2: What's the average predicted time to graduation since admission in no. of days?
