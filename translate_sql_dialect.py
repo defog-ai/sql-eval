@@ -43,11 +43,21 @@ df = pd.read_csv(dataset_file)
 df["valid"] = ""
 df["err_msg"] = ""
 
-# create db_type col where if "Snowflake" in instructions of row, db_type = "Snowflake" else "postgres"
+# create db_type col where if "Snowflake" in file name, db_type = "snowflake", else db_type = "postgres"
 if "snowflake" in dataset_file:
     df["db_type"] = "snowflake"
 else:
     df["db_type"] = "postgres"
+
+# if ILIKE in instructions col, and db_type is in ["sqlite", "bigquery", "tsql"], replace ILIKE with LIKE
+if "instructions" in df.columns:
+    df["instructions"] = df["instructions"].apply(
+        lambda x: (
+            x.replace("ILIKE", "LIKE")
+            if "ILIKE" in x and dialect in ["sqlite", "bigquery", "tsql"]
+            else x
+        )
+    )
 
 # if db_name is empty, use "dbname"
 df["db_name"] = df.apply(

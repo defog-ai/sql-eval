@@ -55,7 +55,7 @@ for model_name in "${model_names[@]}"; do
     python3 main.py -db ${db_type} \
       -f prompts/prompt.md \
       -q "data/instruct_basic_${db_type}.csv" "data/instruct_advanced_${db_type}.csv" "data/questions_gen_${db_type}.csv" "data/idk.csv" \
-      -o "results/${model_name}/c${checkpoint_num}_${db_type}_api_basic.csv" "results/${model_name}/c${checkpoint_num}_${db_type}_api_advanced.csv" "results/${model_name}/c${checkpoint_num}_${db_type}_api_v1.csv" "results/${model_name}/c${checkpoint_num}_${db_type}_api_idk.csv" \
+      -o "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_basic.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_advanced.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_v1.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_idk.csv" \
       -g api \
       -b 1 \
       -c 0 \
