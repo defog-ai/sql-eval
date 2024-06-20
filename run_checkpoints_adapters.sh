@@ -6,7 +6,12 @@ db_type="sqlite"
 PORT=8084 # avoid 8081 as it's used by nginx
 export CUDA_VISIBLE_DEVICES=1 # set gpu you want to use (just 1 will do)
 preprocess_adapters=true # set to false if you have already preprocessed the adapters
+cot_table_alias=true # set to true if you want to use the cot_table_alias prompt in evals
 
+# check that the base model was trained on cot data otherwise print a warning
+if [[ ! $base_model_path == *"cot"* ]]; then
+  echo "WARNING: Base model was not trained on 'cot' data. This may lead to less than optimal results"
+fi
 for model_name in "${model_names[@]}"; do
   # list the folder names in /models/combined/${model_name}
   adapter_dir="${HOME}/finetuning/models/${model_name}"
@@ -52,7 +57,22 @@ for model_name in "${model_names[@]}"; do
     done
 
     # then run sql-eval
-    python3 main.py -db ${db_type} \
+    if [ "$cot_table_alias" = true ]; then
+      python3 main.py -db ${db_type} \
+        -f prompts/prompt_cot.md \
+        -q "data/instruct_basic_${db_type}.csv" "data/instruct_advanced_${db_type}.csv" "data/questions_gen_${db_type}.csv" "data/idk.csv" \
+        -o "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_cot_basic.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_cot_advanced.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_cot_v1.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_cot_idk.csv" \
+        -g api \
+        -b 1 \
+        -c 0 \
+        --api_url "http://localhost:${PORT}/generate" \
+        --api_type "vllm" \
+        -p 10 \
+        -a ${adapter_dir}/checkpoint-${checkpoint_num}\
+        --cot_table_alias "prealias" \
+        --logprobs 
+    else
+      python3 main.py -db ${db_type} \
       -f prompts/prompt.md \
       -q "data/instruct_basic_${db_type}.csv" "data/instruct_advanced_${db_type}.csv" "data/questions_gen_${db_type}.csv" "data/idk.csv" \
       -o "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_basic.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_advanced.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_v1.csv" "results/${model_name}/${model_name}_c${checkpoint_num}_${db_type}_api_idk.csv" \
@@ -64,6 +84,7 @@ for model_name in "${model_names[@]}"; do
       -p 10 \
       -a ${adapter_dir}/checkpoint-${checkpoint_num}\
       --logprobs
+    fi
     # finally, kill the api server
     pkill -9 -f "python3 utils/api_server.py.*--port ${PORT}"
   done
