@@ -12,6 +12,7 @@ from tqdm import tqdm
 from time import time
 import requests
 from utils.reporting import upload_results
+from uuid import uuid4
 
 
 def mk_vllm_json(prompt, num_beams, logprobs=False, sql_lora_path=None):
@@ -189,6 +190,7 @@ def run_api_eval(args):
     logprobs = args.logprobs
     cot_table_alias = args.cot_table_alias
     sql_lora_path = args.adapter if args.adapter else None
+    run_name = args.run_name if args.run_name else None
     if sql_lora_path:
         print("Using LoRA adapter at:", sql_lora_path)
     if logprobs:
@@ -302,11 +304,14 @@ def run_api_eval(args):
         # with open(prompt_file, "r") as f:
         #     prompt = f.read()
 
-        # if args.upload_url is not None:
-        #     upload_results(
-        #         results=results,
-        #         url=args.upload_url,
-        #         runner_type="api_runner",
-        #         prompt=prompt,
-        #         args=args,
-        #     )
+        if run_name is None:
+            run_name = uuid4().hex
+
+        if args.upload_url is not None:
+            upload_results(
+                results=results,
+                url=args.upload_url,
+                runner_type="api_runner",
+                args=args,
+                run_name=run_name,
+            )

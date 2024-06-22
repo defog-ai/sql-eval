@@ -33,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-l", "--logprobs", action="store_true")
     parser.add_argument("--upload_url", type=str)
+    parser.add_argument("--run_name", type=str, required=False)
     parser.add_argument(
         "-qz", "--quantized", default=False, action=argparse.BooleanOptionalAction
     )
