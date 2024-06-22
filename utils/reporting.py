@@ -81,7 +81,6 @@ def upload_results(
     url: str,
     run_name: str,
     runner_type: str,
-    prompt: str,
     args: dict,
 ):
     """
@@ -99,7 +98,6 @@ def upload_results(
         "results": results,
         "timestamp": datetime.now().isoformat(),
         "runner_type": runner_type,
-        "prompt": prompt,
         "model": args.model,
         "num_beams": args.num_beams,
         "db_type": args.db_type,
