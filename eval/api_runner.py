@@ -306,6 +306,7 @@ def run_api_eval(args):
 
         if run_name is None:
             run_name = uuid4().hex
+            print("Run name not provided. Using a random run name:", run_name)
 
         if args.upload_url is not None:
             upload_results(
