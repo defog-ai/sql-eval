@@ -12,7 +12,6 @@ from tqdm import tqdm
 from time import time
 import requests
 from utils.reporting import upload_results
-from uuid import uuid4
 
 
 def mk_vllm_json(prompt, num_beams, logprobs=False, sql_lora_path=None):
@@ -305,8 +304,10 @@ def run_api_eval(args):
         #     prompt = f.read()
 
         if run_name is None:
-            run_name = uuid4().hex
-            print("Run name not provided. Using a random run name:", run_name)
+            run_name = output_file.split("/")[-1].replace(".csv", "")
+            print(
+                "Run name not provided. Using a output filename for run name:", run_name
+            )
 
         if args.upload_url is not None:
             upload_results(
