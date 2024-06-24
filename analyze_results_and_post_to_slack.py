@@ -34,16 +34,16 @@ if __name__ == "__main__":
     )
     avg_correct = avg_correct.reset_index()
     avg_correct = avg_correct.melt(
-        id_vars=["model_name"], var_name="checkpoint", value_name="avg_correct"
+        id_vars=["model_name"], var_name="checkpoint", value_name="correct"
     )
     print(avg_correct)
 
     # create a graph of the average correct for each model, with each model as a line and each checkpoint as a point on the x axis
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(15, 15))
     facet_plot = sns.relplot(
         data=avg_correct,
         x="checkpoint",
-        y="avg_correct",
+        y="correct",
         col="model_name",
         kind="line",
     )
@@ -57,5 +57,5 @@ if __name__ == "__main__":
         channel="C07940SRVM5",  # id of the eval-results channel
         title="Average Correct for each model",
         file="results/avg_correct.png",
-        initial_comment="A set of evals just finished running! Here's the average correct rate for each model and each checkpoint that was in the evals.",
+        initial_comment="A set of evals just finished running! Here's the average correct rate for each model and each checkpoint that was in the evals (excluding idk questions).",
     )
