@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # create a graph of the average correct for each model, with each model as a line and each checkpoint as a point on the x axis
     plt.figure(figsize=(10, 10))
-    sns.relplot(
+    facet_plot = sns.relplot(
         data=avg_correct,
         x="checkpoint",
         y="avg_correct",
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     )
     # save the graph
     # this will get overwritten each time the script is run, but that's okay
-    sns.savefig("results/avg_correct.png")
+    facet_plot.figure.savefig("results/avg_correct.png")
 
     # post the graph to slack
     slack_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
