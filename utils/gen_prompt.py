@@ -213,6 +213,12 @@ def generate_prompt(
     if glossary == "":
         glossary = dbs[db_name]["glossary"]
 
+    instruction_reflections = instructions.replace(
+        "\nFollow the instructions below to generate the query:",
+        "\nAdditionally, I was asked to follow the instructions below to generate the query:",
+    )
+    instruction_reflections = instruction_reflections + "\n"
+
     prompt = prompt.format(
         user_question=question,
         db_type=db_type,
@@ -227,6 +233,7 @@ def generate_prompt(
         question_1=question_1,
         query_1=query_1,
         cot_instructions=cot_instructions,
+        instruction_reflections=instruction_reflections,
     )
 
     if cot_pregen:
