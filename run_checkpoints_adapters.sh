@@ -9,7 +9,7 @@ preprocess_adapters=true # set to false if you have already preprocessed the ada
 cot_table_alias=true # set to true if you want to use the cot_table_alias prompt in evals
 
 # check that the base model was trained on cot data otherwise print a warning
-if [[ ! $base_model_path == *"cot"* ]]; then
+if [[ ! $base_model_path == *"cot"* ]] && [[ $cot_table_alias == true ]]; then
   echo "WARNING: Base model was not trained on 'cot' data. This may lead to less than optimal results"
 fi
 for model_name in "${model_names[@]}"; do
