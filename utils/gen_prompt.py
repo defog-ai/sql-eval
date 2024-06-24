@@ -181,6 +181,11 @@ def generate_prompt(
                 table_metadata_ddl = (
                     f"CREATE SCHEMA IF NOT EXISTS {schema_name};\n" + table_metadata_ddl
                 )
+        # remove schema names from cot_instructions if db_type is in ["sqlite", "mysql", "bigquery"]
+        if db_type in ["sqlite", "mysql", "bigquery"]:
+            for schema_name in schema_names:
+                cot_instructions = cot_instructions.replace(f"{schema_name}.", "")
+        
         # transform metadata string to target dialect if necessary
         if db_type in ["postgres", "snowflake"]:
             table_metadata_string = table_metadata_ddl + join_str
