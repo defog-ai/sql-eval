@@ -304,7 +304,7 @@ def run_api_eval(args):
         # with open(prompt_file, "r") as f:
         #     prompt = f.read()
 
-        if run_name is None:
+        if args.run_name is None:
             run_name = output_file.split("/")[-1].replace(".csv", "")
             print(
                 "Run name not provided. Using a output filename for run name:", run_name
