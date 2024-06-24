@@ -39,23 +39,24 @@ if __name__ == "__main__":
     print(avg_correct)
 
     # create a graph of the average correct for each model, with each model as a line and each checkpoint as a point on the x axis
-    plt.figure(figsize=(15, 15))
-    facet_plot = sns.relplot(
-        data=avg_correct,
-        x="checkpoint",
-        y="correct",
-        col="model_name",
-        kind="line",
-    )
-    # save the graph
-    # this will get overwritten each time the script is run, but that's okay
-    facet_plot.figure.savefig("results/avg_correct.png")
+    for model_name in model_names:
+        plt.figure(figsize=(15, 15))
+        facet_plot = sns.relplot(
+            data=avg_correct,
+            x="checkpoint",
+            y="correct",
+            col="eval_type",
+            kind="line",
+        )
+        # save the graph
+        # this will get overwritten each time the script is run, but that's okay
+        facet_plot.figure.savefig(f"results/avg_correct_{model_name}.png")
 
-    # post the graph to slack
-    slack_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
-    slack_client.files_upload_v2(
-        channel="C07940SRVM5",  # id of the eval-results channel
-        title="Average Correct for each model",
-        file="results/avg_correct.png",
-        initial_comment="A set of evals just finished running! Here's the average correct rate for each model and each checkpoint that was in the evals (excluding idk questions).",
-    )
+        # post the graph to slack
+        slack_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+        slack_client.files_upload_v2(
+            channel="C07940SRVM5",  # id of the eval-results channel
+            title=f"Average Correct for {model_name}",
+            file=f"results/avg_correct_{model_name}.png",
+            initial_comment="A set of evals just finished running! Here's the average correct rate for each model and each checkpoint that was in the evals (excluding idk questions).",
+        )
