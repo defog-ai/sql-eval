@@ -216,7 +216,6 @@ def ddl_to_dialect(ddl, db_type, dialect):
         print("Error transpiling ddl", e)
         print(ddl)
         raise
-    translated = [stmt + ";" for stmt in translated]
     translated = "\n".join(translated)
     return translated
 
