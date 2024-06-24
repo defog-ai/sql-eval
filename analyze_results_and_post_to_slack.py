@@ -25,21 +25,22 @@ if __name__ == "__main__":
 
     results = pd.concat(results)
 
-    # first, get the average correct for each model, so that the index is the model name and each checkpoint is a column
-    avg_correct = (
-        results[~results.query_category.isin(["cat_a", "cat_b", "cat_c"])]
-        .groupby(["model_name", "checkpoint"])["correct"]
-        .mean()
-        .unstack()
-    )
-    avg_correct = avg_correct.reset_index()
-    avg_correct = avg_correct.melt(
-        id_vars=["model_name"], var_name="checkpoint", value_name="correct"
-    )
-    print(avg_correct)
-
     # create a graph of the average correct for each model, with each model as a line and each checkpoint as a point on the x axis
     for model_name in model_names:
+        avg_correct = (
+            results[
+                (~results.query_category.isin(["cat_a", "cat_b", "cat_c"]))
+                & (results.model_name == model_name)
+            ]
+            .groupby(["eval_type", "checkpoint"])["correct"]
+            .mean()
+            .unstack()
+        )
+        avg_correct = avg_correct.reset_index()
+        avg_correct = avg_correct.melt(
+            id_vars=["eval_type"], var_name="checkpoint", value_name="correct"
+        )
+        print(avg_correct)
         plt.figure(figsize=(15, 15))
         facet_plot = sns.relplot(
             data=avg_correct,
