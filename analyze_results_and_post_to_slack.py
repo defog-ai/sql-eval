@@ -48,6 +48,11 @@ if __name__ == "__main__":
             y="correct",
             col="eval_type",
             kind="line",
+            col_wrap=3,
+            estimator="mean",
+            ci=None,
+            hue="eval_type",
+            palette="viridis",
         )
         # save the graph
         # this will get overwritten each time the script is run, but that's okay
