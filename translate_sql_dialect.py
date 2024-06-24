@@ -24,8 +24,10 @@ import os
 
 tqdm.pandas()
 
-dataset_file = "data/idk.csv"  # Postgres dataset file to translate
-dialect = "bigquery"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
+dataset_file = (
+    "data/instruct_advanced_postgres.csv"  # Postgres dataset file to translate
+)
+dialect = "sqlite"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 bigquery_proj = os.getenv(
     "BIGQUERY_PROJ"
 )  # Set this to your BigQuery project ID, leave empty if dialect is not BigQuery
@@ -92,6 +94,25 @@ def get_md_string(db_name):
 df["table_metadata_string"] = df.progress_apply(
     lambda x: get_md_string(x["db_name"]), axis=1
 )
+
+
+# remove `schema_name.` from instructions from all rows if dialect is in ["sqlite", "bigquery", "mysql"]
+def remove_schema_instructions(table_metadata_string, instructions):
+    schema_names = get_schema_names(table_metadata_string)
+    for schema_name in schema_names:
+        instructions = instructions.replace(f"{schema_name}.", "")
+    return instructions
+
+
+if "instructions" in df.columns:
+    df["instructions"] = df.progress_apply(
+        lambda x: (
+            remove_schema_instructions(x["table_metadata_string"], x["instructions"])
+            if dialect in ["sqlite", "bigquery", "mysql"]
+            else x["instructions"]
+        ),
+        axis=1,
+    )
 
 # get all minimal queries for all rows
 df["query_list"] = df.progress_apply(
