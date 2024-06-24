@@ -1,4 +1,6 @@
 # this is a Google cloud function for receiving the data from the web app and storing it in the database
+# to launch the cloud function, run the following command in the terminal:
+# gcloud functions deploy record-eval --runtime python10 --trigger-http --allow-unauthenticated
 
 import functions_framework
 from google.cloud import storage
