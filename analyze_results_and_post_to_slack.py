@@ -28,3 +28,7 @@ if __name__ == "__main__":
         results.groupby(["model_name", "checkpoint"])["correct"].mean().unstack()
     )
     avg_correct = avg_correct.reset_index()
+    avg_correct = avg_correct.melt(
+        id_vars=["model_name"], var_name="checkpoint", value_name="avg_correct"
+    )
+    print(avg_correct)
