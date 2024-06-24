@@ -207,30 +207,16 @@ def ddl_to_dialect(ddl, db_type, dialect):
     """
     Preprocesses the ddl and then translates it to another dialect with sqlglot.
     """
-    # remove lines that start with PRIMARY or FOREIGN or UNIQUE
-    lines = [
-        line
-        for line in ddl
-        if not any(
-            line.strip().startswith(keyword)
-            for keyword in ["PRIMARY", "FOREIGN", "UNIQUE", "CONSTRAINT", "--"]
-        )
-    ]
-    # join the list as a str
-    ddl = "".join(lines)
-    ddl = ddl.replace("public.", "")
+
     ddl = ddl.replace("UNIQUE", "")
-    ddl = ddl.replace("VALUES", "VALUES\n")
-    ddl = ddl.replace("),", "),\n")
-    ddl = ddl.replace(")\n\nCREATE", ");\n\nCREATE")
-    ddl = ddl.replace(")\n\nINSERT", ");\n\nINSERT")
     ddl = ddl.replace(" PRIMARY KEY", "")
     try:
-        translated = sqlglot.transpile(ddl, read=db_type, write=dialect)
+        translated = sqlglot.transpile(ddl, read=db_type, write=dialect, pretty=True)
     except Exception as e:
         print("Error transpiling ddl", e)
         print(ddl)
         raise
+    translated = [stmt + ";" for stmt in translated]
     translated = "\n".join(translated)
     return translated
 
