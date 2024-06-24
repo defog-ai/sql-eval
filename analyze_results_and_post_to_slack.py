@@ -52,7 +52,9 @@ if __name__ == "__main__":
         # save the graph
         # this will get overwritten each time the script is run, but that's okay
         facet_plot.figure.savefig(f"results/avg_correct_{model_name}.png")
-        fnames = [i for i in os.listdir(f"results/{model_name}") if i.endswith(".csv")]
+        fnames = sorted(
+            [i for i in os.listdir(f"results/{model_name}") if i.endswith(".csv")]
+        )
         fnames = "\n".join([i.replace(".csv", "") for i in fnames])
 
         # post the graph to slack
