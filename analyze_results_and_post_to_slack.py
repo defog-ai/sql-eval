@@ -49,6 +49,7 @@ if __name__ == "__main__":
             kind="scatter",
             col_wrap=3,
         )
+        plt.grid()  # add grid lines
         # save the graph
         # this will get overwritten each time the script is run, but that's okay
         facet_plot.figure.savefig(f"results/avg_correct_{model_name}.png")
