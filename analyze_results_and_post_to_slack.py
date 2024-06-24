@@ -45,6 +45,7 @@ if __name__ == "__main__":
         x="checkpoint",
         y="avg_correct",
         col="model_name",
+        kind="line",
     )
     # save the graph
     # this will get overwritten each time the script is run, but that's okay
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     # post the graph to slack
     slack_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
     slack_client.files_upload_v2(
-        channels="#engineering",
+        channel="C07940SRVM5",  # id of the eval-results channel
         title="Average Correct for each model",
         file="results/avg_correct.png",
         initial_comment="A set of evals just finished running! Here's the average correct rate for each model and each checkpoint that was in the evals.",
