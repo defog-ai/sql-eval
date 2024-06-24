@@ -77,8 +77,6 @@ def run_anthropic_eval(args):
                 row = input_rows[i]
                 result_dict = f.result()
                 query_gen = result_dict["query"]
-                print("Query for")
-                print(query_gen)
                 reason = result_dict["reason"]
                 err = result_dict["err"]
                 # save custom metrics
@@ -142,9 +140,6 @@ def run_anthropic_eval(args):
             os.makedirs(output_dir)
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
-        # get average rate of exact matches
-        avg_acc = output_df["exact_match"].sum() / len(output_df)
-        print(f"Average rate of exact match: {avg_acc:.2f}")
         # get average rate of correct results
         avg_subset = output_df["correct"].sum() / len(output_df)
         print(f"Average correct rate: {avg_subset:.2f}")

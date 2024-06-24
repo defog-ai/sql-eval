@@ -6,6 +6,7 @@ import os
 
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
+from utils.gen_prompt import to_prompt_schema
 
 anthropic = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -95,18 +96,30 @@ class AnthropicQueryGenerator(QueryGenerator):
         self.query = ""
         self.reason = ""
 
+        if self.use_public_data:
+            from defog_data.metadata import dbs
+        else:
+            # raise Exception("Replace this with your private data import")
+            from defog_data_private.metadata import dbs
+
         with open(self.prompt_file) as file:
             model_prompt = file.read()
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
-            pruned_metadata_ddl, join_str = prune_metadata_str(
-                question_instructions,
-                self.db_name,
-                self.use_public_data,
-                columns_to_keep,
-                shuffle,
-            )
-            pruned_metadata_str = pruned_metadata_ddl + join_str
+            if columns_to_keep > 0:
+                pruned_metadata_ddl, join_str = prune_metadata_str(
+                    question_instructions,
+                    self.db_name,
+                    self.use_public_data,
+                    columns_to_keep,
+                    shuffle,
+                )
+                pruned_metadata_str = pruned_metadata_ddl + join_str
+            elif columns_to_keep == 0:
+                md = dbs[self.db_name]["table_metadata"]
+                pruned_metadata_str = to_prompt_schema(md, shuffle)
+            else:
+                raise ValueError("columns_to_keep must be >= 0")
         else:
             pruned_metadata_str = table_metadata_string
         prompt = model_prompt.format(
