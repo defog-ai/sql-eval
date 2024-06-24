@@ -142,7 +142,7 @@ class AnthropicQueryGenerator(QueryGenerator):
                 args=(
                     self.model,
                     package,
-                    400,
+                    600,
                     0,
                     ["```", ";"],
                 ),
