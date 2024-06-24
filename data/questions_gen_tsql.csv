@@ -208,25 +208,20 @@ yelp,tsql,table_join,"SELECT TOP 2 category.category_name FROM (SELECT business.
 yelp,tsql,instruct,SELECT COUNT(review.rid) AS total_reviews FROM review JOIN category ON review.business_id = category.business_id WHERE review.year = 2021 AND category.category_name COLLATE SQL_Latin1_General_CP1_CI_AS LIKE '%Cafe%';,"What is the total number of reviews posted in the year 2021 for businesses in the category ""Cafe""?","Filter strings of users, city, address, business.name using LIKE with wildcards.
 Filter strings of state using exact upper case matches.
 Assume the rating of a business to be its average rating, and compute it before computing other aggregates on it.
-Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
 "
 yelp,tsql,instruct,"SELECT AVG(sf.average_rating) AS sf_average_rating FROM (SELECT business.business_id AS business_id, AVG(review.rating) AS average_rating FROM business JOIN review ON business.business_id = review.business_id WHERE LOWER(business.city) LIKE '%san francisco%' GROUP BY business.business_id) AS sf;",What is the average rating of businesses in the city of San Francisco?,"Filter strings of users, city, address, business.name using LIKE with wildcards.
 Filter strings of state using exact upper case matches.
 The rating of businesses in a city refers to the average rating of the businesses in that city. I.e., you must compute the average rating of each business before computing the average rating of businesses in the city.
-Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
 "
 yelp,tsql,instruct,"SELECT review.business_id, COUNT(*) AS review_count FROM review WHERE review.year = 2021 GROUP BY review.business_id ORDER BY review_count DESC;",How many reviews were posted for each business id in the year 2021?,"Filter strings of users, city, address, business.name using LIKE with wildcards.
 Filter strings of state using exact upper case matches.
 Assume the rating of a business to be its average rating, and compute it before computing other aggregates on it.
-Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
 "
 yelp,tsql,instruct,SELECT COUNT(*) FROM review JOIN users ON review.user_id = users.user_id WHERE LOWER(users.name) LIKE LOWER('%Sarah Williams%') AND review.month = 'April' AND review.year = 2021;,"How many reviews were posted by users with the name ""Sarah Williams"" in the month of April 2021?","Filter strings of users, city, address, business.name using LIKE with wildcards.
 Filter strings of state using exact upper case matches.
 Assume the rating of a business to be its average rating, and compute it before computing other aggregates on it.
-Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
 "
 yelp,tsql,instruct,SELECT SUM(checkin.count) AS total_checkins FROM business JOIN checkin ON business.business_id = checkin.business_id WHERE business.state = 'CA' AND checkin.day = 'Monday';,How many check-ins occurred on Mondays at businesses in the state of California?,"Filter strings of users, city, address, business.name using LIKE with wildcards.
 Filter strings of state using exact upper case matches.
 Assume the rating of a business to be its average rating, and compute it before computing other aggregates on it.
-Always truncate dates in the question to its current month and year (if applicable) before filtering on `review.year` and `review.month`.
 "
