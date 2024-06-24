@@ -1,6 +1,6 @@
 <|start_header_id|>system<|end_header_id|>
 
-Pay attention to detail, follow instructions to the letter, and answer questions without making any additional assumptions.<|start_header_id|>user<|end_header_id|>
+Follow instructions to the letter, and answer questions without making any additional assumptions.<|start_header_id|>user<|end_header_id|>
 
 Generate a SQL query to answer this question: `{user_question}`
 {instructions}
