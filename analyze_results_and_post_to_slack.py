@@ -52,6 +52,8 @@ if __name__ == "__main__":
         # save the graph
         # this will get overwritten each time the script is run, but that's okay
         facet_plot.figure.savefig(f"results/avg_correct_{model_name}.png")
+        fnames = [i for i in os.listdir(f"results/{model_name}") if i.endswith(".csv")]
+        fnames = "\n".join([i.replace(".csv", "") for i in fnames])
 
         # post the graph to slack
         slack_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
@@ -59,5 +61,11 @@ if __name__ == "__main__":
             channel="C07940SRVM5",  # id of the eval-results channel
             title=f"Average Correct for {model_name}",
             file=f"results/avg_correct_{model_name}.png",
-            initial_comment="A set of evals just finished running! Here's the average correct rate for each model and each checkpoint that was in the evals (excluding idk questions).",
+            initial_comment=f"""A set of evals just finished running for model `{model_name}`! The graph below has the average correct rate for each model and each checkpoint that was in the evals (excluding idk questions).
+Additionally, if you want to see the raw data for any run in eval-visualizer, you can paste one of the following run names into the Eval Visualizer search bar:
+
+```
+{fnames}
+```
+""",
         )
