@@ -89,3 +89,6 @@ for model_name in "${model_names[@]}"; do
     pkill -9 -f "python3 utils/api_server.py.*--port ${PORT}"
   done
 done
+
+# pass all the model_names to the python script
+python3 analyze_results_and_post_to_slack.py -m "${model_names[@]}"
