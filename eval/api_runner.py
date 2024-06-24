@@ -282,11 +282,12 @@ def run_api_eval(args):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
+        results = output_df.to_dict("records")
+
         if logprobs:
             print(
                 f"Writing logprobs to JSON file at eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}"
             )
-            results = output_df.to_dict("records")
             with open(
                 f"./eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}",
                 "w",
