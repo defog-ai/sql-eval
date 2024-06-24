@@ -48,7 +48,6 @@ if __name__ == "__main__":
             col="eval_type",
             kind="scatter",
             col_wrap=3,
-            figsize=(8, 4.5),
         )
         # save the graph
         # this will get overwritten each time the script is run, but that's okay
