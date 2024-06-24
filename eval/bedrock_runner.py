@@ -22,7 +22,7 @@ def process_row(row, model_id, decimal_points):
     body = json.dumps(
         {
             "prompt": row["prompt"],
-            "max_gen_len": 400,
+            "max_gen_len": 600,
             "temperature": 0,
             "top_p": 1,
         }
@@ -38,20 +38,10 @@ def process_row(row, model_id, decimal_points):
     generated_query = model_response["generation"]
     end_time = time()
 
-    if "```sql" in generated_query:
-        generated_query = (
-            generated_query.split("[/SQL]")[0]
-            .split("```sql")[-1]
-            .split("```")[0]
-            .split(";")[0]
-            .strip()
-            + ";"
-        )
-    else:
-        generated_query = (
-            generated_query.split("[/SQL]")[0].split("```")[1].split(";")[0].strip()
-            + ";"
-        )
+    generated_query = (
+        generated_query.split("```sql")[-1].split("```")[0].split(";")[0].strip() + ";"
+    )
+    print(generated_query)
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
