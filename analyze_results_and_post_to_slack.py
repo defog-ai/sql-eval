@@ -41,18 +41,14 @@ if __name__ == "__main__":
             id_vars=["eval_type"], var_name="checkpoint", value_name="correct"
         )
         print(avg_correct)
-        plt.figure(figsize=(15, 15))
         facet_plot = sns.relplot(
             data=avg_correct,
             x="checkpoint",
             y="correct",
             col="eval_type",
-            kind="line",
+            kind="scatter",
             col_wrap=3,
-            estimator="mean",
-            ci=None,
-            hue="eval_type",
-            palette="viridis",
+            figsize=(8, 4.5),
         )
         # save the graph
         # this will get overwritten each time the script is run, but that's okay
