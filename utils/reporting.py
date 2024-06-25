@@ -79,9 +79,10 @@ def num_gpus():
 def upload_results(
     results: list,
     url: str,
-    run_name: str,
-    runner_type: str,
-    args: dict,
+    run_name: str = None,
+    runner_type: str = None,
+    args: dict = None,
+    **kwargs,  # this is to make sure other imports don't break
 ):
     """
     Uploads results to a server.
@@ -89,6 +90,8 @@ def upload_results(
     The db_type in the args below refers to the db_type of the queries we evaluated,
     not the db_type of where we are storing our results.
     """
+    if not run_name:
+        return
     # Create a unique id for the request
     run_id = uuid4().hex
 
