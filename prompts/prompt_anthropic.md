@@ -1,12 +1,9 @@
-### Instructions:
-Your task is to convert a text question to a SQL query that runs on Postgres, given a database schema. Return the SQL as a markdown string, nothing else.
+Your task is to convert a text question to a PostgreSQL query, given a database schema.
 
-### Input:
-Generate a SQL query that answers the question `{user_question}`.
+The question that you must generate a SQL for is this `{user_question}`.
 {instructions}{glossary}
-This query will run on a database whose schema is represented in this string:
+This query will run on a database with the following schema:
 {table_metadata_string}
 {k_shot_prompt}
-### Response:
-{cot_instructions}Given the database schema, here is the SQL query that answers `{user_question}`:
-```sql
+
+Just return the SQL query, nothing else.
