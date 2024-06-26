@@ -148,7 +148,7 @@ python main.py \
   -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
   -o results/openai_classic.csv results/openai_basic.csv results/openai_advanced.csv \
   -g oa \
-  -f prompts/prompt_openai.md \
+  -f prompts/prompt_openai.json \
   -m gpt-4-turbo \
   -p 5 \
   -c 0
@@ -395,7 +395,7 @@ You can use the following flags in the command line to change the configurations
 | CLI Flags        | Description                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | -g, --model_type | Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, and `mlx` for mlx                                                                                                        |
-| -m, --model      | Model that will be tested and used to generate the queries. Some options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`, and non-chat model `text-davinci-003`. Options for Anthropic include the latest claude-3 family of models (e.g. `claude-3-opus-20240229`). For Hugging Face, and VLLM models, simply use the path of your chosen model (e.g. `defog/sqlcoder`). |
+| -m, --model      | Model that will be tested and used to generate the queries. Some options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`. Options for Anthropic include the latest claude-3 family of models (e.g. `claude-3-opus-20240229`). For Hugging Face, and VLLM models, simply use the path of your chosen model (e.g. `defog/sqlcoder`). |
 | -a, --adapter    | Path to the relevant adapter model you're using. Only available for the `hf_runner`.                                                                                                                                                                                                                                                                                                              |
 | --api_url        | The URL of the custom API you want to send the prompt to. Only used when model_type is `api`.                                                                                                                                                                                                                                                                                                     |
 | -qz, --quantized | Indicate whether the model is an AWQ quantized model. Only available for `vllm_runner`.                                                                                                                                                                                                                                                                                                           |
@@ -466,7 +466,7 @@ python main.py \
   -db postgres \
   -o results/test.csv \
   -g oa \
-  -f prompts/prompt_openai.md \
+  -f prompts/prompt_openai.json \
   -m gpt-3.5-turbo-0613 \
   -n 1 \
   --upload_url <your cloud function url>
@@ -484,7 +484,7 @@ python main.py \
   -db postgres \
   -o results/test.csv \
   -g oa \
-  -f prompts/prompt_openai.md \
+  -f prompts/prompt_openai.json \
   -m gpt-3.5-turbo-0613 \
   -n 1 \
   --upload_url http://127.0.0.1:8080/
