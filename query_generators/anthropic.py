@@ -48,11 +48,8 @@ class AnthropicQueryGenerator(QueryGenerator):
     ):
         """Get Anthropic chat completion for a given prompt and model"""
         generated_text = ""
-        sys_prompt = prompt.split("### Input:")[0]
-        user_prompt = prompt.split("### Input:")[1].split("### Response:")[0]
-        messages = [
-            {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
-        ]
+        prompt
+        messages = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
         try:
             completion = anthropic.messages.create(
                 model=model,
