@@ -736,7 +736,11 @@ def create_sqlite_db(db_name, table_metadata_string_test, row_idx):
     try:
         conn = sqlite3.connect(f"{test_db_name}.db")
         cursor = conn.cursor()
-        for table in table_metadata_string_test.split("\n"):
+        for table in table_metadata_string_test.split(");"):
+            if table.strip() == "":
+                continue
+            if not table.endswith(");"):
+                table += ");"
             cursor.execute(table)
         # print(f"Tables for `{test_db_name}` created successfully")
     except Exception as err:
@@ -989,6 +993,8 @@ def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_i
         validity_added = False
         while tries < 3 and not validity_added:
             try:
+                import pyodbc
+                
                 conn = pyodbc.connect(
                     f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE={test_db};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
                 )
