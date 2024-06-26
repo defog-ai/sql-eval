@@ -45,6 +45,9 @@ df = pd.read_csv(dataset_file)
 df["valid"] = ""
 df["err_msg"] = ""
 
+# fill na with empty string
+df.fillna("", inplace=True)
+
 # create db_type col where if "Snowflake" in file name, db_type = "snowflake", else db_type = "postgres"
 if "snowflake" in dataset_file:
     df["db_type"] = "snowflake"
