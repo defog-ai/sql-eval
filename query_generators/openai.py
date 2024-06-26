@@ -4,6 +4,7 @@ from typing import Dict, List
 from func_timeout import FunctionTimedOut, func_timeout
 from openai import OpenAI
 import tiktoken
+import json
 
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
@@ -15,7 +16,6 @@ openai = OpenAI()
 class OpenAIQueryGenerator(QueryGenerator):
     """
     Query generator that uses OpenAI's models
-    Models available: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003, gpt-4-1106-preview
     """
 
     def __init__(
@@ -97,18 +97,14 @@ class OpenAIQueryGenerator(QueryGenerator):
     ) -> int:
         """
         This function counts the number of tokens used in a prompt
-        model: the model used to generate the prompt. can be one of the following: gpt-3.5-turbo-0613, gpt-4-0613, text-davinci-003, gpt-4-1106-preview
+        model: the model used to generate the prompt. can be any valid OpenAI model
         messages: (only for OpenAI chat models) a list of messages to be used as a prompt. Each message is a dict with two keys: role and content
-        prompt: (only for text-davinci-003 model) a string to be used as a prompt
         """
         tokenizer = tiktoken.encoding_for_model(model)
         num_tokens = 0
-        if model != "text-davinci-003":
-            for message in messages:
-                for _, value in message.items():
-                    num_tokens += len(tokenizer.encode(value))
-        else:
-            num_tokens = len(tokenizer.encode(prompt))
+        for message in messages:
+            for _, value in message.items():
+                num_tokens += len(tokenizer.encode(value))
         return num_tokens
 
     def generate_query(
@@ -136,7 +132,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             from defog_data_private.metadata import dbs
 
         with open(self.prompt_file) as file:
-            chat_prompt = file.read()
+            chat_prompt = json.load(file)
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
             if columns_to_keep > 0:
@@ -155,49 +151,32 @@ class OpenAIQueryGenerator(QueryGenerator):
                 raise ValueError("columns_to_keep must be >= 0")
         if glossary == "":
             glossary = dbs[self.db_name]["glossary"]
-        if self.model != "text-davinci-003":
-            try:
-                sys_prompt = chat_prompt.split("### Input:")[0]
-                user_prompt = chat_prompt.split("### Input:")[1].split("### Response:")[
-                    0
-                ]
-                assistant_prompt = chat_prompt.split("### Response:")[1]
-            except:
-                raise ValueError("Invalid prompt file. Please use prompt_openai.md")
-            user_prompt = user_prompt.format(
-                user_question=question,
-                table_metadata_string=table_metadata_string,
-                instructions=instructions,
-                k_shot_prompt=k_shot_prompt,
-                glossary=glossary,
-                prev_invalid_sql=prev_invalid_sql,
-                prev_error_msg=prev_error_msg,
-                cot_instructions=cot_instructions,
-            )
+        try:
+            sys_prompt = chat_prompt[0]["content"]
+            user_prompt = chat_prompt[1]["content"]
+            assistant_prompt = chat_prompt[2]["content"]
+        except:
+            raise ValueError("Invalid prompt file. Please use prompt_openai.md")
+        user_prompt = user_prompt.format(
+            user_question=question,
+            table_metadata_string=table_metadata_string,
+            instructions=instructions,
+            k_shot_prompt=k_shot_prompt,
+            glossary=glossary,
+            prev_invalid_sql=prev_invalid_sql,
+            prev_error_msg=prev_error_msg,
+            cot_instructions=cot_instructions,
+        )
 
-            messages = []
-            messages.append({"role": "system", "content": sys_prompt})
-            messages.append({"role": "user", "content": user_prompt})
-            messages.append({"role": "assistant", "content": assistant_prompt})
-        else:
-            prompt = chat_prompt.format(
-                user_question=question,
-                table_metadata_string=table_metadata_string,
-                instructions=instructions,
-                k_shot_prompt=k_shot_prompt,
-                glossary=glossary,
-                prev_invalid_sql=prev_invalid_sql,
-                prev_error_msg=prev_error_msg,
-                cot_instructions=cot_instructions,
-            )
+        messages = []
+        messages.append({"role": "system", "content": sys_prompt})
+        messages.append({"role": "user", "content": user_prompt})
+        messages.append({"role": "assistant", "content": assistant_prompt})
+
         function_to_run = None
         package = None
-        if self.model == "text-davinci-003":
-            function_to_run = self.get_nonchat_completion
-            package = prompt
-        else:
-            function_to_run = self.get_chat_completion
-            package = messages
+        function_to_run = self.get_chat_completion
+        package = messages
 
         try:
             self.completion = func_timeout(
@@ -223,10 +202,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             else:
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}"
 
-        if self.model == "text-davinci-003":
-            tokens_used = self.count_tokens(self.model, prompt=prompt)
-        else:
-            tokens_used = self.count_tokens(self.model, messages=messages)
+        tokens_used = self.count_tokens(self.model, messages=messages)
 
         return {
             "table_metadata_string": table_metadata_string,
