@@ -994,7 +994,7 @@ def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_i
         while tries < 3 and not validity_added:
             try:
                 import pyodbc
-                
+
                 conn = pyodbc.connect(
                     f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE={test_db};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
                 )
