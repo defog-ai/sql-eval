@@ -17,7 +17,7 @@ if __name__ == "__main__":
         for fname in fnames:
             checkpoint = fname.split(model_name)[1].split("_")[1]
             eval_type = fname.split("_")[-1].replace(".csv", "")
-            # get cot_type based on whether there is _cot in the filename
+            # get cot_inference type based on whether there is _cot in the filename
             if "_cot" in fname:
                 cot_inference = "cot"
             else:
