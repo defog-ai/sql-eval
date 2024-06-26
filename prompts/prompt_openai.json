@@ -1,14 +1,10 @@
 [
   {
     "role": "system",
-    "content": "Your role is to convert text question to PostgreSQL queries, given a database schema."
+    "content": "Your role is to convert a user question to a PostgreSQL query, given a database schema."
   },
   {
     "role": "user",
     "content": "Generate a SQL query that answers the question `{user_question}`.\n{instructions}{glossary}\nThis query will run on a database whose schema is represented in this string:\n{table_metadata_string}\n{k_shot_prompt}\nReturn only the SQL query, and nothing else."
-  },
-  {
-    "role": "assistant",
-    "content": "Given the database schema, here is the SQL query that answers `{user_question}`:\n```sql"
   }
 ]
