@@ -154,7 +154,8 @@ class OpenAIQueryGenerator(QueryGenerator):
         try:
             sys_prompt = chat_prompt[0]["content"]
             user_prompt = chat_prompt[1]["content"]
-            assistant_prompt = chat_prompt[2]["content"]
+            if len(chat_prompt) == 3:
+                assistant_prompt = chat_prompt[2]["content"]
         except:
             raise ValueError("Invalid prompt file. Please use prompt_openai.md")
         user_prompt = user_prompt.format(
@@ -171,7 +172,8 @@ class OpenAIQueryGenerator(QueryGenerator):
         messages = []
         messages.append({"role": "system", "content": sys_prompt})
         messages.append({"role": "user", "content": user_prompt})
-        messages.append({"role": "assistant", "content": assistant_prompt})
+        if len(chat_prompt) == 3:
+            messages.append({"role": "assistant", "content": assistant_prompt})
 
         function_to_run = None
         package = None
