@@ -434,3 +434,10 @@ if n_invalid == 0:
 # save to csv
 merged_df.to_csv(output_file, index=False)
 print(f"Saved to {output_file}")
+print("""\n\nNote that translations may not be 100% accurate and may require manual correction, especially for date-related syntax such as the following:
+- date arithmetic calculations
+- date interval functions
+- date truncations
+- date part extractions
+- current date/time functions
+""")
