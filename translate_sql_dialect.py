@@ -11,6 +11,7 @@ from utils.dialects import (
     test_valid_md_mysql_concurr,
     sql_to_sqlite,
     ddl_to_sqlite,
+    instructions_to_sqlite,
     test_valid_md_sqlite_concurr,
     sql_to_tsql,
     ddl_to_tsql,
@@ -63,6 +64,17 @@ if "instructions" in df.columns:
             else x
         )
     )
+# translate instructions and full_instructions columns to dialect
+if "instructions" in df.columns:
+    if dialect == "sqlite":
+        df["instructions"] = df.progress_apply(
+            lambda x: instructions_to_sqlite(x["instructions"]), axis=1
+        )
+if "full_instructions" in df.columns:
+    if dialect == "sqlite":
+        df["full_instructions"] = df.progress_apply(
+            lambda x: instructions_to_sqlite(x["full_instructions"]), axis=1
+        )
 
 # if db_name is empty, use "dbname"
 df["db_name"] = df.apply(
@@ -422,3 +434,9 @@ if n_invalid == 0:
 # save to csv
 merged_df.to_csv(output_file, index=False)
 print(f"Saved to {output_file}")
+print(
+    """\n\nNote that translations may not be 100% accurate and may require manual correction, especially for date-related syntax such as the following:
+date arithmetic calculations, date interval functions, date truncations, date part extractions, current date/time functions
+Do also check that all SQL syntax in instructions are correctly translated. 
+Instruction translation in `instructions_to_<dialect>` of utils/dialects.py is not performed by an LLM and currently only handle specific cases."""
+)
