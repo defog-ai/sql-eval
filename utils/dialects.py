@@ -864,29 +864,58 @@ def test_valid_md_sqlite_concurr(df, sql_list_col, table_metadata_col):
 
     return results
 
+
 def instructions_to_sqlite(instructions):
     """
     Convert the db-specific instructions to SQLite dialect.
     """
     # Replace pattern for months (example included in the original pattern)
-    date_trunc_month_pattern = r"DATE_TRUNC\('month', CURRENT_DATE\) - INTERVAL '(\d+) (months?|days?)'"
-    instructions = re.sub(date_trunc_month_pattern, r"DATE('now', 'start of month', '-\1 \2')", instructions)
+    date_trunc_month_pattern = (
+        r"DATE_TRUNC\('month', CURRENT_DATE\) - INTERVAL '(\d+) (months?|days?)'"
+    )
+    instructions = re.sub(
+        date_trunc_month_pattern,
+        r"DATE('now', 'start of month', '-\1 \2')",
+        instructions,
+    )
 
     # Replace pattern for weeks
-    date_trunc_week_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (week|weeks)'"
-    instructions = re.sub(date_trunc_week_pattern, lambda m: f"DATE('now', '-7 days', 'weekday 1', '-{int(m.group(1)) * 7} days')", instructions)
+    date_trunc_week_pattern = (
+        r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (week|weeks)'"
+    )
+    instructions = re.sub(
+        date_trunc_week_pattern,
+        lambda m: f"DATE('now', '-7 days', 'weekday 1', '-{int(m.group(1)) * 7} days')",
+        instructions,
+    )
 
     # Replace pattern for days
-    date_trunc_day_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (day|days)'"
-    instructions = re.sub(date_trunc_day_pattern, lambda m: f"DATE('now', '-7 days', 'weekday 1', '-{m.group(1)} {m.group(2)}')", instructions)
+    date_trunc_day_pattern = (
+        r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (day|days)'"
+    )
+    instructions = re.sub(
+        date_trunc_day_pattern,
+        lambda m: f"DATE('now', '-7 days', 'weekday 1', '-{m.group(1)} {m.group(2)}')",
+        instructions,
+    )
 
     # Replace pattern for DATE_TRUNC without interval
     date_trunc_nointerval_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\)"
-    instructions = re.sub(date_trunc_nointerval_pattern, lambda m: f"DATE('now', '-7 days', 'weekday 1')", instructions)
+    instructions = re.sub(
+        date_trunc_nointerval_pattern,
+        lambda m: f"DATE('now', '-7 days', 'weekday 1')",
+        instructions,
+    )
 
     # Replace pattern for DATE_TRUNC('<interval>', t1.date)=DATE_TRUNC('<interval>', t2.date)
-    date_trunc_date_pattern = r"DATE_TRUNC\('(\<\w+\>)', t1.date\)\s*=\s*DATE_TRUNC\('(\<\w+\>)', t2.date\)"
-    instructions = re.sub(date_trunc_date_pattern, r"DATE(t1.date, '\1') = DATE(t2.date, '\2')", instructions)
+    date_trunc_date_pattern = (
+        r"DATE_TRUNC\('(\<\w+\>)', t1.date\)\s*=\s*DATE_TRUNC\('(\<\w+\>)', t2.date\)"
+    )
+    instructions = re.sub(
+        date_trunc_date_pattern,
+        r"DATE(t1.date, '\1') = DATE(t2.date, '\2')",
+        instructions,
+    )
 
     # Replace pattern for DATE_TRUNC('day', table.datecol)
     date_trunc_pattern = r"DATE_TRUNC\('day', (\w+).(\w+)\)"
@@ -894,7 +923,9 @@ def instructions_to_sqlite(instructions):
 
     # Replace pattern for CURRENT_DATE - INTERVAL 'some time'
     current_date_interval_pattern = r"CURRENT_DATE (-|\+) INTERVAL '(.*)'"
-    instructions = re.sub(current_date_interval_pattern, r"DATE('now', \1'\2')", instructions)
+    instructions = re.sub(
+        current_date_interval_pattern, r"DATE('now', \1'\2')", instructions
+    )
 
     # Replace pattern for CURRENT_DATE with DATE('now')
     current_date_pattern = r"CURRENT_DATE"
