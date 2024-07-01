@@ -234,7 +234,10 @@ python -m vllm.entrypoints.api_server \
 python utils/api_server.py \
     --model defog/sqlcoder-7b-2 \
     --tensor-parallel-size 4 \
-    --dtype float16
+    --dtype float16 \
+    --max-model-len 4096 \
+    --enable-lora \
+    --max-lora-rank 64
 
 # to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p and b to higher values
 python main.py \
