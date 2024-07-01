@@ -217,13 +217,13 @@ We also provide our custom modification of the vllm api server, which only retur
 ```bash
 # to set up a vllm server
 python -m vllm.entrypoints.api_server \
-    --model defog/sqlcoder-7b-2 \
+    --model defog/defog-llama-3-sqlcoder-8b \
     --tensor-parallel-size 4 \
     --dtype float16
 
 # to set up a vllm server that supports LoRA adapters
 python -m vllm.entrypoints.api_server \
-    --model defog/sqlcoder-7b-2 \
+    --model defog/llama-3-sqlcoder-8b \
     --tensor-parallel-size 1 \
     --dtype float16 \
     --max-model-len 4096 \
@@ -232,7 +232,7 @@ python -m vllm.entrypoints.api_server \
 
 # to use our modified api server
 python utils/api_server.py \
-    --model defog/sqlcoder-7b-2 \
+    --model defog/llama-3-sqlcoder-8b \
     --tensor-parallel-size 4 \
     --dtype float16 \
     --max-model-len 4096 \
@@ -259,7 +259,7 @@ You may consult the [TGI documentation](https://huggingface.co/docs/text-generat
 
 ```bash
 # to set up a tgi server
-model="defog/sqlcoder-7b-2"
+model="defog/llama-3-sqlcoder-8b"
 docker run --gpus all \
   --shm-size 1g \
   -p 8000:80 \
@@ -341,10 +341,10 @@ Note that MLX does not currently have beam search, and hence will have lower qua
 python -W ignore main.py \
   -db postgres \
   -q "data/questions_gen_postgres.csv" \
-  -o "results/mlx_sqlcoder-7b-2.csv" \
+  -o "results/mlx_llama-3-sqlcoder-8b.csv" \
   -g mlx \
   -f "prompts/prompt.md" \
-  -m mlx-community/defog-sqlcoder-7b-2
+  -m mlx-community/defog-llama-3-sqlcoder-8b
 ```
 
 ### Gemini
