@@ -3,7 +3,7 @@
 Follow instructions to the letter, and answer questions without making any additional assumptions.<|start_header_id|>user<|end_header_id|>
 
 Generate a {db_type} query to answer this question: `{user_question}`
-{instructions}{glossary}
+{instructions}
 DDL statements:
 {table_metadata_string}
 
