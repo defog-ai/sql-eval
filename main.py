@@ -12,7 +12,10 @@ if __name__ == "__main__":
     # model-related parameters
     parser.add_argument("-g", "--model_type", type=str, required=True)
     parser.add_argument("-m", "--model", type=str)
-    parser.add_argument("-a", "--adapter", type=str)
+    parser.add_argument("-a", "--adapter", type=str)  # path to adapter
+    parser.add_argument(
+        "-an", "--adapter_name", type=str, default=None
+    )  # only for use with production server
     parser.add_argument("--api_url", type=str)
     parser.add_argument("--api_type", type=str)
     # inference-technique-related parameters
