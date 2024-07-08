@@ -1,7 +1,7 @@
 [
   {
     "role": "system",
-    "content": "Your role is to convert a user question to a PostgreSQL query, given a database schema."
+    "content": "Your role is to convert a user question to a {db_type} query, given a database schema."
   },
   {
     "role": "user",
