@@ -139,8 +139,8 @@ class AnthropicQueryGenerator(QueryGenerator):
             elif columns_to_keep == 0:
                 md = dbs[self.db_name]["table_metadata"]
                 pruned_metadata_str = to_prompt_schema(md, shuffle)
-                table_metadata_ddl = convert_ddl(
-                    postgres_ddl=table_metadata_ddl,
+                pruned_metadata_str = convert_ddl(
+                    postgres_ddl=pruned_metadata_str,
                     to_dialect=self.db_type,
                     db_name=self.db_name,
                 )
@@ -159,7 +159,7 @@ class AnthropicQueryGenerator(QueryGenerator):
                     )
                 else:
                     join_str = ""
-                prune_metadata_str = prune_metadata_str + join_str
+                pruned_metadata_str = pruned_metadata_str + join_str
             else:
                 raise ValueError("columns_to_keep must be >= 0")
         else:
