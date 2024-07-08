@@ -9,8 +9,30 @@ import json
 from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
 from utils.gen_prompt import to_prompt_schema
+from utils.dialects import (
+    ddl_to_bigquery,
+    ddl_to_mysql,
+    ddl_to_sqlite,
+    ddl_to_tsql,
+)
 
 openai = OpenAI()
+
+
+def convert_ddl(postgres_ddl: str, to_dialect: str, db_name: str):
+    if to_dialect == "postgres":
+        return postgres_ddl
+    elif to_dialect == "bigquery":
+        new_ddl, _ = ddl_to_bigquery(postgres_ddl, "postgres", db_name, 42)
+    elif to_dialect == "mysql":
+        new_ddl, _ = ddl_to_mysql(postgres_ddl, "postgres", db_name, 42)
+    elif to_dialect == "sqlite":
+        new_ddl, _ = ddl_to_sqlite(postgres_ddl, "postgres", db_name, 42)
+    elif to_dialect == "tsql":
+        new_ddl, _ = ddl_to_tsql(postgres_ddl, "postgres", db_name, 42)
+    else:
+        raise ValueError(f"Unsupported dialect {to_dialect}")
+    return new_ddl
 
 
 class OpenAIQueryGenerator(QueryGenerator):
@@ -22,6 +44,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         self,
         db_creds: Dict[str, str],
         db_name: str,
+        db_type: str,
         model: str,
         prompt_file: str,
         timeout: int,
@@ -30,6 +53,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         **kwargs,
     ):
         self.db_creds = db_creds
+        self.db_type = db_type
         self.db_name = db_name
         self.model = model
         self.prompt_file = prompt_file
@@ -127,6 +151,7 @@ class OpenAIQueryGenerator(QueryGenerator):
 
         if self.use_public_data:
             from defog_data.metadata import dbs
+            import defog_data.supplementary as sup
         else:
             # raise Exception("Replace this with your private data import")
             from defog_data_private.metadata import dbs
@@ -143,16 +168,45 @@ class OpenAIQueryGenerator(QueryGenerator):
                     columns_to_keep,
                     shuffle,
                 )
+                table_metadata_ddl = convert_ddl(
+                    postgres_ddl=table_metadata_ddl,
+                    to_dialect=self.db_type,
+                    db_name=self.db_name,
+                )
                 table_metadata_string = table_metadata_ddl + join_str
             elif columns_to_keep == 0:
                 md = dbs[self.db_name]["table_metadata"]
-                table_metadata_string = to_prompt_schema(md, shuffle)
+                table_metadata_ddl = to_prompt_schema(md, shuffle)
+                table_metadata_ddl = convert_ddl(
+                    postgres_ddl=table_metadata_ddl,
+                    to_dialect=self.db_type,
+                    db_name=self.db_name,
+                )
+                column_join = sup.columns_join.get(self.db_name, {})
+                # get join_str from column_join
+                join_list = []
+                for values in column_join.values():
+                    col_1, col_2 = values[0]
+                    # add to join_list
+                    join_str = f"{col_1} can be joined with {col_2}"
+                    if join_str not in join_list:
+                        join_list.append(join_str)
+                if len(join_list) > 0:
+                    join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
+                        join_list
+                    )
+                else:
+                    join_str = ""
+                table_metadata_string = table_metadata_ddl + join_str
             else:
                 raise ValueError("columns_to_keep must be >= 0")
         if glossary == "":
             glossary = dbs[self.db_name]["glossary"]
         try:
             sys_prompt = chat_prompt[0]["content"]
+            sys_prompt = sys_prompt.format(
+                db_type=self.db_type,
+            )
             user_prompt = chat_prompt[1]["content"]
             if len(chat_prompt) == 3:
                 assistant_prompt = chat_prompt[2]["content"]
@@ -184,7 +238,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             self.completion = func_timeout(
                 self.timeout,
                 function_to_run,
-                args=(self.model, package, 400, 0),
+                args=(self.model, package, 1200, 0),
             )
             results = self.completion
             self.query = results.split("```sql")[-1].split("```")[0]

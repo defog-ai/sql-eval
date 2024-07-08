@@ -48,6 +48,7 @@ def run_openai_eval(args):
                 qg = OpenAIQueryGenerator(
                     db_creds=copy.deepcopy(db_creds),
                     db_name=db_name,
+                    db_type=db_type,
                     model=args.model,
                     prompt_file=prompt_file,
                     timeout=args.timeout_gen,
