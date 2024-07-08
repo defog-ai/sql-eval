@@ -5,6 +5,6 @@
   },
   {
     "role": "user",
-    "content": "Generate a SQL query that answers the question `{user_question}`.\n{instructions}{glossary}\nThis query will run on a database whose schema is represented in this string:\n{table_metadata_string}\n{k_shot_prompt}\nReturn only the SQL query, and nothing else."
+    "content": "Generate a SQL query that answers the question `{user_question}`.\n{instructions}\nThis query will run on a database whose schema is represented in this string:\n{table_metadata_string}\n{k_shot_prompt}\nReturn only the SQL query, and nothing else."
   }
 ]
