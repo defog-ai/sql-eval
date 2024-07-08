@@ -47,6 +47,7 @@ def run_anthropic_eval(args):
                 qg = AnthropicQueryGenerator(
                     db_creds=copy.deepcopy(db_creds),
                     db_name=db_name,
+                    db_type=db_type,
                     model=args.model,
                     prompt_file=prompt_file,
                     timeout=args.timeout_gen,
