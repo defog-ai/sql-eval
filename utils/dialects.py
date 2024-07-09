@@ -1131,3 +1131,25 @@ def test_valid_md_tsql_concurr(df, sql_list_col, table_metadata_col):
             results[index] = future.result()
 
     return results
+
+
+### General conversion function
+def convert_postgres_ddl_to_dialect(postgres_ddl: str, to_dialect: str, db_name: str):
+    """
+    This function converts a ddl from postgres to another dialect.
+    We have a separate function for this since the default defog_data DDLS
+    are for Postgres, and using this means less code when converting.
+    """
+    if to_dialect == "postgres":
+        return postgres_ddl
+    elif to_dialect == "bigquery":
+        new_ddl, _ = ddl_to_bigquery(postgres_ddl, "postgres", db_name, 42)
+    elif to_dialect == "mysql":
+        new_ddl, _ = ddl_to_mysql(postgres_ddl, "postgres", db_name, 42)
+    elif to_dialect == "sqlite":
+        new_ddl, _ = ddl_to_sqlite(postgres_ddl, "postgres", db_name, 42)
+    elif to_dialect == "tsql":
+        new_ddl, _ = ddl_to_tsql(postgres_ddl, "postgres", db_name, 42)
+    else:
+        raise ValueError(f"Unsupported dialect {to_dialect}")
+    return new_ddl
