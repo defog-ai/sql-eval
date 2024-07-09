@@ -10,29 +10,10 @@ from query_generators.query_generator import QueryGenerator
 from utils.pruning import prune_metadata_str
 from utils.gen_prompt import to_prompt_schema
 from utils.dialects import (
-    ddl_to_bigquery,
-    ddl_to_mysql,
-    ddl_to_sqlite,
-    ddl_to_tsql,
+    convert_postgres_ddl_to_dialect,
 )
 
 openai = OpenAI()
-
-
-def convert_ddl(postgres_ddl: str, to_dialect: str, db_name: str):
-    if to_dialect == "postgres":
-        return postgres_ddl
-    elif to_dialect == "bigquery":
-        new_ddl, _ = ddl_to_bigquery(postgres_ddl, "postgres", db_name, 42)
-    elif to_dialect == "mysql":
-        new_ddl, _ = ddl_to_mysql(postgres_ddl, "postgres", db_name, 42)
-    elif to_dialect == "sqlite":
-        new_ddl, _ = ddl_to_sqlite(postgres_ddl, "postgres", db_name, 42)
-    elif to_dialect == "tsql":
-        new_ddl, _ = ddl_to_tsql(postgres_ddl, "postgres", db_name, 42)
-    else:
-        raise ValueError(f"Unsupported dialect {to_dialect}")
-    return new_ddl
 
 
 class OpenAIQueryGenerator(QueryGenerator):
@@ -168,7 +149,7 @@ class OpenAIQueryGenerator(QueryGenerator):
                     columns_to_keep,
                     shuffle,
                 )
-                table_metadata_ddl = convert_ddl(
+                table_metadata_ddl = convert_postgres_ddl_to_dialect(
                     postgres_ddl=table_metadata_ddl,
                     to_dialect=self.db_type,
                     db_name=self.db_name,
@@ -177,7 +158,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             elif columns_to_keep == 0:
                 md = dbs[self.db_name]["table_metadata"]
                 table_metadata_ddl = to_prompt_schema(md, shuffle)
-                table_metadata_ddl = convert_ddl(
+                table_metadata_ddl = convert_postgres_ddl_to_dialect(
                     postgres_ddl=table_metadata_ddl,
                     to_dialect=self.db_type,
                     db_name=self.db_name,
