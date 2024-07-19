@@ -1,8 +1,16 @@
 #!/bin/zsh
 
-model_names=("sqlcoder_8b_fullft_ds_012_llama3_mgn1_b1_0900_b2_0990_steps_600")
+model_names=("sqlcoder_8b_fullft_ds_012_llama3_old_join_hints_mgn1_b1_0900_b2_0990_steps_600")
+db_type="postgres"
 PORT=8083 # avoid 8081 as it's used by nginx
 export CUDA_VISIBLE_DEVICES=1 # set gpu you want to use (just 1 will do)
+
+# if db_type not postgres or sqlite, prompt_file should be prompts/prompt_cot.md else use prompts/prompt_cot_${dbtype}.md
+if [ "$db_type" != "postgres" ] && [ "$db_type" != "sqlite" ]; then
+  prompt_file="prompts/prompt_cot.md"
+else
+  prompt_file="prompts/prompt_cot_${db_type}.md"
+fi
 
 # Loop over model names
 for model_name in "${model_names[@]}"; do
@@ -36,9 +44,9 @@ for model_name in "${model_names[@]}"; do
     done
 
     # then run sql-eval
-    python3 main.py -db postgres \
-      -f prompts/prompt_cot.md \
-      -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" "data/idk.csv" \
+    python3 main.py -db "${db_type}" \
+      -f "${prompt_file}" \
+      -q "data/questions_gen_${db_type}.csv" "data/instruct_basic_${db_type}.csv" "data/instruct_advanced_${db_type}.csv" "data/idk.csv" \
       -o "results/${model_name}/c${checkpoint_num}_api_v1_cot.csv" "results/${model_name}/c${checkpoint_num}_api_basic_cot.csv" "results/${model_name}/c${checkpoint_num}_api_advanced_cot.csv" "results/${model_name}/c${checkpoint_num}_api_idk_cot.csv" \
       -g api \
       -b 1 \
