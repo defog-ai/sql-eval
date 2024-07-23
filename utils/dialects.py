@@ -2,7 +2,10 @@ import sqlglot
 from sqlglot import parse_one, exp
 from tqdm import tqdm
 import re
-from google.cloud import bigquery
+try:
+    from google.cloud import bigquery
+except:
+    pass
 import os
 import time
 import concurrent.futures
