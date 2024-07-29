@@ -50,7 +50,7 @@ car_dealership,tsql,instructions_cte_join,"WITH salesperson_sales AS (SELECT s.i
 Always join sales with cars before using the sales table
 Weekend days are Saturday and Sunday
 Truncate date to month for aggregation
-Last 30 days = CURRENT_DATE - INTERVAL 'some time' to CURRENT_DATE
+Last 30 days = CURRENT_DATE - INTERVAL '30 days' to CURRENT_DATE
 PMSPS = per month salesperson signups
 To get the total sales amount per salesperson, join the salespersons and sales tables, group by salesperson, and sum the sale_price. Always order results with NULLS last.
 Truncate date to week for aggregation."
