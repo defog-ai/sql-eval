@@ -2,6 +2,7 @@ import sqlglot
 from sqlglot import parse_one, exp
 from tqdm import tqdm
 import re
+
 try:
     from google.cloud import bigquery
 except:
@@ -888,7 +889,7 @@ def instructions_to_sqlite(instructions):
     )
     instructions = re.sub(
         date_trunc_week_pattern,
-        lambda m: f"DATE('now', '-7 days', 'weekday 1', '-{int(m.group(1)) * 7} days')",
+        lambda m: f"DATE('now',  '-' || ((strftime('%w', 'now') + 6) % 7) || ' days', '-{int(m.group(1)) * 7} days')",
         instructions,
     )
 
@@ -898,7 +899,7 @@ def instructions_to_sqlite(instructions):
     )
     instructions = re.sub(
         date_trunc_day_pattern,
-        lambda m: f"DATE('now', '-7 days', 'weekday 1', '-{m.group(1)} {m.group(2)}')",
+        lambda m: f"DATE('now',  '-' || ((strftime('%w', 'now') + 6) % 7) || ' days', '-{m.group(1)} {m.group(2)}')",
         instructions,
     )
 
@@ -906,7 +907,7 @@ def instructions_to_sqlite(instructions):
     date_trunc_nointerval_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\)"
     instructions = re.sub(
         date_trunc_nointerval_pattern,
-        lambda m: f"DATE('now', '-7 days', 'weekday 1')",
+        lambda m: f"DATE('now',  '-' || ((strftime('%w', 'now') + 6) % 7) || ' days')",
         instructions,
     )
 
@@ -924,10 +925,10 @@ def instructions_to_sqlite(instructions):
     date_trunc_pattern = r"DATE_TRUNC\('day', (\w+).(\w+)\)"
     instructions = re.sub(date_trunc_pattern, r"DATETIME(DATE(\1.\2))", instructions)
 
-    # Replace pattern for CURRENT_DATE - INTERVAL 'some time'
-    current_date_interval_pattern = r"CURRENT_DATE (-|\+) INTERVAL '(.*)'"
+    # Replace pattern for CURRENT_DATE - INTERVAL '30 days'
+    current_date_interval_pattern = r"CURRENT_DATE (-|\+) INTERVAL '(\d+) (day|days)'"
     instructions = re.sub(
-        current_date_interval_pattern, r"DATE('now', \1'\2')", instructions
+        current_date_interval_pattern, r"DATE('now', \1'\2 \3')", instructions
     )
 
     # Replace pattern for CURRENT_DATE with DATE('now')
@@ -1134,6 +1135,87 @@ def test_valid_md_tsql_concurr(df, sql_list_col, table_metadata_col):
             results[index] = future.result()
 
     return results
+
+
+def instructions_to_tsql(instructions):
+    """
+    Convert the db-specific instructions to T-SQL dialect.
+    """
+
+    def remove_last_char_if_s(s):
+        if s.endswith("S"):
+            return s[:-1]
+        return s
+
+    # Replace pattern for months (example included in the original pattern)
+    date_trunc_month_pattern = (
+        r"DATE_TRUNC\('month', CURRENT_DATE\) - INTERVAL '(\d+) (months?|days?)'"
+    )
+    instructions = re.sub(
+        date_trunc_month_pattern,
+        lambda m: f"DATEADD({remove_last_char_if_s(m.group(2).upper())}, -{m.group(1)}, DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))",
+        instructions,
+    )
+
+    # Replace pattern for weeks
+    date_trunc_week_pattern = (
+        r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (week|weeks)'"
+    )
+    instructions = re.sub(
+        date_trunc_week_pattern,
+        lambda m: f"DATEADD(WEEK, -{m.group(1)}, DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0))",
+        instructions,
+    )
+
+    # Replace pattern for days
+    date_trunc_day_pattern = (
+        r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (day|days)'"
+    )
+    instructions = re.sub(
+        date_trunc_day_pattern,
+        lambda m: f"DATEADD(DAY, -{m.group(1)}, DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0))",
+        instructions,
+    )
+
+    # Replace pattern for DATE_TRUNC without interval
+    date_trunc_nointerval_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\)"
+    instructions = re.sub(
+        date_trunc_nointerval_pattern,
+        lambda m: f"DATEADD(WEEK, DATEDIFF (WEEK, 0, GETDATE()), 0)",
+        instructions,
+    )
+
+    # Replace pattern for DATE_TRUNC('<interval>', t1.date)=DATE_TRUNC('<interval>', t2.date)
+    date_trunc_date_pattern = (
+        r"DATE_TRUNC\('(\<\w+\>)', t1.date\)\s*=\s*DATE_TRUNC\('(\<\w+\>)', t2.date\)"
+    )
+    instructions = re.sub(
+        date_trunc_date_pattern,
+        r"DATEADD('\1', DATEDIFF('\1', 0, t1.date), 0) = DATEADD('\2', DATEDIFF('\2', 0, t2.date), 0)",
+        instructions,
+    )
+
+    # Replace pattern for DATE_TRUNC('day', table.datecol)
+    date_trunc_pattern = r"DATE_TRUNC\('day', (\w+).(\w+)\)"
+    instructions = re.sub(
+        date_trunc_pattern, r"CONVERT(DATETIME, CONVERT(DATE, \1.\2))", instructions
+    )
+
+    # Replace pattern for CURRENT_DATE - INTERVAL '30 days'
+    current_date_interval_pattern = r"CURRENT_DATE (-|\+) INTERVAL '(\d+) (day|days)'"
+    instructions = re.sub(
+        current_date_interval_pattern,
+        r"DATEADD(DAY, \1\2, CAST(GETDATE() AS DATE))",
+        instructions,
+    )
+
+    # Replace pattern for CURRENT_DATE
+    current_date_pattern = r"CURRENT_DATE"
+    instructions = re.sub(
+        current_date_pattern, r"CAST(GETDATE() AS DATE)", instructions
+    )
+
+    return instructions
 
 
 ### General conversion function
