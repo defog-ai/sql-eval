@@ -12,6 +12,7 @@ from utils.dialects import (
     sql_to_sqlite,
     ddl_to_sqlite,
     instructions_to_sqlite,
+    instructions_to_tsql,
     test_valid_md_sqlite_concurr,
     sql_to_tsql,
     ddl_to_tsql,
@@ -70,10 +71,18 @@ if "instructions" in df.columns:
         df["instructions"] = df.progress_apply(
             lambda x: instructions_to_sqlite(x["instructions"]), axis=1
         )
+    elif dialect == "tsql":
+        df["instructions"] = df.progress_apply(
+            lambda x: instructions_to_tsql(x["instructions"]), axis=1
+        )
 if "full_instructions" in df.columns:
     if dialect == "sqlite":
         df["full_instructions"] = df.progress_apply(
             lambda x: instructions_to_sqlite(x["full_instructions"]), axis=1
+        )
+    elif dialect == "tsql":
+        df["full_instructions"] = df.progress_apply(
+            lambda x: instructions_to_tsql(x["full_instructions"]), axis=1
         )
 
 # if db_name is empty, use "dbname"
