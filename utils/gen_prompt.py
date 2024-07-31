@@ -159,6 +159,7 @@ def generate_prompt(
 
             # get join_str from column_join
             join_list = []
+            pruned_join_list = []
             for values in column_join.values():
                 for col_pair in values:
                     # add to join_list
@@ -166,12 +167,23 @@ def generate_prompt(
                     join_str = f"{col_1} can be joined with {col_2}"
                     if join_str not in join_list:
                         join_list.append(join_str)
+                    # add to pruned_join_list if column names are not equal
+                    colname_1 = col_1.rsplit(".", 1)[1]
+                    colname_2 = col_2.rsplit(".", 1)[1]
+                    if colname_1 != colname_2 and join_str not in pruned_join_list:
+                        pruned_join_list.append(join_str)
             if len(join_list) > 0:
                 join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
                     join_list
                 )
             else:
                 join_str = ""
+            if len(pruned_join_list) > 0:
+                pruned_join_str = "\nHere is a list of joinable columns with different names:\n" + "\n".join(
+                    pruned_join_list
+                )
+            else:
+                pruned_join_str = ""
         else:
             raise ValueError("columns_to_keep must be >= 0")
 
@@ -235,6 +247,7 @@ def generate_prompt(
         cot_instructions=cot_instructions,
         instruction_reflections=instruction_reflections,
         join_hints=join_str,
+        pruned_join_hints=pruned_join_str,
     )
 
     if cot_pregen:
