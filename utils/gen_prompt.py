@@ -160,11 +160,12 @@ def generate_prompt(
             # get join_str from column_join
             join_list = []
             for values in column_join.values():
-                col_1, col_2 = values[0]
-                # add to join_list
-                join_str = f"{col_1} can be joined with {col_2}"
-                if join_str not in join_list:
-                    join_list.append(join_str)
+                for col_pair in values:
+                    # add to join_list
+                    col_1, col_2 = col_pair
+                    join_str = f"{col_1} can be joined with {col_2}"
+                    if join_str not in join_list:
+                        join_list.append(join_str)
             if len(join_list) > 0:
                 join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
                     join_list
