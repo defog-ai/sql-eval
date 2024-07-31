@@ -188,24 +188,23 @@ def generate_prompt(
 
         # transform metadata string to target dialect if necessary
         if db_type in ["postgres", "snowflake"]:
-            table_metadata_string = table_metadata_ddl + join_str
+            table_metadata_string = table_metadata_ddl
         elif db_type == "bigquery":
-            table_metadata_string = (
-                ddl_to_bigquery(table_metadata_ddl, "postgres", db_name, "")[0]
-                + join_str
-            )
+            table_metadata_string = ddl_to_bigquery(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "mysql":
-            table_metadata_string = (
-                ddl_to_mysql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_mysql(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "sqlite":
-            table_metadata_string = (
-                ddl_to_sqlite(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_sqlite(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "tsql":
-            table_metadata_string = (
-                ddl_to_tsql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_tsql(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         else:
             raise ValueError(
                 "db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql"
@@ -234,6 +233,7 @@ def generate_prompt(
         query_1=query_1,
         cot_instructions=cot_instructions,
         instruction_reflections=instruction_reflections,
+        join_hints=join_str,
     )
 
     if cot_pregen:
