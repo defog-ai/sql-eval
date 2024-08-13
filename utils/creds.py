@@ -23,7 +23,8 @@ db_creds_all = {
         "creds": os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
     },
     "sqlite": {
-        "path_to_folder": os.environ.get("HOME") + f"/defog-data/sqlite_dbs/",  # Path to folder containing sqlite dbs
+        "path_to_folder": os.environ.get("HOME")
+        + f"/defog-data/sqlite_dbs/",  # Path to folder containing sqlite dbs
     },
     "tsql": {
         "server": os.getenv("TSQL_SERVER"),
