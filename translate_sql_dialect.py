@@ -20,6 +20,7 @@ from utils.dialects import (
     get_schema_names,
 )
 from utils.gen_prompt import to_prompt_schema
+from utils.creds import db_creds_all
 from tqdm import tqdm
 from eval.eval import get_all_minimal_queries
 import os
@@ -29,11 +30,7 @@ tqdm.pandas()
 dataset_file = (
     "data/instruct_advanced_postgres.csv"  # Postgres dataset file to translate
 )
-dialect = "sqlite"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
-bigquery_proj = os.getenv(
-    "BIGQUERY_PROJ"
-)  # Set this to your BigQuery project ID, leave empty if dialect is not BigQuery
-
+dialect = "tsql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 model = "gpt-4-turbo"  # Model to use for translation of invalid SQL
 max_concurrent = 5  # Maximum number of concurrent coroutines when querying openai
 if "postgres" in dataset_file:
@@ -261,11 +258,11 @@ sql_col = f"sql_{dialect}_test_list"
 table_metadata_col = f"table_metadata_{dialect}_test"
 if dialect == "bigquery":
     df["result_tuple_list"] = test_valid_md_bq_concurr(
-        df, bigquery_proj, sql_col, table_metadata_col
+        df, db_creds_all, sql_col, table_metadata_col
     )
 elif dialect == "mysql":
     df["result_tuple_list"] = test_valid_md_mysql_concurr(
-        df, sql_col, table_metadata_col
+        df, db_creds_all, sql_col, table_metadata_col
     )
 elif dialect == "sqlite":
     df["result_tuple_list"] = test_valid_md_sqlite_concurr(
@@ -273,7 +270,7 @@ elif dialect == "sqlite":
     )
 elif dialect == "tsql":
     df["result_tuple_list"] = test_valid_md_tsql_concurr(
-        df, sql_col, table_metadata_col
+        df, db_creds_all, sql_col, table_metadata_col
     )
 
 df[f"valid_list"] = df["result_tuple_list"].apply(lambda x: [item[0] for item in x])
@@ -322,11 +319,11 @@ if df_invalid.shape[0] > 0:
     table_metadata_col = f"table_metadata_{dialect}_test"
     if dialect == "bigquery":
         df_invalid["result_tuple_list"] = test_valid_md_bq_concurr(
-            df_invalid, bigquery_proj, sql_col, table_metadata_col
+            df_invalid, db_creds_all, sql_col, table_metadata_col
         )
     elif dialect == "mysql":
         df_invalid["result_tuple_list"] = test_valid_md_mysql_concurr(
-            df_invalid, sql_col, table_metadata_col
+            df_invalid, db_creds_all, sql_col, table_metadata_col
         )
     elif dialect == "sqlite":
         df_invalid["result_tuple_list"] = test_valid_md_sqlite_concurr(
@@ -334,7 +331,7 @@ if df_invalid.shape[0] > 0:
         )
     elif dialect == "tsql":
         df_invalid["result_tuple_list"] = test_valid_md_tsql_concurr(
-            df_invalid, sql_col, table_metadata_col
+            df_invalid, db_creds_all, sql_col, table_metadata_col
         )
     df_invalid[f"valid_list"] = df_invalid["result_tuple_list"].apply(
         lambda x: [item[0] for item in x]
