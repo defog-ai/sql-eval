@@ -146,9 +146,9 @@ async def amend_invalid_sql_concurr(df, model, max_concurrent, dialect):
         result = await amend_invalid_sql(
             model=model,
             question=row["question"],
-            sql_list=row[f"sql_{dialect}_test_list"],
+            sql_list=row[f"sql_{dialect}_list"],
             err_msg_list=row["err_msg_list"],
-            db_ddl=row[f"table_metadata_{dialect}_test"],
+            db_ddl=row[f"table_metadata_{dialect}"],
             instructions=row.get("instructions", ""),
             db_type=dialect,
         )
@@ -378,14 +378,14 @@ def test_valid_md_bq(
     Test the validity of the metadata and list of sql in BigQuery.
     This will create a test dataset and tables, run the test sqls and delete the test dataset.
     """
+    from google.cloud import bigquery
+
     validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     client = bigquery.Client(project=creds["project"])
     # create a test db
     try:
-        create_bq_db(
-            client, creds, db_name, table_metadata_string_test, row_idx
-        )
+        create_bq_db(client, creds, db_name, table_metadata_string_test, row_idx)
     except Exception as e:
         delete_bq_db(client, creds, db_name, row_idx)
         error_tuple = (False, "Error creating test db: " + str(e))
@@ -456,6 +456,38 @@ def test_valid_md_bq_concurr(df, db_creds_all, sql_list_col, table_metadata_col)
             results[index] = future.result()
 
     return results
+
+
+def test_valid_bq(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in BigQuery.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    from google.cloud import bigquery
+
+    validity_tuple_list = []
+    client = bigquery.Client(project=creds["project"])
+    # run the sqls
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            query_job = client.query(sql_test)
+            results = query_job.result()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    return validity_tuple_list
 
 
 ######## MYSQL FUNCTIONS ########
@@ -576,7 +608,9 @@ def delete_mysql_db(creds, db_name, row_idx):
             conn.close()
 
 
-def test_valid_md_mysql(creds, sql_test_list, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_mysql(
+    creds, sql_test_list, db_name, table_metadata_string_test, row_idx
+):
     """
     Test the validity of the metadata and sql in MySQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
@@ -671,6 +705,45 @@ def test_valid_md_mysql_concurr(df, db_creds_all, sql_list_col, table_metadata_c
             results[index] = future.result()
 
     return results
+
+
+def test_valid_mysql(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in MySQL.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    import mysql.connector
+
+    validity_tuple_list = []
+    # run the sqls
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            conn = mysql.connector.connect(**creds)
+            cursor = conn.cursor()
+            use_db = f"USE {db_name};"
+            cursor.execute(use_db)
+            cursor.execute(sql_test)
+            results = cursor.fetchall()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    return validity_tuple_list
 
 
 ######## SQLITE FUNCTIONS ########
@@ -856,6 +929,43 @@ def test_valid_md_sqlite_concurr(df, sql_list_col, table_metadata_col):
     return results
 
 
+def test_valid_sqlite(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in SQLite.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    validity_tuple_list = []
+    db_file = creds["path_to_folder"] + f"{db_name}.db"
+
+    # run the sql
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            conn = sqlite3.connect(db_file)
+            cursor = conn.cursor()
+            cursor.execute(sql_test)
+            results = cursor.fetchall()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    return validity_tuple_list
+
+
 def instructions_to_sqlite(instructions):
     """
     Convert the db-specific instructions to SQLite dialect.
@@ -1025,11 +1135,15 @@ def delete_tsql_db(creds, db_name, row_idx):
             print(f"Unexpected error deleting `{test_db_name}`: {err}")
 
 
-def test_valid_md_tsql(creds, sql_test_list, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_tsql(
+    creds, sql_test_list, db_name, table_metadata_string_test, row_idx
+):
     """
     Test the validity of the metadata and sql in T-SQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
     """
+    import pyodbc
+
     validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     # create a test db
@@ -1053,8 +1167,6 @@ def test_valid_md_tsql(creds, sql_test_list, db_name, table_metadata_string_test
         validity_added = False
         while tries < 3 and not validity_added:
             try:
-                import pyodbc
-
                 conn = pyodbc.connect(
                     f"DRIVER={creds['driver']};SERVER={creds['server']};DATABASE={test_db};UID={creds['user']};PWD={creds['password']}"
                 )
@@ -1123,6 +1235,47 @@ def test_valid_md_tsql_concurr(df, db_creds_all, sql_list_col, table_metadata_co
             results[index] = future.result()
 
     return results
+
+
+def test_valid_tsql(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in T-SQL.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    import pyodbc
+
+    validity_tuple_list = []
+    # run the sql
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            conn = pyodbc.connect(
+                f"DRIVER={creds['driver']};SERVER={creds['server']};DATABASE={db_name};UID={creds['user']};PWD={creds['password']}"
+            )
+            cursor = conn.cursor()
+            use_db = f"USE {db_name};"
+            cursor.execute(use_db)
+            cursor.execute(sql_test)
+            results = cursor.fetchall()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    return validity_tuple_list
 
 
 def instructions_to_tsql(instructions):
