@@ -21,20 +21,6 @@ import sqlite3
 # Suppress all logs from sqlglot
 logging.getLogger("sqlglot").setLevel(logging.CRITICAL)
 idk_list = list(pd.read_csv("data/idk.csv")["query"].unique())
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-creds = {
-    "mysql": {
-        "user": "root",
-        "password": "password",
-        "host": "localhost",
-    },
-    "tsql": {
-        "server": os.getenv("TSQL_SERVER"),
-        "user": "test_user",
-        "password": "password",
-        "driver": "{ODBC Driver 17 for SQL Server}",
-    },
-}
 
 ######## GENERIC FUNCTIONS ########
 
@@ -160,9 +146,9 @@ async def amend_invalid_sql_concurr(df, model, max_concurrent, dialect):
         result = await amend_invalid_sql(
             model=model,
             question=row["question"],
-            sql_list=row[f"sql_{dialect}_test_list"],
+            sql_list=row[f"sql_{dialect}_list"],
             err_msg_list=row["err_msg_list"],
-            db_ddl=row[f"table_metadata_{dialect}_test"],
+            db_ddl=row[f"table_metadata_{dialect}"],
             instructions=row.get("instructions", ""),
             db_type=dialect,
         )
@@ -343,14 +329,14 @@ def ddl_to_bigquery(ddl, db_type, db_name, row_idx):
     return translated_ddl, translated_ddl_test
 
 
-def create_bq_db(client, bigquery_proj, db_name, table_metadata_string_test, row_idx):
+def create_bq_db(client, creds, db_name, table_metadata_string_test, row_idx):
     """
     Create a test BigQuery dataset and tables from the table_metadata_string
     """
 
     db_name = f"test{row_idx}_" + db_name
     # Create a test dataset
-    dataset_id = f"{bigquery_proj}.{db_name}"
+    dataset_id = f"{creds['project']}.{db_name}"
     dataset = bigquery.Dataset(dataset_id)
     dataset.location = "US"
 
@@ -369,7 +355,7 @@ def create_bq_db(client, bigquery_proj, db_name, table_metadata_string_test, row
         raise
 
 
-def delete_bq_db(client, bigquery_proj, db_name, row_idx):
+def delete_bq_db(client, creds, db_name, row_idx):
     """
     Delete a test BigQuery dataset
     """
@@ -377,7 +363,7 @@ def delete_bq_db(client, bigquery_proj, db_name, row_idx):
     db_name = f"test{row_idx}_" + db_name
 
     # Delete the test dataset
-    dataset_id = f"{bigquery_proj}.{db_name}"
+    dataset_id = f"{creds['project']}.{db_name}"
     try:
         client.delete_dataset(dataset_id, delete_contents=True, not_found_ok=True)
         # print(f"Dataset `{db_name}` deleted successfully")
@@ -386,22 +372,22 @@ def delete_bq_db(client, bigquery_proj, db_name, row_idx):
 
 
 def test_valid_md_bq(
-    bigquery_proj, sql_test_list, db_name, table_metadata_string_test, row_idx
+    creds, sql_test_list, db_name, table_metadata_string_test, row_idx
 ):
     """
     Test the validity of the metadata and list of sql in BigQuery.
     This will create a test dataset and tables, run the test sqls and delete the test dataset.
     """
+    from google.cloud import bigquery
+
     validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
-    client = bigquery.Client(project=bigquery_proj)
+    client = bigquery.Client(project=creds["project"])
     # create a test db
     try:
-        create_bq_db(
-            client, bigquery_proj, db_name, table_metadata_string_test, row_idx
-        )
+        create_bq_db(client, creds, db_name, table_metadata_string_test, row_idx)
     except Exception as e:
-        delete_bq_db(client, bigquery_proj, db_name, row_idx)
+        delete_bq_db(client, creds, db_name, row_idx)
         error_tuple = (False, "Error creating test db: " + str(e))
         validity_tuple_list.extend([error_tuple] * len(sql_test_list))
         return validity_tuple_list
@@ -432,11 +418,11 @@ def test_valid_md_bq(
         if not validity_added:
             validity_tuple_list.append((False, error_msg))
 
-    delete_bq_db(client, bigquery_proj, db_name, row_idx)
+    delete_bq_db(client, creds, db_name, row_idx)
     return validity_tuple_list
 
 
-def test_valid_md_bq_concurr(df, bigquery_proj, sql_list_col, table_metadata_col):
+def test_valid_md_bq_concurr(df, db_creds_all, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_bq concurrently on a DataFrame
     """
@@ -448,7 +434,7 @@ def test_valid_md_bq_concurr(df, bigquery_proj, sql_list_col, table_metadata_col
         futures = [
             executor.submit(
                 test_valid_md_bq,
-                bigquery_proj,
+                db_creds_all["bigquery"],
                 row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
@@ -470,6 +456,38 @@ def test_valid_md_bq_concurr(df, bigquery_proj, sql_list_col, table_metadata_col
             results[index] = future.result()
 
     return results
+
+
+def test_valid_bq(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in BigQuery.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    from google.cloud import bigquery
+
+    validity_tuple_list = []
+    client = bigquery.Client(project=creds["project"])
+    # run the sqls
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            query_job = client.query(sql_test)
+            results = query_job.result()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    return validity_tuple_list
 
 
 ######## MYSQL FUNCTIONS ########
@@ -530,7 +548,7 @@ def create_mysql_db(creds, db_name, table_metadata_string_test, row_idx):
 
     test_db_name = f"test{row_idx}_" + db_name
     try:
-        conn = mysql.connector.connect(**creds["mysql"])
+        conn = mysql.connector.connect(**creds)
         cursor = conn.cursor()
         cursor.execute(f"CREATE DATABASE {test_db_name};")
         # print(f"Database `{test_db_name}` created successfully")
@@ -561,7 +579,7 @@ def create_mysql_db(creds, db_name, table_metadata_string_test, row_idx):
             conn.close()
 
 
-def delete_mysql_db(db_name, row_idx):
+def delete_mysql_db(creds, db_name, row_idx):
     """
     Delete a test MySQL database
     """
@@ -572,7 +590,7 @@ def delete_mysql_db(db_name, row_idx):
 
     # Delete the test database
     try:
-        conn = mysql.connector.connect(**creds["mysql"])
+        conn = mysql.connector.connect(**creds)
         cursor = conn.cursor()
         cursor.execute(f"DROP DATABASE {test_db_name};")
         # print("Database deleted successfully")
@@ -590,7 +608,9 @@ def delete_mysql_db(db_name, row_idx):
             conn.close()
 
 
-def test_valid_md_mysql(sql_test_list, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_mysql(
+    creds, sql_test_list, db_name, table_metadata_string_test, row_idx
+):
     """
     Test the validity of the metadata and sql in MySQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
@@ -607,7 +627,7 @@ def test_valid_md_mysql(sql_test_list, db_name, table_metadata_string_test, row_
             cursor.close()
         if "conn" in locals():
             conn.close()
-        delete_mysql_db(db_name, row_idx)
+        delete_mysql_db(creds, db_name, row_idx)
         error_tuple = (False, "Error creating test db: " + str(e))
         validity_tuple_list.extend([error_tuple] * len(sql_test_list))
         return validity_tuple_list
@@ -619,7 +639,7 @@ def test_valid_md_mysql(sql_test_list, db_name, table_metadata_string_test, row_
         validity_added = False
         while tries < 3 and not validity_added:
             try:
-                conn = mysql.connector.connect(**creds["mysql"])
+                conn = mysql.connector.connect(**creds)
                 cursor = conn.cursor()
 
                 use_db = f"USE {test_db};"
@@ -648,11 +668,11 @@ def test_valid_md_mysql(sql_test_list, db_name, table_metadata_string_test, row_
         cursor.close()
     if "conn" in locals():
         conn.close()
-    delete_mysql_db(db_name, row_idx)
+    delete_mysql_db(creds, db_name, row_idx)
     return validity_tuple_list
 
 
-def test_valid_md_mysql_concurr(df, sql_list_col, table_metadata_col):
+def test_valid_md_mysql_concurr(df, db_creds_all, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_mysql concurrently on a DataFrame
     """
@@ -663,6 +683,7 @@ def test_valid_md_mysql_concurr(df, sql_list_col, table_metadata_col):
         futures = [
             executor.submit(
                 test_valid_md_mysql,
+                db_creds_all["mysql"],
                 row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
@@ -684,6 +705,45 @@ def test_valid_md_mysql_concurr(df, sql_list_col, table_metadata_col):
             results[index] = future.result()
 
     return results
+
+
+def test_valid_mysql(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in MySQL.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    import mysql.connector
+
+    validity_tuple_list = []
+    # run the sqls
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            conn = mysql.connector.connect(**creds)
+            cursor = conn.cursor()
+            use_db = f"USE {db_name};"
+            cursor.execute(use_db)
+            cursor.execute(sql_test)
+            results = cursor.fetchall()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    return validity_tuple_list
 
 
 ######## SQLITE FUNCTIONS ########
@@ -869,6 +929,43 @@ def test_valid_md_sqlite_concurr(df, sql_list_col, table_metadata_col):
     return results
 
 
+def test_valid_sqlite(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in SQLite.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    validity_tuple_list = []
+    db_file = creds["path_to_folder"] + f"{db_name}.db"
+
+    # run the sql
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            conn = sqlite3.connect(db_file)
+            cursor = conn.cursor()
+            cursor.execute(sql_test)
+            results = cursor.fetchall()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    return validity_tuple_list
+
+
 def instructions_to_sqlite(instructions):
     """
     Convert the db-specific instructions to SQLite dialect.
@@ -975,7 +1072,7 @@ def create_tsql_db(creds, db_name, table_metadata_string_test, row_idx):
     test_db_name = f"test{row_idx}_" + db_name
     try:
         with pyodbc.connect(
-            f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
+            f"DRIVER={creds['driver']};SERVER={creds['server']};UID={creds['user']};PWD={creds['password']}"
         ) as conn:
             conn.autocommit = True
             with conn.cursor() as cursor:
@@ -997,7 +1094,7 @@ def create_tsql_db(creds, db_name, table_metadata_string_test, row_idx):
 
     try:
         with pyodbc.connect(
-            f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE={test_db_name};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
+            f"DRIVER={creds['driver']};SERVER={creds['server']};DATABASE={test_db_name};UID={creds['user']};PWD={creds['password']}"
         ) as conn:
             with conn.cursor() as cursor:
                 cursor.execute(f"USE {test_db_name};")
@@ -1013,7 +1110,7 @@ def create_tsql_db(creds, db_name, table_metadata_string_test, row_idx):
             conn.close()
 
 
-def delete_tsql_db(db_name, row_idx):
+def delete_tsql_db(creds, db_name, row_idx):
     """
     Delete a test T-SQL database
     """
@@ -1022,7 +1119,7 @@ def delete_tsql_db(db_name, row_idx):
     test_db_name = f"test{row_idx}_{db_name}"
     try:
         with pyodbc.connect(
-            f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE=master;UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
+            f"DRIVER={creds['driver']};SERVER={creds['server']};DATABASE=master;UID={creds['user']};PWD={creds['password']}"
         ) as conn:
             conn.autocommit = True
             with conn.cursor() as cursor:
@@ -1038,11 +1135,15 @@ def delete_tsql_db(db_name, row_idx):
             print(f"Unexpected error deleting `{test_db_name}`: {err}")
 
 
-def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_idx):
+def test_valid_md_tsql(
+    creds, sql_test_list, db_name, table_metadata_string_test, row_idx
+):
     """
     Test the validity of the metadata and sql in T-SQL.
     This will create a test dataset and tables, run the sql and delete the test dataset.
     """
+    import pyodbc
+
     validity_tuple_list = []
     test_db = f"test{row_idx}_{db_name}"
     # create a test db
@@ -1054,7 +1155,7 @@ def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_i
         if "conn" in locals():
             conn.close()
         time.sleep(2)
-        delete_tsql_db(db_name, row_idx)
+        delete_tsql_db(creds, db_name, row_idx)
         error_tuple = (False, "Error creating test db: " + str(e))
         validity_tuple_list.extend([error_tuple] * len(sql_test_list))
         return validity_tuple_list
@@ -1066,10 +1167,8 @@ def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_i
         validity_added = False
         while tries < 3 and not validity_added:
             try:
-                import pyodbc
-
                 conn = pyodbc.connect(
-                    f"DRIVER={creds['tsql']['driver']};SERVER={creds['tsql']['server']};DATABASE={test_db};UID={creds['tsql']['user']};PWD={creds['tsql']['password']}"
+                    f"DRIVER={creds['driver']};SERVER={creds['server']};DATABASE={test_db};UID={creds['user']};PWD={creds['password']}"
                 )
                 cursor = conn.cursor()
 
@@ -1098,11 +1197,11 @@ def test_valid_md_tsql(sql_test_list, db_name, table_metadata_string_test, row_i
     if "conn" in locals():
         conn.close()
     time.sleep(2)
-    delete_tsql_db(db_name, row_idx)
+    delete_tsql_db(creds, db_name, row_idx)
     return validity_tuple_list
 
 
-def test_valid_md_tsql_concurr(df, sql_list_col, table_metadata_col):
+def test_valid_md_tsql_concurr(df, db_creds_all, sql_list_col, table_metadata_col):
     """
     Run test_valid_md_tsql concurrently on a DataFrame
     """
@@ -1114,6 +1213,7 @@ def test_valid_md_tsql_concurr(df, sql_list_col, table_metadata_col):
         futures = [
             executor.submit(
                 test_valid_md_tsql,
+                db_creds_all["tsql"],
                 row[sql_list_col],
                 row["db_name"],
                 row[table_metadata_col],
@@ -1135,6 +1235,47 @@ def test_valid_md_tsql_concurr(df, sql_list_col, table_metadata_col):
             results[index] = future.result()
 
     return results
+
+
+def test_valid_tsql(creds, sql_test_list, db_name):
+    """
+    Test the validity of the sql on an existing DB in T-SQL.
+    If the sql is valid and returns non-empty results, return True.
+    """
+    import pyodbc
+
+    validity_tuple_list = []
+    # run the sql
+    for sql_test in sql_test_list:
+        error_msg = ""
+        try:
+            conn = pyodbc.connect(
+                f"DRIVER={creds['driver']};SERVER={creds['server']};DATABASE={db_name};UID={creds['user']};PWD={creds['password']}"
+            )
+            cursor = conn.cursor()
+            use_db = f"USE {db_name};"
+            cursor.execute(use_db)
+            cursor.execute(sql_test)
+            results = cursor.fetchall()
+            # check if results empty
+            if results:
+                validity_tuple_list.append((True, ""))
+            else:
+                validity_tuple_list.append(
+                    (
+                        False,
+                        "Results are empty, which means SQL is wrong and does not answer the question. Or data values in defog-data databases could be outdated.",
+                    )
+                )
+        except Exception as e:
+            error_msg = str(e)
+            validity_tuple_list.append((False, error_msg))
+
+    if "cursor" in locals():
+        cursor.close()
+    if "conn" in locals():
+        conn.close()
+    return validity_tuple_list
 
 
 def instructions_to_tsql(instructions):
