@@ -28,7 +28,7 @@ import os
 tqdm.pandas()
 
 dataset_file = (
-    "data/instruct_advanced_postgresTEST.csv"  # Postgres dataset file to translate
+    "data/instruct_advanced_postgres.csv"  # Postgres dataset file to translate
 )
 dialect = "sqlite"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 model = "gpt-4-turbo"  # Model to use for translation of invalid SQL
