@@ -179,8 +179,9 @@ def generate_prompt(
             else:
                 join_str = ""
             if len(pruned_join_list) > 0:
-                pruned_join_str = "\nHere is a list of joinable columns with different names:\n" + "\n".join(
-                    pruned_join_list
+                pruned_join_str = (
+                    "\nHere is a list of joinable columns with different names:\n"
+                    + "\n".join(pruned_join_list)
                 )
             else:
                 pruned_join_str = ""
