@@ -159,18 +159,32 @@ def generate_prompt(
 
             # get join_str from column_join
             join_list = []
+            pruned_join_list = []
             for values in column_join.values():
-                col_1, col_2 = values[0]
-                # add to join_list
-                join_str = f"{col_1} can be joined with {col_2}"
-                if join_str not in join_list:
-                    join_list.append(join_str)
+                for col_pair in values:
+                    # add to join_list
+                    col_1, col_2 = col_pair
+                    join_str = f"{col_1} can be joined with {col_2}"
+                    if join_str not in join_list:
+                        join_list.append(join_str)
+                    # add to pruned_join_list if column names are not equal
+                    colname_1 = col_1.rsplit(".", 1)[1]
+                    colname_2 = col_2.rsplit(".", 1)[1]
+                    if colname_1 != colname_2 and join_str not in pruned_join_list:
+                        pruned_join_list.append(join_str)
             if len(join_list) > 0:
                 join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
                     join_list
                 )
             else:
                 join_str = ""
+            if len(pruned_join_list) > 0:
+                pruned_join_str = (
+                    "\nHere is a list of joinable columns with different names:\n"
+                    + "\n".join(pruned_join_list)
+                )
+            else:
+                pruned_join_str = ""
         else:
             raise ValueError("columns_to_keep must be >= 0")
 
@@ -188,24 +202,23 @@ def generate_prompt(
 
         # transform metadata string to target dialect if necessary
         if db_type in ["postgres", "snowflake"]:
-            table_metadata_string = table_metadata_ddl + join_str
+            table_metadata_string = table_metadata_ddl
         elif db_type == "bigquery":
-            table_metadata_string = (
-                ddl_to_bigquery(table_metadata_ddl, "postgres", db_name, "")[0]
-                + join_str
-            )
+            table_metadata_string = ddl_to_bigquery(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "mysql":
-            table_metadata_string = (
-                ddl_to_mysql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_mysql(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "sqlite":
-            table_metadata_string = (
-                ddl_to_sqlite(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_sqlite(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "tsql":
-            table_metadata_string = (
-                ddl_to_tsql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_tsql(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         else:
             raise ValueError(
                 "db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql"
@@ -234,6 +247,8 @@ def generate_prompt(
         query_1=query_1,
         cot_instructions=cot_instructions,
         instruction_reflections=instruction_reflections,
+        join_hints=join_str,
+        pruned_join_hints=pruned_join_str,
     )
 
     if cot_pregen:
