@@ -72,6 +72,9 @@ if "instructions" in df.columns:
         df["instructions"] = df.progress_apply(
             lambda x: instructions_to_tsql(x["instructions"]), axis=1
         )
+    else:
+        print(f"Instructions translation not yet supported for {dialect}. Please add an instructions_to_{dialect} function in utils/dialects.py")
+
 if "full_instructions" in df.columns:
     if dialect == "sqlite":
         df["full_instructions"] = df.progress_apply(
@@ -81,6 +84,8 @@ if "full_instructions" in df.columns:
         df["full_instructions"] = df.progress_apply(
             lambda x: instructions_to_tsql(x["full_instructions"]), axis=1
         )
+    else:
+        print(f"Instructions translation not yet supported for {dialect}. Please add an instructions_to_{dialect} function in utils/dialects.py")
 
 # if db_name is empty, use "dbname"
 df["db_name"] = df.apply(
