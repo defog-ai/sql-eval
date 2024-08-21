@@ -791,9 +791,9 @@ def instructions_to_mysql(instructions):
     )
 
     # Replace pattern for DATE_TRUNC without interval
-    date_trunc_nointerval_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\)"
+    date_trunc_start_of_week_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\)"
     instructions = re.sub(
-        date_trunc_nointerval_pattern,
+        date_trunc_start_of_week_pattern,
         "SUBDATE(CURDATE(), WEEKDAY(CURDATE()))",
         instructions,
     )
@@ -815,6 +815,14 @@ def instructions_to_mysql(instructions):
     date_trunc_pattern = r"DATE_TRUNC\('day', (\w+).(\w+)\)"
     instructions = re.sub(date_trunc_pattern, r"DATE(\1.\2)", instructions)
 
+    # New pattern to handle dynamic DATE_TRUNC in join conditions
+    dynamic_date_trunc_join_pattern = r"DATE_TRUNC\('<interval>', (\w+)\.(\w+)\)"
+    instructions = re.sub(
+        dynamic_date_trunc_join_pattern,
+        lambda m: f"DATE_FORMAT({m.group(1)}.{m.group(2)}, '{format_date_for_mysql('<interval>')}')",
+        instructions,
+    )
+
     # Replace pattern for CURRENT_DATE - INTERVAL '30 days'
     current_date_interval_pattern = r"CURRENT_DATE (-|\+) INTERVAL '(\d+) (day|days)'"
     instructions = re.sub(
@@ -825,7 +833,21 @@ def instructions_to_mysql(instructions):
     current_date_pattern = r"CURRENT_DATE"
     instructions = re.sub(current_date_pattern, "CURDATE()", instructions)
 
+    # Replace ILIKE for case-insensitive search
+    ilike_pattern = r"(\w+)\s+ILIKE\s+'([^']+)'"
+    instructions = re.sub(ilike_pattern, r"LOWER(\1) LIKE LOWER('%\2%')", instructions)
+
+    # Generic replacement for ILIKE with LIKE
+    instructions = re.sub(r"\b(ILIKE)\b", "LIKE", instructions, flags=re.IGNORECASE)
+
+    # Replace pattern for EPOCH function conversion
+    epoch_pattern = r"\bEPOCH\b"
+    instructions = re.sub(
+        epoch_pattern, "UNIX_TIMESTAMP", instructions, flags=re.IGNORECASE
+    )
+
     return instructions
+
 
 ######## SQLITE FUNCTIONS ########
 
