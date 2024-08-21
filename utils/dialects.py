@@ -746,6 +746,109 @@ def test_valid_mysql(creds, sql_test_list, db_name):
     return validity_tuple_list
 
 
+def instructions_to_mysql(instructions):
+    """
+    Convert the PostgreSQL-specific instructions to MySQL dialect.
+    """
+
+    def format_date_for_mysql(interval):
+        format_mapping = {
+            "year": "%Y-01-01",  # First day of the year
+            "month": "%Y-%m-01",  # First day of the month
+            "day": "%Y-%m-%d",  # The exact day
+            "week": "%Y-%m-%d",
+        }
+        return format_mapping.get(interval, "%Y-%m-%d")
+
+    # Replace pattern for months (PostgreSQL to MySQL)
+    date_trunc_month_pattern = (
+        r"DATE_TRUNC\('month', CURRENT_DATE\) - INTERVAL '(\d+) (months?|days?)'"
+    )
+    instructions = re.sub(
+        date_trunc_month_pattern,
+        lambda m: f"DATE_SUB(DATE_FORMAT(CURRENT_DATE, '%Y-%m-01'), INTERVAL {m.group(1)} {m.group(2).upper().rstrip('S')})",
+        instructions,
+    )
+
+    # Replace pattern for weeks
+    date_trunc_week_pattern = (
+        r"DATE_TRUNC\('week', CURRENT_DATE\) - INTERVAL '(\d+) (week|weeks)'"
+    )
+    instructions = re.sub(
+        date_trunc_week_pattern,
+        lambda m: f"DATE_SUB(DATE_FORMAT(CURRENT_DATE, '%Y-%m-%d'), INTERVAL {int(m.group(1)) * 7} DAY)",
+        instructions,
+    )
+
+    # Replace pattern for days directly, similar to weeks but simpler
+    date_trunc_day_pattern = (
+        r"DATE_TRUNC\('day', CURRENT_DATE\) - INTERVAL '(\d+) (day|days)'"
+    )
+    instructions = re.sub(
+        date_trunc_day_pattern,
+        lambda m: f"DATE_SUB(CURRENT_DATE, INTERVAL {m.group(1)} DAY)",
+        instructions,
+    )
+
+    # Replace pattern for DATE_TRUNC without interval
+    date_trunc_start_of_week_pattern = r"DATE_TRUNC\('week', CURRENT_DATE\)"
+    instructions = re.sub(
+        date_trunc_start_of_week_pattern,
+        "SUBDATE(CURDATE(), WEEKDAY(CURDATE()))",
+        instructions,
+    )
+
+    # Replace pattern for DATE_TRUNC using direct equals
+    # Example:
+    #   PostgreSQL: DATE_TRUNC('month', t1.date) = DATE_TRUNC('month', t2.date)
+    #   MySQL: DATE_FORMAT(t1.date, '%Y-%m-01') = DATE_FORMAT(t2.date, '%Y-%m-01')
+    date_trunc_date_pattern = (
+        r"DATE_TRUNC\('(\w+)', t1.date\)\s*=\s*DATE_TRUNC\('(\w+)', t2.date\)"
+    )
+    instructions = re.sub(
+        date_trunc_date_pattern,
+        lambda m: f"DATE_FORMAT(t1.date, '{format_date_for_mysql(m.group(1))}') = DATE_FORMAT(t2.date, '{format_date_for_mysql(m.group(2))}')",
+        instructions,
+    )
+
+    # Replace pattern for DATE_TRUNC('day', table.datecol)
+    date_trunc_pattern = r"DATE_TRUNC\('day', (\w+).(\w+)\)"
+    instructions = re.sub(date_trunc_pattern, r"DATE(\1.\2)", instructions)
+
+    # New pattern to handle dynamic DATE_TRUNC in join conditions
+    dynamic_date_trunc_join_pattern = r"DATE_TRUNC\('<interval>', (\w+)\.(\w+)\)"
+    instructions = re.sub(
+        dynamic_date_trunc_join_pattern,
+        lambda m: f"DATE_FORMAT({m.group(1)}.{m.group(2)}, '<interval>')",
+        instructions,
+    )
+
+    # Replace pattern for CURRENT_DATE - INTERVAL '30 days'
+    current_date_interval_pattern = r"CURRENT_DATE (-|\+) INTERVAL '(\d+) (day|days)'"
+    instructions = re.sub(
+        current_date_interval_pattern, r"CURRENT_DATE \1 INTERVAL \2 DAY", instructions
+    )
+
+    # Replace pattern for CURRENT_DATE with CURDATE()
+    current_date_pattern = r"CURRENT_DATE"
+    instructions = re.sub(current_date_pattern, "CURDATE()", instructions)
+
+    # Replace ILIKE for case-insensitive search
+    ilike_pattern = r"(\w+)\s+ILIKE\s+'([^']+)'"
+    instructions = re.sub(ilike_pattern, r"LOWER(\1) LIKE LOWER('%\2%')", instructions)
+
+    # Generic replacement for ILIKE with LIKE
+    instructions = re.sub(r"\b(ILIKE)\b", "LIKE", instructions, flags=re.IGNORECASE)
+
+    # Replace pattern for EPOCH function conversion
+    epoch_pattern = r"\bEPOCH\b"
+    instructions = re.sub(
+        epoch_pattern, "UNIX_TIMESTAMP", instructions, flags=re.IGNORECASE
+    )
+
+    return instructions
+
+
 ######## SQLITE FUNCTIONS ########
 
 

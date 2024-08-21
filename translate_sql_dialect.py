@@ -12,6 +12,7 @@ from utils.dialects import (
     sql_to_sqlite,
     ddl_to_sqlite,
     instructions_to_sqlite,
+    instructions_to_mysql,
     instructions_to_tsql,
     test_valid_sqlite,
     sql_to_tsql,
@@ -30,7 +31,7 @@ tqdm.pandas()
 dataset_file = (
     "data/instruct_advanced_postgres.csv"  # Postgres dataset file to translate
 )
-dialect = "sqlite"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
+dialect = "mysql"  # Supported dialects: "bigquery", "mysql", "sqlite", "tsql"
 model = "gpt-4-turbo"  # Model to use for translation of invalid SQL
 max_concurrent = 5  # Maximum number of concurrent coroutines when querying openai
 if "postgres" in dataset_file:
@@ -71,6 +72,10 @@ if "instructions" in df.columns:
     elif dialect == "tsql":
         df["instructions"] = df.progress_apply(
             lambda x: instructions_to_tsql(x["instructions"]), axis=1
+        )
+    elif dialect == "mysql":
+        df["instructions"] = df.progress_apply(
+            lambda x: instructions_to_mysql(x["instructions"]), axis=1
         )
     else:
         print(
