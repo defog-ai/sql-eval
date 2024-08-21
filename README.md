@@ -37,7 +37,7 @@ Once you have Docker installed, you can create the Docker container and start th
 
 ```bash
 mkdir data/postgres data/export
-docker create --name postgres-sql-eval -e POSTGRES_PASSWORD=postgres -p 5432:5432 -v $(pwd)/data/postgres:/var/lib/postgresql/data -v $(pwd)/data/export:/export postgres:14-alpine
+docker create --name postgres-sql-eval -e POSTGRES_PASSWORD=postgres -p 5432:5432 -v $(pwd)/data/postgres:/var/lib/postgresql/data -v $(pwd)/data/export:/export postgres:16-alpine
 ```
 
 To start the container, run:
