@@ -819,7 +819,7 @@ def instructions_to_mysql(instructions):
     dynamic_date_trunc_join_pattern = r"DATE_TRUNC\('<interval>', (\w+)\.(\w+)\)"
     instructions = re.sub(
         dynamic_date_trunc_join_pattern,
-        lambda m: f"DATE_FORMAT({m.group(1)}.{m.group(2)}, '{format_date_for_mysql('<interval>')}')",
+        lambda m: f"DATE_FORMAT({m.group(1)}.{m.group(2)}, '<interval>')",
         instructions,
     )
 
