@@ -379,6 +379,23 @@ python -W ignore main.py \
   -n 10
 ```
 
+### Together
+
+Before running this, you must create an account with [Together.ai](https://together.ai/) and obtain an API key and store it with `export TOGETHER_API_KEY=<your_api_key>`. Then, install `together` with `pip install together`. You can then run the following command:
+
+```bash
+python3 main.py \
+  -db postgres \
+  -q data/instruct_basic_postgres.csv data/instruct_advanced_postgres.csv data/questions_gen_postgres.csv \
+  -o results/together_llama_70b_basic.csv results/together_llama_70b_advanced.csv results/together_llama_70b_v1.csv \
+  -g together \
+  -f prompts/prompt_together.json \
+  --cot_table_alias prealias \
+  -m "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo" \
+  -c 0 \
+  -p 10
+```
+
 ## CLI Flags
 
 You can use the following flags in the command line to change the configurations of your evaluation runs.
@@ -397,7 +414,7 @@ You can use the following flags in the command line to change the configurations
 
 | CLI Flags        | Description                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| -g, --model_type | Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, and `mlx` for mlx                                                                                                        |
+| -g, --model_type | Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, `mlx` for mlx, `bedrock` for AWS bedrock API, `together` for together.ai's API           |
 | -m, --model      | Model that will be tested and used to generate the queries. Some options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`. Options for Anthropic include the latest claude-3 family of models (e.g. `claude-3-opus-20240229`). For Hugging Face, and VLLM models, simply use the path of your chosen model (e.g. `defog/sqlcoder`). |
 | -a, --adapter    | Path to the relevant adapter model you're using. Only available for the `hf_runner`.                                                                                                                                                                                                                                                                                                              |
 | --api_url        | The URL of the custom API you want to send the prompt to. Only used when model_type is `api`.                                                                                                                                                                                                                                                                                                     |

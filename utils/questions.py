@@ -136,8 +136,12 @@ def prepare_questions_df(
         question_query_df["cot_instructions"] = question_query_df["db_name"].apply(
             get_table_aliases
         )
+        question_query_df["table_aliases"] = question_query_df["db_name"].apply(
+            get_table_aliases
+        )
     else:
         question_query_df["cot_instructions"] = ""
+        question_query_df["table_aliases"] = ""
 
     if cot_table_alias == "pregen":
         question_query_df["cot_pregen"] = True

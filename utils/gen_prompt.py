@@ -1,3 +1,5 @@
+from copy import deepcopy
+import json
 from typing import Dict, List, Optional
 import numpy as np
 from utils.dialects import (
@@ -120,11 +122,22 @@ def generate_prompt(
     public_data=True,
     columns_to_keep=40,
     shuffle_metadata=False,
+    table_aliases="",
 ):
+    """
+    Generates the prompt for the given question.
+    If a json file is passed in as the prompt_file, please ensure that it is a list
+    of dictionaries, which should have the `content` key minimally.
+    Else, we will treat the file as a string template.
+    """
     from defog_data.metadata import dbs  # to avoid CI error
-
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
+    is_json = prompt_file.endswith(".json")
+    if is_json:
+        with open(prompt_file, "r") as f:
+            messages_template = json.load(f)
+    else:
+        with open(prompt_file, "r") as f:
+            prompt = f.read()
     question_instructions = question + " " + instructions
     table_names = []
 
@@ -232,26 +245,51 @@ def generate_prompt(
     )
     instruction_reflections = instruction_reflections + "\n"
 
-    prompt = prompt.format(
-        user_question=question,
-        db_type=db_type,
-        instructions=instructions,
-        table_metadata_string=table_metadata_string,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-        prev_invalid_sql=prev_invalid_sql,
-        prev_error_msg=prev_error_msg,
-        question_0=question_0,
-        query_0=query_0,
-        question_1=question_1,
-        query_1=query_1,
-        cot_instructions=cot_instructions,
-        instruction_reflections=instruction_reflections,
-        join_hints=join_str,
-        pruned_join_hints=pruned_join_str,
-    )
-
-    if cot_pregen:
-        table_aliases = generate_aliases(table_names)
-        prompt = prompt + table_aliases
-    return prompt
+    if is_json:
+        messages = []
+        for msg_template in messages_template:
+            msg = deepcopy(msg_template)
+            msg["content"] = msg_template["content"].format(
+                user_question=question,
+                db_type=db_type,
+                instructions=instructions,
+                table_metadata_string=table_metadata_string,
+                k_shot_prompt=k_shot_prompt,
+                glossary=glossary,
+                prev_invalid_sql=prev_invalid_sql,
+                prev_error_msg=prev_error_msg,
+                question_0=question_0,
+                query_0=query_0,
+                question_1=question_1,
+                query_1=query_1,
+                cot_instructions=cot_instructions,
+                instruction_reflections=instruction_reflections,
+                table_aliases=table_aliases,
+                join_str=join_str,
+                pruned_join_str=pruned_join_str,
+            )
+            messages.append(msg)
+        return messages
+    else:
+        prompt = prompt.format(
+            user_question=question,
+            db_type=db_type,
+            instructions=instructions,
+            table_metadata_string=table_metadata_string,
+            k_shot_prompt=k_shot_prompt,
+            glossary=glossary,
+            prev_invalid_sql=prev_invalid_sql,
+            prev_error_msg=prev_error_msg,
+            question_0=question_0,
+            query_0=query_0,
+            question_1=question_1,
+            query_1=query_1,
+            cot_instructions=cot_instructions,
+            instruction_reflections=instruction_reflections,
+            join_hints=join_str,
+            pruned_join_hints=pruned_join_str,
+        )
+        if cot_pregen:
+            table_aliases = generate_aliases(table_names)
+            prompt = prompt + table_aliases
+        return prompt
