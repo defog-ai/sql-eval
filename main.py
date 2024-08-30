@@ -131,6 +131,10 @@ if __name__ == "__main__":
         from eval.bedrock_runner import run_bedrock_eval
 
         run_bedrock_eval(args)
+    elif args.model_type == "together":
+        from eval.together_runner import run_together_eval
+
+        run_together_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api', 'llama_cpp', 'mlx', 'gemini', 'mistral'"
