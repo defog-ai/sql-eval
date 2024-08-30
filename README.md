@@ -379,6 +379,21 @@ python -W ignore main.py \
   -n 10
 ```
 
+### Bedrock
+
+```bash
+python3 main.py \
+  -db postgres \
+  -q data/instruct_basic_postgres.csv data/instruct_advanced_postgres.csv data/questions_gen_postgres.csv \
+  -o results/bedrock_llama_70b_basic.csv results/bedrock_llama_70b_advanced.csv results/bedrock_llama_70b_v1.csv \
+  -g bedrock \
+  -f prompts/prompt_cot_postgres.md \
+  --cot_table_alias prealias \
+  -m meta.llama3-70b-instruct-v1:0 \
+  -c 0 \
+  -p 10
+```
+
 ### Together
 
 Before running this, you must create an account with [Together.ai](https://together.ai/) and obtain an API key and store it with `export TOGETHER_API_KEY=<your_api_key>`. Then, install `together` with `pip install together`. You can then run the following command:

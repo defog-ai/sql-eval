@@ -13,15 +13,17 @@ from together import Together
 from utils.reporting import upload_results
 
 
-client = Together(api_key=os.environ.get('TOGETHER_API_KEY'))
+client = Together(api_key=os.environ.get("TOGETHER_API_KEY"))
 
 
 def process_row(row: Dict, model: str):
     start_time = time()
     if model.startswith("meta-llama"):
-        stop = ["<|eot_id|>","<|eom_id|>"]
+        stop = ["<|eot_id|>", "<|eom_id|>"]
     else:
-        print("Undefined stop token(s). Please specify the stop token(s) for the model.")
+        print(
+            "Undefined stop token(s). Please specify the stop token(s) for the model."
+        )
         stop = []
     messages = row["prompt"]
     response = client.chat.completions.create(
@@ -30,12 +32,11 @@ def process_row(row: Dict, model: str):
         max_tokens=800,
         temperature=0.0,
         stop=stop,
-        stream=False
+        stream=False,
     )
     content = response.choices[0].message.content
     generated_query = content.split("```", 1)[0].strip()
     end_time = time()
-
 
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
@@ -132,9 +133,7 @@ def run_together_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(
-                    executor.submit(process_row, row, model)
-                )
+                futures.append(executor.submit(process_row, row, model))
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:

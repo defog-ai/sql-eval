@@ -131,6 +131,7 @@ def generate_prompt(
     Else, we will treat the file as a string template.
     """
     from defog_data.metadata import dbs  # to avoid CI error
+
     is_json = prompt_file.endswith(".json")
     if is_json:
         with open(prompt_file, "r") as f:
