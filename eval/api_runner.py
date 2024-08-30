@@ -268,6 +268,7 @@ def run_api_eval(args):
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,
+                row["table_aliases"],
             ),
             axis=1,
         )
