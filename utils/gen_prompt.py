@@ -287,10 +287,8 @@ def generate_prompt(
             query_1=query_1,
             cot_instructions=cot_instructions,
             instruction_reflections=instruction_reflections,
-            join_hints=join_str,
+            table_aliases=table_aliases,
+            join_str=join_str,
             pruned_join_hints=pruned_join_str,
         )
-        if cot_pregen:
-            table_aliases = generate_aliases(table_names)
-            prompt = prompt + table_aliases
         return prompt

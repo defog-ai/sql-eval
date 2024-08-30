@@ -7,7 +7,7 @@ Generate a {db_type} query to answer this question: `{user_question}`
 DDL statements:
 {table_metadata_string}
 
-{cot_instructions}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+{table_aliases}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 I was asked to generate a SQL query for this question: `{user_question}`
 

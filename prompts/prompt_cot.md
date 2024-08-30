@@ -7,7 +7,7 @@ Generate a {db_type} query to answer this question: `{user_question}`
 DDL statements:
 {table_metadata_string}
 
-{cot_instructions}Generate a valid {db_type} query that best answers the question `{user_question}`.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+{table_aliases}Generate a valid {db_type} query that best answers the question `{user_question}`.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 I will reflect on the user's request before answering the question.
 

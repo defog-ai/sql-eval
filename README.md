@@ -381,6 +381,11 @@ python -W ignore main.py \
 
 ### Bedrock
 
+Before running this, you would need to export the following environment variables for the boto3 client to work:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+
 ```bash
 python3 main.py \
   -db postgres \
@@ -388,7 +393,6 @@ python3 main.py \
   -o results/bedrock_llama_70b_basic.csv results/bedrock_llama_70b_advanced.csv results/bedrock_llama_70b_v1.csv \
   -g bedrock \
   -f prompts/prompt_cot_postgres.md \
-  --cot_table_alias prealias \
   -m meta.llama3-70b-instruct-v1:0 \
   -c 0 \
   -p 10
@@ -405,7 +409,6 @@ python3 main.py \
   -o results/together_llama_70b_basic.csv results/together_llama_70b_advanced.csv results/together_llama_70b_v1.csv \
   -g together \
   -f prompts/prompt_together.json \
-  --cot_table_alias prealias \
   -m "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo" \
   -c 0 \
   -p 10
@@ -437,14 +440,14 @@ You can use the following flags in the command line to change the configurations
 
 ### Inference-technique-related parameters
 
-| CLI Flags              | Description                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| -f, --prompt_file      | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.                                                                                                                                                                                                                                                                           |
-| -b, --num_beams        | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`.                                                                                                                                                                                                                                                                            |
-| -c, --num_columns      | Number of columns, default 20. To not prune the columns, set it to 0.                                                                                                                                                                                                                                                                                                                                                   |
-| -s, --shuffle_metadata | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database).                                                                                                                                                                                          |
-| -k, --k_shot           | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.                                                                                                                                                                                                                                                                                  |
-| --cot_table_alias      | Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct`, `prealias` and `pregen`. If using `instruct` or `prealias`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. `instruct` will get your model generate the chain-of-thought table aliases, while `prealias` would already generate the aliases in the prompt. |     |
+| CLI Flags              | Description  |     |
+| ---------------------- |------------- | --- |
+| -f, --prompt_file      | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script. |
+| -b, --num_beams        | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`. |
+| -c, --num_columns      | Number of columns, default 20. To not prune the columns, set it to 0. |
+| -s, --shuffle_metadata | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database). |
+| -k, --k_shot           | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file. |
+| --cot_table_alias      | (Experimental) Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct`. If using `instruct`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. `instruct` will get your model generate the chain-of-thought table aliases. |
 
 ### Execution-related parameters
 
