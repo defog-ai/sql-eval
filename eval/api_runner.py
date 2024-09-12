@@ -12,6 +12,27 @@ from tqdm import tqdm
 from time import time
 import requests
 from utils.reporting import upload_results
+import sqlparse
+
+
+def clean_generated_query(query: str):
+    """
+    Clean up the generated query by
+    - formatting the query using sqlparse
+    - fixing common problems in LLM-powered query generation with post-processing heuristics
+
+    KNOWN ISSUES: the division fix will only work with Postgres/Redshift/Snowflake/Databricks. It might not work with other databases.
+    """
+
+    query = sqlparse.format(query, reindent_aligned=True)
+
+    # if the string `< =` is present, replace it with `<=`. Similarly for `> =` and `>=`
+    query = query.replace("< =", "<=").replace("> =", ">=")
+
+    # if the string ` / NULLIF (` is present, replace it with `/ NULLIF ( 1.0 * `.
+    # This is a fix for ensuring that the denominator is always a float in division operations.
+    query = query.replace("/ NULLIF (", "/ NULLIF (1.0 * ")
+    return query
 
 
 def mk_vllm_json(
@@ -117,6 +138,9 @@ def process_row(
             generated_query = generated_query.split("[SQL]", 1)[1].strip()
         else:
             generated_query = generated_query.strip()
+
+    # clean up the generated query
+    generated_query = clean_generated_query(generated_query)
 
     # remove extra spaces around brackets especially for MySQL
     generated_query = generated_query.replace(" ( ", "(").replace(" )", ")")
@@ -244,6 +268,7 @@ def run_api_eval(args):
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,
+                row["table_aliases"],
             ),
             axis=1,
         )

@@ -27,7 +27,9 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--num_columns", type=int, default=0)
     parser.add_argument("-s", "--shuffle_metadata", action="store_true")
     parser.add_argument("-k", "--k_shot", action="store_true")
-    parser.add_argument("--cot_table_alias", type=str)
+    parser.add_argument(
+        "--cot_table_alias", type=str, choices=["instruct", "pregen", ""], default=""
+    )
     # execution-related parameters
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
@@ -131,6 +133,10 @@ if __name__ == "__main__":
         from eval.bedrock_runner import run_bedrock_eval
 
         run_bedrock_eval(args)
+    elif args.model_type == "together":
+        from eval.together_runner import run_together_eval
+
+        run_together_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api', 'llama_cpp', 'mlx', 'gemini', 'mistral'"

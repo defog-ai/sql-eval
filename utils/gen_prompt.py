@@ -1,3 +1,5 @@
+from copy import deepcopy
+import json
 from typing import Dict, List, Optional
 import numpy as np
 from utils.dialects import (
@@ -120,11 +122,23 @@ def generate_prompt(
     public_data=True,
     columns_to_keep=40,
     shuffle_metadata=False,
+    table_aliases="",
 ):
+    """
+    Generates the prompt for the given question.
+    If a json file is passed in as the prompt_file, please ensure that it is a list
+    of dictionaries, which should have the `content` key minimally.
+    Else, we will treat the file as a string template.
+    """
     from defog_data.metadata import dbs  # to avoid CI error
 
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
+    is_json = prompt_file.endswith(".json")
+    if is_json:
+        with open(prompt_file, "r") as f:
+            messages_template = json.load(f)
+    else:
+        with open(prompt_file, "r") as f:
+            prompt = f.read()
     question_instructions = question + " " + instructions
     table_names = []
 
@@ -159,18 +173,32 @@ def generate_prompt(
 
             # get join_str from column_join
             join_list = []
+            pruned_join_list = []
             for values in column_join.values():
-                col_1, col_2 = values[0]
-                # add to join_list
-                join_str = f"{col_1} can be joined with {col_2}"
-                if join_str not in join_list:
-                    join_list.append(join_str)
+                for col_pair in values:
+                    # add to join_list
+                    col_1, col_2 = col_pair
+                    join_str = f"{col_1} can be joined with {col_2}"
+                    if join_str not in join_list:
+                        join_list.append(join_str)
+                    # add to pruned_join_list if column names are not equal
+                    colname_1 = col_1.rsplit(".", 1)[1]
+                    colname_2 = col_2.rsplit(".", 1)[1]
+                    if colname_1 != colname_2 and join_str not in pruned_join_list:
+                        pruned_join_list.append(join_str)
             if len(join_list) > 0:
                 join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
                     join_list
                 )
             else:
                 join_str = ""
+            if len(pruned_join_list) > 0:
+                pruned_join_str = (
+                    "\nHere is a list of joinable columns with different names:\n"
+                    + "\n".join(pruned_join_list)
+                )
+            else:
+                pruned_join_str = ""
         else:
             raise ValueError("columns_to_keep must be >= 0")
 
@@ -188,24 +216,23 @@ def generate_prompt(
 
         # transform metadata string to target dialect if necessary
         if db_type in ["postgres", "snowflake"]:
-            table_metadata_string = table_metadata_ddl + join_str
+            table_metadata_string = table_metadata_ddl
         elif db_type == "bigquery":
-            table_metadata_string = (
-                ddl_to_bigquery(table_metadata_ddl, "postgres", db_name, "")[0]
-                + join_str
-            )
+            table_metadata_string = ddl_to_bigquery(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "mysql":
-            table_metadata_string = (
-                ddl_to_mysql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_mysql(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "sqlite":
-            table_metadata_string = (
-                ddl_to_sqlite(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_sqlite(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         elif db_type == "tsql":
-            table_metadata_string = (
-                ddl_to_tsql(table_metadata_ddl, "postgres", db_name, "")[0] + join_str
-            )
+            table_metadata_string = ddl_to_tsql(
+                table_metadata_ddl, "postgres", db_name, ""
+            )[0]
         else:
             raise ValueError(
                 "db_type must be one of postgres, snowflake, bigquery, mysql, sqlite, or tsql"
@@ -219,24 +246,49 @@ def generate_prompt(
     )
     instruction_reflections = instruction_reflections + "\n"
 
-    prompt = prompt.format(
-        user_question=question,
-        db_type=db_type,
-        instructions=instructions,
-        table_metadata_string=table_metadata_string,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-        prev_invalid_sql=prev_invalid_sql,
-        prev_error_msg=prev_error_msg,
-        question_0=question_0,
-        query_0=query_0,
-        question_1=question_1,
-        query_1=query_1,
-        cot_instructions=cot_instructions,
-        instruction_reflections=instruction_reflections,
-    )
-
-    if cot_pregen:
-        table_aliases = generate_aliases(table_names)
-        prompt = prompt + table_aliases
-    return prompt
+    if is_json:
+        messages = []
+        for msg_template in messages_template:
+            msg = deepcopy(msg_template)
+            msg["content"] = msg_template["content"].format(
+                user_question=question,
+                db_type=db_type,
+                instructions=instructions,
+                table_metadata_string=table_metadata_string,
+                k_shot_prompt=k_shot_prompt,
+                glossary=glossary,
+                prev_invalid_sql=prev_invalid_sql,
+                prev_error_msg=prev_error_msg,
+                question_0=question_0,
+                query_0=query_0,
+                question_1=question_1,
+                query_1=query_1,
+                cot_instructions=cot_instructions,
+                instruction_reflections=instruction_reflections,
+                table_aliases=table_aliases,
+                join_str=join_str,
+                pruned_join_str=pruned_join_str,
+            )
+            messages.append(msg)
+        return messages
+    else:
+        prompt = prompt.format(
+            user_question=question,
+            db_type=db_type,
+            instructions=instructions,
+            table_metadata_string=table_metadata_string,
+            k_shot_prompt=k_shot_prompt,
+            glossary=glossary,
+            prev_invalid_sql=prev_invalid_sql,
+            prev_error_msg=prev_error_msg,
+            question_0=question_0,
+            query_0=query_0,
+            question_1=question_1,
+            query_1=query_1,
+            cot_instructions=cot_instructions,
+            instruction_reflections=instruction_reflections,
+            table_aliases=table_aliases,
+            join_str=join_str,
+            pruned_join_hints=pruned_join_str,
+        )
+        return prompt

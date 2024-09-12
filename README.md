@@ -37,7 +37,7 @@ Once you have Docker installed, you can create the Docker container and start th
 
 ```bash
 mkdir data/postgres data/export
-docker create --name postgres-sql-eval -e POSTGRES_PASSWORD=postgres -p 5432:5432 -v $(pwd)/data/postgres:/var/lib/postgresql/data -v $(pwd)/data/export:/export postgres:14-alpine
+docker create --name postgres-sql-eval -e POSTGRES_PASSWORD=postgres -p 5432:5432 -v $(pwd)/data/postgres:/var/lib/postgresql/data -v $(pwd)/data/export:/export postgres:16-alpine
 ```
 
 To start the container, run:
@@ -379,6 +379,41 @@ python -W ignore main.py \
   -n 10
 ```
 
+### Bedrock
+
+Before running this, you would need to export the following environment variables for the boto3 client to work:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+
+```bash
+python3 main.py \
+  -db postgres \
+  -q data/instruct_basic_postgres.csv data/instruct_advanced_postgres.csv data/questions_gen_postgres.csv \
+  -o results/bedrock_llama_70b_basic.csv results/bedrock_llama_70b_advanced.csv results/bedrock_llama_70b_v1.csv \
+  -g bedrock \
+  -f prompts/prompt_cot_postgres.md \
+  -m meta.llama3-70b-instruct-v1:0 \
+  -c 0 \
+  -p 10
+```
+
+### Together
+
+Before running this, you must create an account with [Together.ai](https://together.ai/) and obtain an API key and store it with `export TOGETHER_API_KEY=<your_api_key>`. Then, install `together` with `pip install together`. You can then run the following command:
+
+```bash
+python3 main.py \
+  -db postgres \
+  -q data/instruct_basic_postgres.csv data/instruct_advanced_postgres.csv data/questions_gen_postgres.csv \
+  -o results/together_llama_70b_basic.csv results/together_llama_70b_advanced.csv results/together_llama_70b_v1.csv \
+  -g together \
+  -f prompts/prompt_together.json \
+  -m "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo" \
+  -c 0 \
+  -p 10
+```
+
 ## CLI Flags
 
 You can use the following flags in the command line to change the configurations of your evaluation runs.
@@ -397,7 +432,7 @@ You can use the following flags in the command line to change the configurations
 
 | CLI Flags        | Description                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| -g, --model_type | Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, and `mlx` for mlx                                                                                                        |
+| -g, --model_type | Model type used. Make sure this matches the model used. Currently defined options in `main.py` are `oa` for OpenAI models, `anthropic` for Anthropic models, `hf` for Hugging Face models, `vllm` for a vllm runner, `api` for API endpoints, `llama_cpp` for llama cpp, `mlx` for mlx, `bedrock` for AWS bedrock API, `together` for together.ai's API           |
 | -m, --model      | Model that will be tested and used to generate the queries. Some options for OpenAI models are chat models `gpt-3.5-turbo-0613` and `gpt-4-0613`. Options for Anthropic include the latest claude-3 family of models (e.g. `claude-3-opus-20240229`). For Hugging Face, and VLLM models, simply use the path of your chosen model (e.g. `defog/sqlcoder`). |
 | -a, --adapter    | Path to the relevant adapter model you're using. Only available for the `hf_runner`.                                                                                                                                                                                                                                                                                                              |
 | --api_url        | The URL of the custom API you want to send the prompt to. Only used when model_type is `api`.                                                                                                                                                                                                                                                                                                     |
@@ -405,14 +440,14 @@ You can use the following flags in the command line to change the configurations
 
 ### Inference-technique-related parameters
 
-| CLI Flags              | Description                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| -f, --prompt_file      | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script.                                                                                                                                                                                                                                                                           |
-| -b, --num_beams        | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`.                                                                                                                                                                                                                                                                            |
-| -c, --num_columns      | Number of columns, default 20. To not prune the columns, set it to 0.                                                                                                                                                                                                                                                                                                                                                   |
-| -s, --shuffle_metadata | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database).                                                                                                                                                                                          |
-| -k, --k_shot           | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file.                                                                                                                                                                                                                                                                                  |
-| --cot_table_alias      | Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct`, `prealias` and `pregen`. If using `instruct` or `prealias`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. `instruct` will get your model generate the chain-of-thought table aliases, while `prealias` would already generate the aliases in the prompt. |     |
+| CLI Flags              | Description  |     |
+| ---------------------- |------------- | --- |
+| -f, --prompt_file      | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script. |
+| -b, --num_beams        | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`. |
+| -c, --num_columns      | Number of columns, default 20. To not prune the columns, set it to 0. |
+| -s, --shuffle_metadata | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database). |
+| -k, --k_shot           | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file. |
+| --cot_table_alias      | (Experimental) Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct`. If using `instruct`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. `instruct` will get your model generate the chain-of-thought table aliases. |
 
 ### Execution-related parameters
 

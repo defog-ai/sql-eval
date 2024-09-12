@@ -93,6 +93,11 @@ def prepare_questions_df(
     else:
         question_query_df["table_metadata_string"] = ""
 
+    # get table_aliases
+    question_query_df["table_aliases"] = question_query_df["db_name"].apply(
+        get_table_aliases
+    )
+
     # get prev_invalid_sql if applicable
     if "prev_invalid_sql" in question_query_df.columns:
         question_query_df["prev_invalid_sql"] = question_query_df[
@@ -127,21 +132,14 @@ def prepare_questions_df(
     else:
         question_query_df["query_1"] = ""
 
-    # add all cot instructions to the `cot_instructions` column
+    # add all cot instructions to the respective columns
+    question_query_df["cot_instructions"] = ""
+    question_query_df["cot_pregen"] = False
     if cot_table_alias == "instruct":
         question_query_df["cot_instructions"] = (
             "List the table aliases for each table as comments, starting with the most relevant tables to the question."
         )
-    elif cot_table_alias == "prealias":
-        question_query_df["cot_instructions"] = question_query_df["db_name"].apply(
-            get_table_aliases
-        )
-    else:
-        question_query_df["cot_instructions"] = ""
-
-    if cot_table_alias == "pregen":
+    elif cot_table_alias == "pregen":
         question_query_df["cot_pregen"] = True
-    else:
-        question_query_df["cot_pregen"] = False
 
     return question_query_df
