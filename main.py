@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # execution-related parameters
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
-    parser.add_argument("-t", "--timeout_gen", type=float, default=30.0)
+    parser.add_argument("-t", "--timeout_gen", type=float, default=120.0)
     parser.add_argument("-u", "--timeout_exec", type=float, default=10.0)
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-l", "--logprobs", action="store_true")
