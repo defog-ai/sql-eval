@@ -59,13 +59,14 @@ class OpenAIQueryGenerator(QueryGenerator):
             completion = openai.chat.completions.create(
                 model=model,
                 messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                stop=stop,
-                logit_bias=logit_bias,
+                # max_tokens=max_tokens,
+                # temperature=temperature,
+                # stop=stop,
+                # logit_bias=logit_bias,
                 seed=seed,
             )
             generated_text = completion.choices[0].message.content
+            print(generated_text)
         except Exception as e:
             print(type(e), e)
         return generated_text
@@ -184,15 +185,15 @@ class OpenAIQueryGenerator(QueryGenerator):
         if glossary == "":
             glossary = dbs[self.db_name]["glossary"]
         try:
-            sys_prompt = chat_prompt[0]["content"]
-            sys_prompt = sys_prompt.format(
-                db_type=self.db_type,
-            )
-            user_prompt = chat_prompt[1]["content"]
-            if len(chat_prompt) == 3:
-                assistant_prompt = chat_prompt[2]["content"]
+            # sys_prompt = chat_prompt[0]["content"]
+            # sys_prompt = sys_prompt.format(
+            #     db_type=self.db_type,
+            # )
+            user_prompt = chat_prompt[0]["content"]
+            if len(chat_prompt) == 2:
+                assistant_prompt = chat_prompt[1]["content"]
         except:
-            raise ValueError("Invalid prompt file. Please use prompt_openai.md")
+            raise ValueError("Invalid prompt file. Please use prompt_openai.json")
         user_prompt = user_prompt.format(
             user_question=question,
             table_metadata_string=table_metadata_string,
@@ -205,9 +206,9 @@ class OpenAIQueryGenerator(QueryGenerator):
         )
 
         messages = []
-        messages.append({"role": "system", "content": sys_prompt})
+        # messages.append({"role": "system", "content": sys_prompt})
         messages.append({"role": "user", "content": user_prompt})
-        if len(chat_prompt) == 3:
+        if len(chat_prompt) == 2:
             messages.append({"role": "assistant", "content": assistant_prompt})
 
         function_to_run = None
@@ -239,7 +240,7 @@ class OpenAIQueryGenerator(QueryGenerator):
             else:
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}"
 
-        tokens_used = self.count_tokens(self.model, messages=messages)
+        # tokens_used = self.count_tokens(self.model, messages=messages)
 
         return {
             "table_metadata_string": table_metadata_string,
@@ -247,5 +248,5 @@ class OpenAIQueryGenerator(QueryGenerator):
             "reason": self.reason,
             "err": self.err,
             "latency_seconds": time.time() - start_time,
-            "tokens_used": tokens_used,
+            # "tokens_used": tokens_used,
         }
