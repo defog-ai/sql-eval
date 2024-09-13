@@ -1,0 +1,6 @@
+[
+  {
+    "role": "user",
+    "content": "Generate a SQL query for {db_type} that answers the question `{user_question}`.\n{instructions}\nThis query will run on a database whose schema is represented in this string:\n{table_metadata_string}\n{table_aliases}\n\nReturn only the SQL query, and nothing else."
+  }
+]

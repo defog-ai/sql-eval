@@ -15,7 +15,7 @@ sentence-transformers
 snowflake-connector-python
 spacy
 sqlalchemy
-tiktoken
+tiktoken==0.7.0
 together
 torch
 tqdm
