@@ -65,7 +65,7 @@ def run_openai_eval(args):
                     table_metadata_string=row["table_metadata_string"],
                     prev_invalid_sql=row["prev_invalid_sql"],
                     prev_error_msg=row["prev_error_msg"],
-                    cot_instructions=row["cot_instructions"],
+                    table_aliases=row["table_aliases"],
                     columns_to_keep=args.num_columns,
                     shuffle=args.shuffle_metadata,
                 )

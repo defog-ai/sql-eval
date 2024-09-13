@@ -37,6 +37,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         self.db_type = db_type
         self.db_name = db_name
         self.model = model
+        self.o1 = self.model.startswith("o1-")
         self.prompt_file = prompt_file
         self.use_public_data = use_public_data
 
@@ -56,15 +57,22 @@ class OpenAIQueryGenerator(QueryGenerator):
         """Get OpenAI chat completion for a given prompt and model"""
         generated_text = ""
         try:
-            completion = openai.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                stop=stop,
-                logit_bias=logit_bias,
-                seed=seed,
-            )
+            if self.o1:
+                completion = openai.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    seed=seed,
+                )
+            else:
+                completion = openai.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    stop=stop,
+                    logit_bias=logit_bias,
+                    seed=seed,
+                )
             generated_text = completion.choices[0].message.content
         except Exception as e:
             print(type(e), e)
@@ -105,7 +113,11 @@ class OpenAIQueryGenerator(QueryGenerator):
         model: the model used to generate the prompt. can be any valid OpenAI model
         messages: (only for OpenAI chat models) a list of messages to be used as a prompt. Each message is a dict with two keys: role and content
         """
-        tokenizer = tiktoken.encoding_for_model(model)
+        try:
+            tokenizer = tiktoken.encoding_for_model(model)
+        except KeyError:
+            # default to o200k_base if the model is not in the list. this is just for approximating the max token count
+            tokenizer = tiktoken.get_encoding("o200k_base")
         num_tokens = 0
         for message in messages:
             for _, value in message.items():
@@ -121,7 +133,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         table_metadata_string: str,
         prev_invalid_sql: str,
         prev_error_msg: str,
-        cot_instructions: str,
+        table_aliases: str,
         columns_to_keep: int,
         shuffle: bool,
     ) -> dict:
@@ -184,16 +196,21 @@ class OpenAIQueryGenerator(QueryGenerator):
         if glossary == "":
             glossary = dbs[self.db_name]["glossary"]
         try:
-            sys_prompt = chat_prompt[0]["content"]
-            sys_prompt = sys_prompt.format(
-                db_type=self.db_type,
-            )
-            user_prompt = chat_prompt[1]["content"]
-            if len(chat_prompt) == 3:
-                assistant_prompt = chat_prompt[2]["content"]
+            if self.o1:
+                sys_prompt = ""
+                user_prompt = chat_prompt[0]["content"]
+            else:
+                sys_prompt = chat_prompt[0]["content"]
+                sys_prompt = sys_prompt.format(
+                    db_type=self.db_type,
+                )
+                user_prompt = chat_prompt[1]["content"]
+                if len(chat_prompt) == 3:
+                    assistant_prompt = chat_prompt[2]["content"]
         except:
             raise ValueError("Invalid prompt file. Please use prompt_openai.md")
         user_prompt = user_prompt.format(
+            db_type=self.db_type,
             user_question=question,
             table_metadata_string=table_metadata_string,
             instructions=instructions,
@@ -201,14 +218,17 @@ class OpenAIQueryGenerator(QueryGenerator):
             glossary=glossary,
             prev_invalid_sql=prev_invalid_sql,
             prev_error_msg=prev_error_msg,
-            cot_instructions=cot_instructions,
+            table_aliases=table_aliases,
         )
 
-        messages = []
-        messages.append({"role": "system", "content": sys_prompt})
-        messages.append({"role": "user", "content": user_prompt})
-        if len(chat_prompt) == 3:
-            messages.append({"role": "assistant", "content": assistant_prompt})
+        if self.o1:
+            messages = [{"role": "user", "content": user_prompt}]
+        else:
+            messages = []
+            messages.append({"role": "system", "content": sys_prompt})
+            messages.append({"role": "user", "content": user_prompt})
+            if len(chat_prompt) == 3:
+                messages.append({"role": "assistant", "content": assistant_prompt})
 
         function_to_run = None
         package = None

@@ -154,6 +154,20 @@ python main.py \
   -c 0
 ```
 
+If testing with the latest `o1-*` models (which do not support system prompts), you should use a different prompt file, reduce parallel requests and increase the timeout:
+```bash
+python main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/openai_o1mini_classic.csv results/openai_o1mini_basic.csv results/openai_o1mini_advanced.csv \
+  -g oa \
+  -f prompts/prompt_openai_o1.json \
+  -m o1-mini \
+  -p 1 \
+  -t 120 \
+  -c 0
+```
+
 ### Anthropic
 
 To test out the full suite of questions for claude-3:
