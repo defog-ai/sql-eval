@@ -13,6 +13,7 @@ from time import time
 import requests
 from utils.reporting import upload_results
 import sqlparse
+import re
 
 
 def clean_generated_query(query: str):
@@ -34,9 +35,8 @@ def clean_generated_query(query: str):
     query = query.replace("/ NULLIF (", "/ NULLIF (1.0 * ")
 
     # remove extra spaces around brackets especially for MySQL
-    query = query.replace(" ( ", "(").replace(" )", ")")
-    query = query.replace(" (", "(").replace(") ", ")")
-    query = query.replace("( ", "(").replace(" )", ")")
+    query = re.sub(r"\s*\(\s*", "(", query)  # Remove spaces before and after '('
+    query = re.sub(r"\s*\)", ")", query)  # Remove spaces before ')'
 
     return query
 
