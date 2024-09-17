@@ -148,7 +148,6 @@ def process_row(
     # clean up the generated query
     generated_query = clean_generated_query(generated_query)
 
-
     if "logprobs" in r.json():
         logprobs = r.json()["logprobs"]
 
