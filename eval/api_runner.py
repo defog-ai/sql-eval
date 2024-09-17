@@ -32,6 +32,12 @@ def clean_generated_query(query: str):
     # if the string ` / NULLIF (` is present, replace it with `/ NULLIF ( 1.0 * `.
     # This is a fix for ensuring that the denominator is always a float in division operations.
     query = query.replace("/ NULLIF (", "/ NULLIF (1.0 * ")
+
+    # remove extra spaces around brackets especially for MySQL
+    query = query.replace(" ( ", "(").replace(" )", ")")
+    query = query.replace(" (", "(").replace(") ", ")")
+    query = query.replace("( ", "(").replace(" )", ")")
+
     return query
 
 
@@ -142,8 +148,6 @@ def process_row(
     # clean up the generated query
     generated_query = clean_generated_query(generated_query)
 
-    # remove extra spaces around brackets especially for MySQL
-    generated_query = generated_query.replace(" ( ", "(").replace(" )", ")")
 
     if "logprobs" in r.json():
         logprobs = r.json()["logprobs"]
