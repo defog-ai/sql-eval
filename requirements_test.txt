@@ -1,11 +1,11 @@
 func_timeout
-pandas
 numpy
 openai
+pandas
+pysqlite3
 sentence_transformers
 spacy
 sqlalchemy
 sqlglot
-sqlite3
 torch
 tqdm
