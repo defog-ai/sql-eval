@@ -3,6 +3,7 @@ argparse
 func_timeout
 mistralai
 mysql-connector-python
+numpy
 openai>=1.1.0
 pandas
 pandas-gbq
@@ -15,7 +16,7 @@ sentence-transformers
 snowflake-connector-python
 spacy
 sqlalchemy
-tiktoken==0.7.0
+tiktoken
 together
 torch
 tqdm

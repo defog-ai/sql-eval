@@ -49,7 +49,6 @@ for model_name in "${model_names[@]}"; do
     --api_url "http://localhost:${PORT}/generate" \
     --api_type "vllm" \
     -p 10 \
-    --cot_table_alias "prealias" \
     --logprobs
   # finally, kill the api server
   pkill -9 -f "python3 utils/api_server.py.*--port ${PORT}"
