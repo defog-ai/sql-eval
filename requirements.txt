@@ -18,9 +18,9 @@ spacy
 sqlalchemy
 tiktoken
 together
-torch
+torch==2.4.0
 tqdm
 transformers
 sqlparse
 sqlglot
-vllm; sys_platform != 'darwin'
+vllm==0.6.3.post1; sys_platform != 'darwin'
