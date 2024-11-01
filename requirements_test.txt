@@ -1,0 +1,11 @@
+func_timeout
+pandas
+numpy
+openai
+sentence_transformers
+spacy
+sqlalchemy
+sqlglot
+sqlite3
+torch
+tqdm
