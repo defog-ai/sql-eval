@@ -3,9 +3,9 @@ argparse
 func_timeout
 mistralai
 mysql-connector-python
-numpy
+numpy==2.1.2
 openai>=1.1.0
-pandas
+pandas==2.2.3
 pandas-gbq
 peft
 psycopg2-binary
