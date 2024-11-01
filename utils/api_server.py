@@ -55,17 +55,32 @@ async def generate(request: Request) -> Response:
     sql_lora_path = request_dict.pop("sql_lora_path", None)
     request_dict.pop("sql_lora_name", None)
     lora_request = (
-        LoRARequest("sql_adapter", 1, sql_lora_path) if sql_lora_path else None
+        LoRARequest(lora_name="sql_adapter", lora_int_id=1, lora_path=sql_lora_path)
+        if sql_lora_path
+        else None
     )
+    if vllm_version >= "0.6.2":
+        # remove use_beam_search  if present as it's no longer supported
+        # see https://github.com/vllm-project/vllm/releases/tag/v0.6.2
+        if "use_beam_search" in request_dict:
+            request_dict.pop("use_beam_search")
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
     tokenizer = await engine.get_tokenizer()
     prompt_token_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
-    # print(f"prompt_token_ids: {prompt_token_ids}")
     if prompt_token_ids[0] != tokenizer.bos_token_id:
         prompt_token_ids = [tokenizer.bos_token_id] + prompt_token_ids
 
-    if vllm_version >= "0.4.2":
+    if vllm_version >= "0.6.3":
+        from vllm import TokensPrompt
+
+        results_generator = engine.generate(
+            prompt=TokensPrompt(prompt_token_ids=prompt_token_ids),
+            sampling_params=sampling_params,
+            request_id=request_id,
+            lora_request=lora_request,
+        )
+    elif vllm_version >= "0.4.2":
         results_generator = engine.generate(
             inputs={"prompt_token_ids": prompt_token_ids},
             sampling_params=sampling_params,
