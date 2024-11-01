@@ -33,6 +33,11 @@ def test_metadata():
             "airport.airport_name,text,name of airport",
             "flight.airport_name,text,name of the airport",
         ],
+        "FAC": [
+            "country.name,text,country name",
+            "airport.airport_name,text,name of airport",
+            "flight.airport_name,text,name of the airport",
+        ],
         "PERSON": ["flight.pilot_name,text,name of the pilot"],
     }
     column_join = {("airport", "country"): [("airport.country_id", "country.id")]}
