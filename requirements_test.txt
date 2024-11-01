@@ -6,7 +6,7 @@ psycopg2-binary
 pysqlite3
 sentence_transformers
 snowflake-connector-python
-spacy
+spacy==3.7.2
 sqlalchemy
 sqlglot
 torch
