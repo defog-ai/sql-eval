@@ -2,8 +2,10 @@ func_timeout
 numpy
 openai
 pandas
+psycopg2-binary
 pysqlite3
 sentence_transformers
+snowflake-connector-python
 spacy
 sqlalchemy
 sqlglot

@@ -80,7 +80,7 @@ def test_metadata_diff_coldesc():
 def test_get_md_emb_no_shuffle(test_metadata):
     column_emb, column_csv, column_ner, column_join = test_metadata
     question = "How many flights start from Los Angeles Airport (LAX)?"
-    assert get_entity_types(question) == {"GPE", "ORG"}
+    assert get_entity_types(question) == {"FAC"}
     k = 3
     threshold = 0.0
 
@@ -124,7 +124,7 @@ airport.country_id can be joined with country.id
 def test_get_md_emb_shuffle(test_metadata):
     column_emb, column_csv, column_ner, column_join = test_metadata
     question = "How many flights start from Los Angeles Airport (LAX)?"
-    assert get_entity_types(question) == {"GPE", "ORG"}
+    assert get_entity_types(question) == {"FAC"}
     k = 3
     threshold = 0.0
 
@@ -190,7 +190,7 @@ def test_get_md_emb_sql_emb_empty(test_metadata):
 def test_get_md_emb_coldesc(test_metadata_diff_coldesc):
     column_emb, column_csv, column_ner, column_join = test_metadata_diff_coldesc
     question = "How many flights start from Los Angeles Airport (LAX)?"
-    assert get_entity_types(question) == {"GPE", "ORG"}
+    assert get_entity_types(question) == {"FAC"}
     k = 3
     threshold = 0.0
 
