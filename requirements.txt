@@ -1,6 +1,7 @@
 anthropic
 argparse
 func_timeout
+google-generativeai
 mistralai
 mysql-connector-python
 numpy==2.1.2

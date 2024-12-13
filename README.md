@@ -363,18 +363,17 @@ python -W ignore main.py \
 
 ### Gemini
 
-Before running this, you must create an account with [Google AI](https://ai.google.dev/) and set your credentials with `export GOOGLE_APPLICATION_CREDENTIALS=</path/to/service_account.json>`. Then, install these packages with `pip install vertexai google-cloud-aiplatform`.
+Before running this, you need to set your credentials with `export GEMINI_API_KEY=<your_api_key>`. Then, install these packages with `pip install google-generative-ai`.
 
 ```bash
-python -W ignore main.py \
+python main.py \
   -db postgres \
-  -q "data/questions_gen_postgres.csv" \
-  -o "results/gemini_pro.csv" \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o "results/gemini_flash_basic.csv" "results/gemini_flash_basic.csv" "results/gemini_flash_advanced.csv" \
   -g gemini \
-  -f "prompts/prompt_gemini.md" \
-  -m gemini-pro \
-  -p 1 \
-  -n 5
+  -f "prompts/prompt_gemini.md" "prompts/prompt_gemini.md" "prompts/prompt_gemini.md" \
+  -m gemini-2.0-flash-exp \
+  -p 10
 ```
 
 ### Mistral
