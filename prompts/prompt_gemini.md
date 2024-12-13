@@ -1,6 +1,9 @@
-Generate a PostgreSQL query to answer the following question: `{user_question}`
+Your task is to convert a text question to a {db_type} query, given a database schema.
 
-The query will run on a database with the following schema:
+Generate a SQL query that answers the question `{user_question}`.
+{instructions}
+This query will run on a database whose schema is represented in this SQL DDL:
 {table_metadata_string}
 
-Please return only the SQL query in your response, nothing else.
+Return the SQL query that answers the question `{user_question}`
+```sql
