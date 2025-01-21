@@ -14,8 +14,7 @@ from utils.reporting import upload_results
 
 
 client = OpenAI(
-    base_url="https://api.deepseek.com",
-    api_key=os.environ.get("DEEPSEEK_API_KEY")
+    base_url="https://api.deepseek.com", api_key=os.environ.get("DEEPSEEK_API_KEY")
 )
 
 
@@ -28,14 +27,12 @@ def process_row(row: Dict, model: str):
             messages=messages,
             max_tokens=800,
             temperature=0.0,
-            stream=False,
         )
     else:
         response = client.chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=800,
-            stream=False,
         )
     content = response.choices[0].message.content
     generated_query = content.replace("```sql", "").replace("```", "").strip()
