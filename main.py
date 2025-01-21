@@ -137,6 +137,10 @@ if __name__ == "__main__":
         from eval.together_runner import run_together_eval
 
         run_together_eval(args)
+    elif args.model_type == "deepseek":
+        from eval.deepseek_runner import run_deepseek_eval
+
+        run_deepseek_eval(args)
     else:
         raise ValueError(
             f"Invalid model type: {args.model_type}. Model type must be one of: 'oa', 'hf', 'anthropic', 'vllm', 'api', 'llama_cpp', 'mlx', 'gemini', 'mistral'"
