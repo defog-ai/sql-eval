@@ -411,6 +411,33 @@ python3 main.py \
   -p 10
 ```
 
+### Deepseek
+
+Before running this, you must create an account with [Deepseek](https://deepseek.com/) and obtain an API key and store it with `export DEEPSEEK_API_KEY=<your_api_key>`. Then, install `openai` with `pip install openai`. You can then run the following command:
+
+#### Deepseek Chat
+python main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/deepseek_classic.csv results/deepseek_basic.csv results/deepseek_advanced.csv \
+  -g deepseek \
+  -f prompts/prompt_openai.json \
+  -m deepseek-chat \
+  -p 5 \
+  -c 0
+
+#### Deepseek Reasoner
+python main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/deepseek_classic.csv results/deepseek_basic.csv results/deepseek_advanced.csv \
+  -g deepseek \
+  -f prompts/prompt_openai_o1.json \
+  -m deepseek-reasoner \
+  -p 5 \
+  -c 0
+
+
 ### Together
 
 Before running this, you must create an account with [Together.ai](https://together.ai/) and obtain an API key and store it with `export TOGETHER_API_KEY=<your_api_key>`. Then, install `together` with `pip install together`. You can then run the following command:
