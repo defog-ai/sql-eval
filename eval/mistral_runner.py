@@ -17,6 +17,7 @@ from utils.reporting import upload_results
 api_key = os.environ.get("MISTRAL_API_KEY")
 client = MistralClient(api_key=api_key)
 
+
 def generate_prompt(
     prompt_file,
     question,
@@ -103,6 +104,7 @@ def generate_prompt(
     ]
     return messages
 
+
 def process_row(row, model, args):
     start_time = time()
     chat_response = client.chat(
@@ -155,6 +157,7 @@ def process_row(row, model, args):
         row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
 
     return row
+
 
 def run_mistral_eval(args):
     # get params from args

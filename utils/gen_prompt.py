@@ -147,9 +147,11 @@ def generate_prompt(
     if table_metadata_string == "":
         if public_data:
             import defog_data.supplementary as sup
+
             column_join = sup.columns_join.get(db_name, {})
         else:
             import defog_data_private.supplementary as sup
+
             column_join = sup.columns_join.get(db_name, {})
 
         md = dbs[db_name]["table_metadata"]
@@ -176,7 +178,10 @@ def generate_prompt(
         else:
             join_str = ""
         if len(pruned_join_list) > 0:
-            pruned_join_str = "\nHere is a list of joinable columns with different names:\n" + "\n".join(pruned_join_list)
+            pruned_join_str = (
+                "\nHere is a list of joinable columns with different names:\n"
+                + "\n".join(pruned_join_list)
+            )
         else:
             pruned_join_str = ""
 

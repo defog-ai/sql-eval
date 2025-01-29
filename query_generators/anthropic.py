@@ -53,7 +53,7 @@ class AnthropicQueryGenerator(QueryGenerator):
                 model=model,
                 max_completion_tokens=max_tokens,
                 temperature=temperature,
-                stop=stop
+                stop=stop,
             )
             return response.content
         except Exception as e:
@@ -92,7 +92,7 @@ class AnthropicQueryGenerator(QueryGenerator):
         with open(self.prompt_file) as file:
             model_prompt = file.read()
         question_instructions = question + " " + instructions
-        
+
         if table_metadata_string == "":
             md = dbs[self.db_name]["table_metadata"]
             pruned_metadata_str = to_prompt_schema(md, shuffle)
@@ -119,7 +119,9 @@ class AnthropicQueryGenerator(QueryGenerator):
                     if join_str not in join_list:
                         join_list.append(join_str)
             if len(join_list) > 0:
-                join_str = "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
+                join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
+                    join_list
+                )
             else:
                 join_str = ""
             pruned_metadata_str = pruned_metadata_str + join_str
@@ -175,5 +177,5 @@ class AnthropicQueryGenerator(QueryGenerator):
             "err": self.err,
             "latency_seconds": time.time() - start_time,
             "tokens_used": tokens_used,
-            "table_metadata_string": pruned_metadata_str
+            "table_metadata_string": pruned_metadata_str,
         }

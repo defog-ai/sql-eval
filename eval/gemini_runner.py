@@ -14,6 +14,7 @@ from utils.questions import prepare_questions_df
 from utils.reporting import upload_results
 from utils.llm import chat_gemini
 
+
 def generate_prompt(
     prompt_file,
     question,
@@ -93,12 +94,10 @@ def process_row(row, model_name, args):
     start_time = time()
     messages = [{"role": "user", "content": row["prompt"]}]
     try:
-        response = chat_gemini(
-            messages=messages,
-            model=model_name,
-            temperature=0.0
+        response = chat_gemini(messages=messages, model=model_name, temperature=0.0)
+        generated_query = (
+            response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
         )
-        generated_query = response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
         try:
             generated_query = sqlparse.format(
                 generated_query,
@@ -195,9 +194,7 @@ def run_gemini_eval(args):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for row in df.to_dict("records"):
-                futures.append(
-                    executor.submit(process_row, row, model_name, args)
-                )
+                futures.append(executor.submit(process_row, row, model_name, args))
 
             with tqdm(as_completed(futures), total=len(futures)) as pbar:
                 for f in pbar:
