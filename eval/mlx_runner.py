@@ -1,5 +1,4 @@
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from eval.eval import compare_query_results
 import pandas as pd

@@ -1,5 +1,4 @@
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from eval.eval import compare_query_results
 import pandas as pd
@@ -70,11 +69,10 @@ def run_llama_cpp_eval(args):
     model_path = args.model
     output_file_list = args.output_file
     k_shot = args.k_shot
-    max_workers = args.parallel_threads
     db_type = args.db_type
     cot_table_alias = args.cot_table_alias
 
-    llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=2048)
+    llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=4096)
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list

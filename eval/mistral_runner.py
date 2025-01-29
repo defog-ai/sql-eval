@@ -41,8 +41,6 @@ def generate_prompt(
     sys_prompt = prompt.split("System:")[1].split("User:")[0].strip()
     user_prompt = prompt.split("User:")[1].strip()
 
-    question_instructions = question + " " + instructions
-
     if table_metadata_string == "":
         if public_data:
             from defog_data.metadata import dbs

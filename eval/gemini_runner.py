@@ -42,8 +42,7 @@ def generate_prompt(
 
     with open(prompt_file, "r") as f:
         prompt = f.read()
-    question_instructions = question + " " + instructions
-
+    
     if table_metadata_string == "":
         md = dbs[db_name]["table_metadata"]
         pruned_metadata_ddl = to_prompt_schema(md, shuffle)
