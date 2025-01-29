@@ -41,7 +41,7 @@ def generate_prompt(
 
     with open(prompt_file, "r") as f:
         prompt = f.read()
-    
+
     if table_metadata_string == "":
         md = dbs[db_name]["table_metadata"]
         pruned_metadata_ddl = to_prompt_schema(md, shuffle)
@@ -104,7 +104,9 @@ def process_row(row, model_name, args):
     messages = [{"role": "user", "content": prompt}]
     try:
         response = chat_anthropic(messages=messages, model=model_name, temperature=0.0)
-        generated_query = response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
+        generated_query = (
+            response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
+        )
         try:
             generated_query = sqlparse.format(
                 generated_query, reindent=True, keyword_case="upper"
