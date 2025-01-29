@@ -19,12 +19,16 @@ LLM_COSTS_PER_TOKEN = {
     "claude-3-haiku": {"input_cost_per1k": 0.00025, "output_cost_per1k": 0.00125},
     "gemini-1.5-pro": {"input_cost_per1k": 0.00125, "output_cost_per1k": 0.005},
     "gemini-1.5-flash": {"input_cost_per1k": 0.000075, "output_cost_per1k": 0.0003},
-    "gemini-1.5-flash-8b": {"input_cost_per1k": 0.0000375, "output_cost_per1k": 0.00015},
+    "gemini-1.5-flash-8b": {
+        "input_cost_per1k": 0.0000375,
+        "output_cost_per1k": 0.00015,
+    },
     "gemini-2.0-flash": {
         "input_cost_per1k": 0.000075,
         "output_cost_per1k": 0.0003,
     },
 }
+
 
 @dataclass
 class LLMResponse:
@@ -46,10 +50,10 @@ class LLMResponse:
             for mname in LLM_COSTS_PER_TOKEN.keys():
                 if mname in self.model:
                     potential_model_names.append(mname)
-            
+
             if len(potential_model_names) > 0:
                 model_name = max(potential_model_names, key=len)
-        
+
         if model_name:
             self.cost = (
                 self.input_tokens
@@ -59,6 +63,7 @@ class LLMResponse:
                 / 1000
                 * LLM_COSTS_PER_TOKEN[model_name]["output_cost_per1k"]
             )
+
 
 def chat_anthropic(
     messages: List[Dict[str, str]],
@@ -93,7 +98,7 @@ def chat_anthropic(
         max_tokens=max_completion_tokens,
         temperature=temperature,
         stop_sequences=stop,
-        timeout=timeout
+        timeout=timeout,
     )
     if response.stop_reason == "max_tokens":
         raise Exception("Max tokens reached")
@@ -106,6 +111,7 @@ def chat_anthropic(
         input_tokens=response.usage.input_tokens,
         output_tokens=response.usage.output_tokens,
     )
+
 
 def chat_openai(
     messages: List[Dict[str, str]],
@@ -189,6 +195,7 @@ def chat_openai(
         output_tokens_details=response.usage.completion_tokens_details,
     )
 
+
 def chat_gemini(
     messages: List[Dict[str, str]],
     model: str = "gemini-2.0-flash-exp",
@@ -251,6 +258,7 @@ def chat_gemini(
         output_tokens=response.usage_metadata.candidates_token_count,
     )
 
+
 def map_model_to_chat_fn(model: str) -> Callable:
     """
     Returns the appropriate chat function based on the model.
@@ -263,6 +271,7 @@ def map_model_to_chat_fn(model: str) -> Callable:
         return chat_openai
     raise ValueError(f"Unknown model: {model}")
 
+
 async def chat(
     model,
     messages,
@@ -274,7 +283,7 @@ async def chat(
     seed=0,
     store=True,
     metadata=None,
-    timeout=100, # in seconds
+    timeout=100,  # in seconds
 ) -> LLMResponse:
     """
     Returns the response from the LLM API for a single model that is passed in.
@@ -283,7 +292,7 @@ async def chat(
     llm_function = map_model_to_chat_fn(model)
     max_retries = 3
     base_delay = 1  # Initial delay in seconds
-    
+
     for attempt in range(max_retries):
         try:
             return llm_function(
@@ -300,10 +309,13 @@ async def chat(
                 timeout=timeout,
             )
         except Exception as e:
-            delay = base_delay * (2 ** attempt)  # Exponential backoff
-            print(f"Attempt {attempt + 1} failed. Retrying in {delay} seconds...", flush=True)
+            delay = base_delay * (2**attempt)  # Exponential backoff
+            print(
+                f"Attempt {attempt + 1} failed. Retrying in {delay} seconds...",
+                flush=True,
+            )
             print(f"Error: {e}", flush=True)
             time.sleep(delay)
-    
+
     # If we get here, all attempts failed
     raise Exception("All attempts at calling the chat function failed")
