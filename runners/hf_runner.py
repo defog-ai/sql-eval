@@ -1,25 +1,23 @@
 import os
 from typing import Optional
-
-from eval.eval import compare_query_results
-import pandas as pd
 import torch
+import gc
+import pandas as pd
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     pipeline,
 )
+from tqdm import tqdm
+from psycopg2.extensions import QueryCanceledError
+
 from utils.gen_prompt import generate_prompt
 from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
-from tqdm import tqdm
-from psycopg2.extensions import QueryCanceledError
-from time import time
-import gc
 from utils.reporting import upload_results
+from eval.eval import compare_query_results
 
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
-
 
 def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     """
@@ -62,15 +60,23 @@ def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     return tokenizer, model
 
 
+def extract_hf_sql(text: str, has_sql_tag: bool) -> str:
+    """HuggingFace-specific SQL extraction"""
+    if not has_sql_tag:
+        return text.split("```")[0].split(";")[0].strip() + ";"
+    else:
+        return text.split("[/SQL]")[0].split(";")[0].strip() + ";"
+
+
 def run_hf_eval(args):
-    # get params from args
+    """Run evaluation using HuggingFace models"""
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
+    output_file_list = args.output_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
     model_name = args.model
     adapter_path = args.adapter
-    output_file_list = args.output_file
     k_shot = args.k_shot
     db_type = args.db_type
     num_beams = args.num_beams
@@ -94,8 +100,6 @@ def run_hf_eval(args):
 
     print("model loaded\nnow generating and evaluating predictions...")
 
-    # from here, we generate and evaluate predictions
-    # eos_token_id = tokenizer.convert_tokens_to_ids(["```"])[0]
     pipe = pipeline(
         "text-generation", model=model, tokenizer=tokenizer, batch_size=args.batch_size
     )
@@ -104,7 +108,6 @@ def run_hf_eval(args):
         questions_file_list, prompt_file_list, output_file_list
     ):
         print(f"Using prompt file {prompt_file}")
-        # get questions
         print("Preparing questions...")
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
@@ -112,7 +115,8 @@ def run_hf_eval(args):
         df = prepare_questions_df(
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
-        # create a prompt for each question
+
+        # Create prompts with all parameters
         df["prompt"] = df.apply(
             lambda row: generate_prompt(
                 prompt_file,
@@ -125,15 +129,16 @@ def run_hf_eval(args):
                 row["table_metadata_string"],
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
-                row["question_0"],
-                row["query_0"],
-                row["question_1"],
-                row["query_1"],
-                row["cot_instructions"],
-                row["cot_pregen"],
+                row.get("question_0", ""),
+                row.get("query_0", ""),
+                row.get("question_1", ""),
+                row.get("query_1", ""),
+                row.get("cot_instructions", ""),
+                row.get("cot_pregen", False),
                 public_data,
-                args.num_columns,
+                args.num_columns if hasattr(args, 'num_columns') else 40,
                 args.shuffle_metadata,
+                row.get("table_aliases", ""),
             ),
             axis=1,
         )
@@ -165,30 +170,16 @@ def run_hf_eval(args):
                     top_p=None,
                 )
                 gc.collect()
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
 
                 for row, result in zip(batch.to_dict("records"), generated_queries):
                     total_tried += 1
-                    # we set return_full_text to False so that we don't get the prompt text in the generated text
-                    # this simplifies our postprocessing to deal with just the truncation of the end of the query
-
-                    if "[SQL]" not in row["prompt"]:
-                        generated_query = (
-                            result[0]["generated_text"]
-                            .split("```")[0]
-                            .split(";")[0]
-                            .strip()
-                            + ";"
-                        )
-                    else:
-                        generated_query = (
-                            result[0]["generated_text"]
-                            .split("[/SQL]")[0]
-                            .split(";")[0]
-                            .strip()
-                            + ";"
-                        )
+                    has_sql_tag = "[SQL]" in row["prompt"]
+                    generated_query = extract_hf_sql(
+                        result[0]["generated_text"], has_sql_tag
+                    )
 
                     gc.collect()
                     if torch.cuda.is_available():
@@ -203,8 +194,6 @@ def run_hf_eval(args):
                     question = row["question"]
                     query_category = row["query_category"]
                     table_metadata_string = row["table_metadata_string"]
-                    exact_match = correct = 0
-                    db_creds = db_creds_all[db_type]
 
                     try:
                         exact_match, correct = compare_query_results(
@@ -212,14 +201,15 @@ def run_hf_eval(args):
                             query_gen=generated_query,
                             db_name=db_name,
                             db_type=db_type,
-                            db_creds=db_creds,
+                            db_creds=db_creds_all[db_type],
                             question=question,
                             query_category=query_category,
                             table_metadata_string=table_metadata_string,
-                            decimal_points=args.decimal_points,
+                            decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
                         )
                         row["exact_match"] = int(exact_match)
                         row["correct"] = int(correct)
+                        row["is_correct"] = int(correct)  # For base runner compatibility
                         row["error_msg"] = ""
                         if correct:
                             total_correct += 1
@@ -236,25 +226,47 @@ def run_hf_eval(args):
                         f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
                     )
 
+        # Convert to DataFrame and save results
         output_df = pd.DataFrame(output_rows)
-        del output_df["prompt"]
-        print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-        # get directory of output_file and create if not exist
+        if "prompt" in output_df.columns:
+            del output_df["prompt"]
+
+        # Get stats by query category
+        agg_stats = (
+            output_df.groupby("query_category")
+            .agg(
+                num_rows=("db_name", "count"),
+                mean_correct=("correct", "mean"),
+                mean_error_db_exec=("error_db_exec", "mean"),
+            )
+            .reset_index()
+        )
+        print(agg_stats)
+
+        # Create output directory if needed
         output_dir = os.path.dirname(output_file)
-        if not os.path.exists(output_dir):
+        if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
+            
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
-        results = output_df.to_dict("records")
-        # upload results
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="hf_runner",
-                prompt=prompt,
-                args=args,
-            )
+        # Print summary stats
+        print(f"Total questions: {total_tried}")
+        print(f"Total correct: {total_correct}")
+        print(f"Accuracy: {total_correct/total_tried:.3f}")
+
+        # Upload results if URL provided
+        try:
+            if hasattr(args, 'upload_url') and args.upload_url:
+                with open(prompt_file, "r") as f:
+                    prompt = f.read()
+                upload_results(
+                    results=output_df.to_dict("records"),
+                    url=args.upload_url,
+                    runner_type="hf_runner",
+                    prompt=prompt,
+                    args=args,
+                )
+        except Exception as e:
+            print(f"Error uploading results: {e}")
