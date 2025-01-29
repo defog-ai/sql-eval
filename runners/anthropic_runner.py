@@ -29,9 +29,6 @@ def generate_prompt(
     public_data=True,
     shuffle=True,
 ):
-    if "anthropic" not in prompt_file:
-        raise ValueError("Invalid prompt file. Please use prompt_anthropic.md")
-
     if public_data:
         from defog_data.metadata import dbs
         import defog_data.supplementary as sup
