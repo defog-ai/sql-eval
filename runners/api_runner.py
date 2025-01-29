@@ -216,8 +216,8 @@ def run_api_eval(args):
     cot_table_alias = args.cot_table_alias
     db_type = args.db_type
     logprobs = args.logprobs
-    run_name = getattr(args, 'run_name', None)
-    sql_lora_path = getattr(args, 'adapter', None)
+    run_name = getattr(args, "run_name", None)
+    sql_lora_path = getattr(args, "adapter", None)
 
     if sql_lora_path:
         print("Using LoRA adapter at:", sql_lora_path)
@@ -265,7 +265,7 @@ def run_api_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
@@ -306,7 +306,7 @@ def run_api_eval(args):
         # Clean up and save results
         if "prompt" in output_df.columns:
             del output_df["prompt"]
-            
+
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -319,14 +319,16 @@ def run_api_eval(args):
         # Handle run naming and result upload
         if run_name is None:
             run_name = output_file.split("/")[-1].replace(".csv", "")
-            print("Run name not provided. Using output filename for run name:", run_name)
+            print(
+                "Run name not provided. Using output filename for run name:", run_name
+            )
 
         print(f"Total questions: {total_tried}")
         print(f"Total correct: {total_correct}")
         print(f"Accuracy: {total_correct/total_tried:.3f}")
 
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 upload_results(
                     results=output_df.to_dict("records"),
                     url=args.upload_url,

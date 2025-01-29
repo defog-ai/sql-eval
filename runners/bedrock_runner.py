@@ -4,7 +4,11 @@ import boto3
 from time import time
 import pandas as pd
 
-from runners.base_runner import generate_base_prompt, extract_sql_from_response, run_eval_in_threadpool
+from runners.base_runner import (
+    generate_base_prompt,
+    extract_sql_from_response,
+    run_eval_in_threadpool,
+)
 from utils.gen_prompt import generate_prompt
 from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
@@ -13,17 +17,20 @@ from eval.eval import compare_query_results
 
 bedrock = boto3.client(service_name="bedrock-runtime")
 
+
 def process_row(row, model_id, args):
     """Process a single row using AWS Bedrock"""
     start_time = time()
     try:
         # Bedrock-specific request payload
-        body = json.dumps({
-            "prompt": row["prompt"],
-            "max_gen_len": 600,
-            "temperature": 0,
-            "top_p": 1,
-        })
+        body = json.dumps(
+            {
+                "prompt": row["prompt"],
+                "max_gen_len": 600,
+                "temperature": 0,
+                "top_p": 1,
+            }
+        )
 
         accept = "application/json"
         contentType = "application/json"
@@ -41,7 +48,7 @@ def process_row(row, model_id, args):
         row["generated_query"] = generated_query
         row["latency_seconds"] = end_time - start_time
         row["tokens_used"] = None  # Bedrock doesn't provide token count
-        
+
         # Verify results
         golden_query = row["query"]
         db_name = row["db_name"]
@@ -49,7 +56,7 @@ def process_row(row, model_id, args):
         question = row["question"]
         query_category = row["query_category"]
         table_metadata_string = row["table_metadata_string"]
-        
+
         try:
             exact_match, correct = compare_query_results(
                 query_gold=golden_query,
@@ -60,7 +67,9 @@ def process_row(row, model_id, args):
                 question=question,
                 query_category=query_category,
                 table_metadata_string=table_metadata_string,
-                decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                decimal_points=(
+                    args.decimal_points if hasattr(args, "decimal_points") else 2
+                ),
             )
             row["exact_match"] = int(exact_match)
             row["correct"] = int(correct)
@@ -69,7 +78,7 @@ def process_row(row, model_id, args):
         except Exception as e:
             row["error_db_exec"] = 1
             row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-            
+
         return row
     except Exception as e:
         row["error_query_gen"] = 1
@@ -123,13 +132,13 @@ def run_bedrock_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
             axis=1,
         )
-        
+
         output_rows, total_correct, total_tried = run_eval_in_threadpool(
             df, args.model, process_row, args
         )
@@ -156,7 +165,7 @@ def run_bedrock_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
@@ -169,7 +178,7 @@ def run_bedrock_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

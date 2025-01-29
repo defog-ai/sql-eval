@@ -29,7 +29,7 @@ def run_vllm_eval(args):
     k_shot = args.k_shot
     db_type = args.db_type
     cot_table_alias = args.cot_table_alias
-    
+
     # VLLM-specific LoRA handling
     enable_lora = True if args.adapter else False
     lora_request = LoRARequest("sql_adapter", 1, args.adapter) if args.adapter else None
@@ -38,7 +38,7 @@ def run_vllm_eval(args):
     print(f"Preparing {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
-    
+
     # VLLM-specific model initialization
     if not args.quantized:
         llm = LLM(
@@ -99,7 +99,7 @@ def run_vllm_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
@@ -112,7 +112,9 @@ def run_vllm_eval(args):
             df_chunks = []
             for i in range(0, len(df), chunk_size):
                 df_i = df.iloc[i : min(i + chunk_size, len(df))]
-                print(f"Chunk {i//chunk_size+1}/{len(df)//chunk_size+1} with {len(df_i)} questions")
+                print(
+                    f"Chunk {i//chunk_size+1}/{len(df)//chunk_size+1} with {len(df_i)} questions"
+                )
                 df_chunks.append(df_i)
             return df_chunks
 
@@ -126,7 +128,7 @@ def run_vllm_eval(args):
         for batch in (pbar := tqdm(df_chunks, total=len(df))):
             prompts = batch["prompt"].tolist()
             print(f"Generating completions for {len(prompts)} prompts")
-            
+
             # VLLM-specific token handling
             prompt_tokens = []
             prompt_token_sizes = []
@@ -136,8 +138,10 @@ def run_vllm_eval(args):
                     token_ids = [tokenizer.bos_token_id] + token_ids
                 prompt_tokens.append(token_ids)
                 prompt_token_sizes.append(len(token_ids))
-            print(f"Average prompt size: {sum(prompt_token_sizes)/len(prompt_token_sizes):.0f}")
-            
+            print(
+                f"Average prompt size: {sum(prompt_token_sizes)/len(prompt_token_sizes):.0f}"
+            )
+
             start_time = time.time()
             outputs = llm.generate(
                 sampling_params=sampling_params,
@@ -145,11 +149,15 @@ def run_vllm_eval(args):
                 use_tqdm=False,
                 lora_request=lora_request,
             )
-            print(f"Generated {len(outputs)} completions in {time.time() - start_time:.2f} seconds")
+            print(
+                f"Generated {len(outputs)} completions in {time.time() - start_time:.2f} seconds"
+            )
             time_taken = time.time() - start_time
-            
+
             for row, output in zip(batch.to_dict("records"), outputs):
-                generated_query = output.outputs[0].text.split(";")[0].split("```")[0].strip() + ";"
+                generated_query = (
+                    output.outputs[0].text.split(";")[0].split("```")[0].strip() + ";"
+                )
                 normalized_query = sqlparse.format(
                     generated_query, keyword_case="upper", strip_whitespace=True
                 )
@@ -164,7 +172,7 @@ def run_vllm_eval(args):
                 question = row["question"]
                 query_category = row["query_category"]
                 table_metadata_string = row["table_metadata_string"]
-                
+
                 try:
                     exact_match, correct = compare_query_results(
                         query_gold=golden_query,
@@ -175,7 +183,11 @@ def run_vllm_eval(args):
                         question=question,
                         query_category=query_category,
                         table_metadata_string=table_metadata_string,
-                        decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                        decimal_points=(
+                            args.decimal_points
+                            if hasattr(args, "decimal_points")
+                            else 2
+                        ),
                     )
                     row["exact_match"] = int(exact_match)
                     row["correct"] = int(correct)
@@ -189,15 +201,17 @@ def run_vllm_eval(args):
 
                 total_tried += 1
                 output_rows.append(row)
-                
+
             pbar.update(len(batch))
-            pbar.set_description(f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)")
+            pbar.set_description(
+                f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
+            )
 
         # Process results
         df = pd.DataFrame(output_rows)
         if "prompt" in df.columns:
             del df["prompt"]
-            
+
         # Get stats by query category
         agg_stats = df.groupby("query_category")[["exact_match", "correct"]].mean()
         print(agg_stats)
@@ -208,7 +222,7 @@ def run_vllm_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         df.to_csv(output_file, index=False, float_format="%.2f")
         print(f"Saved results to {output_file}")
 
@@ -219,7 +233,7 @@ def run_vllm_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

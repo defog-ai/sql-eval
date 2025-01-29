@@ -19,6 +19,7 @@ from eval.eval import compare_query_results
 
 device_map = "mps" if torch.backends.mps.is_available() else "auto"
 
+
 def get_tokenizer_model(model_name: Optional[str], adapter_path: Optional[str]):
     """
     Load a HuggingFace tokenizer and model.
@@ -136,7 +137,7 @@ def run_hf_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
@@ -205,11 +206,17 @@ def run_hf_eval(args):
                             question=question,
                             query_category=query_category,
                             table_metadata_string=table_metadata_string,
-                            decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                            decimal_points=(
+                                args.decimal_points
+                                if hasattr(args, "decimal_points")
+                                else 2
+                            ),
                         )
                         row["exact_match"] = int(exact_match)
                         row["correct"] = int(correct)
-                        row["is_correct"] = int(correct)  # For base runner compatibility
+                        row["is_correct"] = int(
+                            correct
+                        )  # For base runner compatibility
                         row["error_msg"] = ""
                         if correct:
                             total_correct += 1
@@ -248,7 +255,7 @@ def run_hf_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
         # Print summary stats
@@ -258,7 +265,7 @@ def run_hf_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

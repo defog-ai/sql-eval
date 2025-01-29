@@ -15,6 +15,7 @@ from eval.eval import compare_query_results
 
 client = Together(api_key=os.environ.get("TOGETHER_API_KEY"))
 
+
 def process_row(row: Dict, model: str):
     """Process a single row using Together"""
     start_time = time()
@@ -23,9 +24,11 @@ def process_row(row: Dict, model: str):
         if model.startswith("meta-llama"):
             stop = ["<|eot_id|>", "<|eom_id|>"]
         else:
-            print("Undefined stop token(s). Please specify the stop token(s) for the model.")
+            print(
+                "Undefined stop token(s). Please specify the stop token(s) for the model."
+            )
             stop = []
-            
+
         messages = row["prompt"]
         response = client.chat.completions.create(
             model=model,
@@ -44,7 +47,7 @@ def process_row(row: Dict, model: str):
         row["generated_query"] = generated_query
         row["latency_seconds"] = end_time - start_time
         row["tokens_used"] = None  # Together doesn't provide token count
-        
+
         # Verify results
         golden_query = row["query"]
         db_name = row["db_name"]
@@ -52,7 +55,7 @@ def process_row(row: Dict, model: str):
         question = row["question"]
         query_category = row["query_category"]
         table_metadata_string = row["table_metadata_string"]
-        
+
         try:
             exact_match, correct = compare_query_results(
                 query_gold=golden_query,
@@ -71,7 +74,7 @@ def process_row(row: Dict, model: str):
         except Exception as e:
             row["error_db_exec"] = 1
             row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-            
+
         return row
     except Exception as e:
         row["error_query_gen"] = 1
@@ -99,7 +102,7 @@ def run_together_eval(args):
         # Together-specific JSON validation
         if not prompt_file.endswith(".json"):
             raise ValueError(f"Prompt file must be a JSON file. Got {prompt_file}")
-            
+
         print(f"Using prompt file {prompt_file}")
         print("Preparing questions...")
         print(
@@ -129,13 +132,13 @@ def run_together_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
             axis=1,
         )
-        
+
         output_rows, total_correct, total_tried = run_eval_in_threadpool(
             df, args.model, process_row, args
         )
@@ -162,7 +165,7 @@ def run_together_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
@@ -175,7 +178,7 @@ def run_together_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

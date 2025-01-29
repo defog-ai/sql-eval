@@ -148,7 +148,7 @@ def run_anthropic_eval(args):
         df = prepare_questions_df(
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
-        
+
         output_rows, total_correct, total_tried = run_eval_in_threadpool(
             df, args.model, process_row, args
         )
@@ -175,7 +175,7 @@ def run_anthropic_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
         # Print summary stats
@@ -185,7 +185,7 @@ def run_anthropic_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

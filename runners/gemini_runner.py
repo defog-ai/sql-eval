@@ -2,7 +2,11 @@ from time import time
 import os
 import pandas as pd
 
-from runners.base_runner import generate_base_prompt, extract_sql_from_response, run_eval_in_threadpool
+from runners.base_runner import (
+    generate_base_prompt,
+    extract_sql_from_response,
+    run_eval_in_threadpool,
+)
 from utils.questions import prepare_questions_df
 from utils.llm import chat_gemini
 from utils.creds import db_creds_all
@@ -27,9 +31,18 @@ def generate_prompt(
     """Gemini-specific prompt handling"""
     # Get base prompt data
     base_data = generate_base_prompt(
-        prompt_file, question, db_name, db_type, instructions,
-        k_shot_prompt, glossary, table_metadata_string,
-        prev_invalid_sql, prev_error_msg, public_data, shuffle
+        prompt_file,
+        question,
+        db_name,
+        db_type,
+        instructions,
+        k_shot_prompt,
+        glossary,
+        table_metadata_string,
+        prev_invalid_sql,
+        prev_error_msg,
+        public_data,
+        shuffle,
     )
 
     # Load and format Gemini text prompt
@@ -58,19 +71,19 @@ def process_row(row, model_name, args):
     try:
         response = chat_gemini(messages=messages, model=model_name, temperature=0.0)
         generated_query = extract_sql_from_response(response.content)
-        
+
         # Gemini-specific result handling
         row["generated_query"] = generated_query
         row["latency_seconds"] = response.time
         row["tokens_used"] = response.input_tokens + response.output_tokens
-        
+
         # Verify results with exact_match
         golden_query = row["query"]
         db_name = row["db_name"]
         db_type = row["db_type"]
         question = row["question"]
         query_category = row["query_category"]
-        
+
         try:
             exact_match, correct = compare_query_results(
                 query_gold=golden_query,
@@ -80,7 +93,9 @@ def process_row(row, model_name, args):
                 db_creds=db_creds_all[db_type],
                 question=question,
                 query_category=query_category,
-                decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                decimal_points=(
+                    args.decimal_points if hasattr(args, "decimal_points") else 2
+                ),
             )
             row["exact_match"] = int(exact_match)
             row["correct"] = int(correct)
@@ -89,7 +104,7 @@ def process_row(row, model_name, args):
         except Exception as e:
             row["error_db_exec"] = 1
             row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-            
+
         return row
     except Exception as e:
         row["error_query_gen"] = 1
@@ -141,7 +156,7 @@ def run_gemini_eval(args):
             ),
             axis=1,
         )
-        
+
         output_rows, total_correct, total_tried = run_eval_in_threadpool(
             df, args.model, process_row, args
         )
@@ -168,7 +183,7 @@ def run_gemini_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
         # Print summary stats
@@ -178,7 +193,7 @@ def run_gemini_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

@@ -16,16 +16,18 @@ def process_row(model, tokenizer, row, args):
     start_time = time()
     try:
         prompt = row["prompt"]
-        
+
         # MLX-specific generation
-        generated_text = generate(model, tokenizer, prompt=prompt, max_tokens=512, temp=0, verbose=True)
+        generated_text = generate(
+            model, tokenizer, prompt=prompt, max_tokens=512, temp=0, verbose=True
+        )
         generated_query = generated_text.split(";")[0].split("```")[0].strip() + ";"
         end_time = time()
 
         # Store results
         row["generated_query"] = generated_query
         row["latency_seconds"] = end_time - start_time
-        
+
         # Verify results
         golden_query = row["query"]
         db_name = row["db_name"]
@@ -33,7 +35,7 @@ def process_row(model, tokenizer, row, args):
         question = row["question"]
         query_category = row["query_category"]
         table_metadata_string = row["table_metadata_string"]
-        
+
         try:
             exact_match, correct = compare_query_results(
                 query_gold=golden_query,
@@ -44,7 +46,9 @@ def process_row(model, tokenizer, row, args):
                 question=question,
                 query_category=query_category,
                 table_metadata_string=table_metadata_string,
-                decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                decimal_points=(
+                    args.decimal_points if hasattr(args, "decimal_points") else 2
+                ),
             )
             row["exact_match"] = int(exact_match)
             row["correct"] = int(correct)
@@ -53,7 +57,7 @@ def process_row(model, tokenizer, row, args):
         except Exception as e:
             row["error_db_exec"] = 1
             row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-            
+
         return row
     except Exception as e:
         row["error_query_gen"] = 1
@@ -110,7 +114,7 @@ def run_mlx_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
@@ -156,7 +160,7 @@ def run_mlx_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
@@ -169,7 +173,7 @@ def run_mlx_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

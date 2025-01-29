@@ -60,7 +60,11 @@ def generate_base_prompt(
                 join_str = f"{col_1} can be joined with {col_2}"
                 if join_str not in join_list:
                     join_list.append(join_str)
-        join_str = "\nHere is a list of joinable columns:\n" + "\n".join(join_list) if join_list else ""
+        join_str = (
+            "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
+            if join_list
+            else ""
+        )
         pruned_metadata_str = pruned_metadata_ddl + join_str
     else:
         pruned_metadata_str = table_metadata_string
@@ -82,11 +86,7 @@ def extract_sql_from_response(content):
     """Extract SQL from between ```sql blocks and format it."""
     try:
         generated_query = content.split("```sql", 1)[-1].split("```", 1)[0].strip()
-        return sqlparse.format(
-            generated_query,
-            reindent=True,
-            keyword_case="upper"
-        )
+        return sqlparse.format(generated_query, reindent=True, keyword_case="upper")
     except:
         return content
 
@@ -110,6 +110,8 @@ def run_eval_in_threadpool(df, model_name, process_row_func, args):
                 if row.get("correct", 0):
                     total_correct += 1
                 total_tried += 1
-                pbar.set_description(f"Acc: {total_correct}/{total_tried}={total_correct/total_tried:.3f}")
+                pbar.set_description(
+                    f"Acc: {total_correct}/{total_tried}={total_correct/total_tried:.3f}"
+                )
 
     return output_rows, total_correct, total_tried

@@ -3,7 +3,11 @@ import json
 import os
 import pandas as pd
 
-from runners.base_runner import generate_base_prompt, extract_sql_from_response, run_eval_in_threadpool
+from runners.base_runner import (
+    generate_base_prompt,
+    extract_sql_from_response,
+    run_eval_in_threadpool,
+)
 from utils.questions import prepare_questions_df
 from utils.llm import chat_openai
 from utils.creds import db_creds_all
@@ -28,9 +32,18 @@ def generate_prompt(
     """OpenAI-specific prompt handling"""
     # Get base prompt data
     base_data = generate_base_prompt(
-        prompt_file, question, db_name, db_type, instructions,
-        k_shot_prompt, glossary, table_metadata_string,
-        prev_invalid_sql, prev_error_msg, public_data, shuffle
+        prompt_file,
+        question,
+        db_name,
+        db_type,
+        instructions,
+        k_shot_prompt,
+        glossary,
+        table_metadata_string,
+        prev_invalid_sql,
+        prev_error_msg,
+        public_data,
+        shuffle,
     )
 
     # Load and format OpenAI-specific JSON prompt
@@ -38,7 +51,7 @@ def generate_prompt(
         prompt = json.load(f)
 
     pruned_metadata_str = base_data["table_metadata_string"]
-    
+
     if prompt[0]["role"] == "system":
         prompt[0]["content"] = prompt[0]["content"].format(
             db_type=db_type,
@@ -80,7 +93,7 @@ def process_row(row, model_name, args):
     try:
         response = chat_openai(messages=messages, model=model_name, temperature=0.0)
         generated_query = extract_sql_from_response(response.content)
-        
+
         result = {
             "generated_query": generated_query,
             "reason": "",
@@ -88,7 +101,7 @@ def process_row(row, model_name, args):
             "latency_seconds": time() - start_time,
             "tokens_used": response.input_tokens + response.output_tokens,
         }
-        
+
         # Verify results
         expected_query = row["query"]
         db_name = row["db_name"]
@@ -102,7 +115,9 @@ def process_row(row, model_name, args):
                 db_creds=db_creds_all[db_type],
                 question=row["question"],
                 query_category=row["query_category"],
-                decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                decimal_points=(
+                    args.decimal_points if hasattr(args, "decimal_points") else 2
+                ),
             )
             if is_correct:
                 row["is_correct"] = 1
@@ -112,7 +127,7 @@ def process_row(row, model_name, args):
         except Exception as e:
             row["error_db_exec"] = 1
             result["error_msg"] = f"EXECUTION ERROR: {str(e)}"
-            
+
         # Update row with result data
         row.update(result)
         return row
@@ -147,7 +162,7 @@ def run_openai_eval(args):
         df = prepare_questions_df(
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
-        
+
         output_rows, total_correct, total_tried = run_eval_in_threadpool(
             df, args.model, process_row, args
         )
@@ -174,7 +189,7 @@ def run_openai_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
         # Print summary stats
@@ -184,7 +199,7 @@ def run_openai_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(

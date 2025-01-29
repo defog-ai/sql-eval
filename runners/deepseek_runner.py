@@ -16,6 +16,7 @@ client = OpenAI(
     base_url="https://api.deepseek.com", api_key=os.environ.get("DEEPSEEK_API_KEY")
 )
 
+
 def process_row(row: Dict, model: str, args):
     """Process a single row using Deepseek"""
     start_time = time()
@@ -44,7 +45,7 @@ def process_row(row: Dict, model: str, args):
         row["generated_query"] = generated_query
         row["latency_seconds"] = end_time - start_time
         row["tokens_used"] = None  # Deepseek doesn't provide token count
-        
+
         # Verify results
         golden_query = row["query"]
         db_name = row["db_name"]
@@ -52,7 +53,7 @@ def process_row(row: Dict, model: str, args):
         question = row["question"]
         query_category = row["query_category"]
         table_metadata_string = row["table_metadata_string"]
-        
+
         try:
             exact_match, correct = compare_query_results(
                 query_gold=golden_query,
@@ -63,7 +64,9 @@ def process_row(row: Dict, model: str, args):
                 question=question,
                 query_category=query_category,
                 table_metadata_string=table_metadata_string,
-                decimal_points=args.decimal_points if hasattr(args, 'decimal_points') else 2,
+                decimal_points=(
+                    args.decimal_points if hasattr(args, "decimal_points") else 2
+                ),
             )
             row["exact_match"] = int(exact_match)
             row["correct"] = int(correct)
@@ -72,7 +75,7 @@ def process_row(row: Dict, model: str, args):
         except Exception as e:
             row["error_db_exec"] = 1
             row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-            
+
         return row
     except Exception as e:
         row["error_query_gen"] = 1
@@ -100,7 +103,7 @@ def run_deepseek_eval(args):
         # Deepseek-specific JSON validation
         if not prompt_file.endswith(".json"):
             raise ValueError(f"Prompt file must be a JSON file. Got {prompt_file}")
-            
+
         print(f"Using prompt file {prompt_file}")
         print("Preparing questions...")
         print(
@@ -130,13 +133,13 @@ def run_deepseek_eval(args):
                 row.get("cot_instructions", ""),
                 row.get("cot_pregen", False),
                 public_data,
-                args.num_columns if hasattr(args, 'num_columns') else 40,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
                 row.get("table_aliases", ""),
             ),
             axis=1,
         )
-        
+
         output_rows, total_correct, total_tried = run_eval_in_threadpool(
             df, args.model, process_row, args
         )
@@ -163,7 +166,7 @@ def run_deepseek_eval(args):
         output_dir = os.path.dirname(output_file)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
-            
+
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
@@ -176,7 +179,7 @@ def run_deepseek_eval(args):
 
         # Upload results if URL provided
         try:
-            if hasattr(args, 'upload_url') and args.upload_url:
+            if hasattr(args, "upload_url") and args.upload_url:
                 with open(prompt_file, "r") as f:
                     prompt = f.read()
                 upload_results(
