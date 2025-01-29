@@ -1,7 +1,6 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from time import time
-from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
@@ -10,19 +9,19 @@ from tqdm import tqdm
 
 from eval.eval import compare_query_results
 from utils.creds import db_creds_all
-from utils.pruning import prune_metadata_str
+from utils.gen_prompt import to_prompt_schema
+from utils.dialects import convert_postgres_ddl_to_dialect
 from utils.questions import prepare_questions_df
 from utils.reporting import upload_results
 
 api_key = os.environ.get("MISTRAL_API_KEY")
-
 client = MistralClient(api_key=api_key)
-
 
 def generate_prompt(
     prompt_file,
     question,
     db_name,
+    db_type,
     instructions="",
     k_shot_prompt="",
     glossary="",
@@ -30,7 +29,6 @@ def generate_prompt(
     prev_invalid_sql="",
     prev_error_msg="",
     public_data=True,
-    columns_to_keep=20,
     shuffle=True,
 ):
     with open(prompt_file, "r") as f:
@@ -45,10 +43,42 @@ def generate_prompt(
     question_instructions = question + " " + instructions
 
     if table_metadata_string == "":
-        pruned_metadata_ddl, join_str = prune_metadata_str(
-            question_instructions, db_name, public_data, columns_to_keep, shuffle
+        if public_data:
+            from defog_data.metadata import dbs
+            import defog_data.supplementary as sup
+        else:
+            from defog_data_private.metadata import dbs
+            import defog_data_private.supplementary as sup
+
+        md = dbs[db_name]["table_metadata"]
+        metadata_ddl = to_prompt_schema(md, shuffle)
+        metadata_ddl = convert_postgres_ddl_to_dialect(
+            postgres_ddl=metadata_ddl,
+            to_dialect=db_type,
+            db_name=db_name,
         )
-        pruned_metadata_str = pruned_metadata_ddl + join_str
+        column_join = sup.columns_join.get(db_name, {})
+        # get join_str from column_join
+        join_list = []
+        for values in column_join.values():
+            if isinstance(values[0], tuple):
+                for col_pair in values:
+                    col_1, col_2 = col_pair
+                    # add to join_list
+                    join_str = f"{col_1} can be joined with {col_2}"
+                    if join_str not in join_list:
+                        join_list.append(join_str)
+            else:
+                col_1, col_2 = values[0]
+                # add to join_list
+                join_str = f"{col_1} can be joined with {col_2}"
+                if join_str not in join_list:
+                    join_list.append(join_str)
+        if len(join_list) > 0:
+            join_str = "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
+        else:
+            join_str = ""
+        pruned_metadata_str = metadata_ddl + join_str
     else:
         pruned_metadata_str = table_metadata_string
 
@@ -72,7 +102,6 @@ def generate_prompt(
         ),
     ]
     return messages
-
 
 def process_row(row, model, args):
     start_time = time()
@@ -127,7 +156,6 @@ def process_row(row, model, args):
 
     return row
 
-
 def run_mistral_eval(args):
     # get params from args
     questions_file_list = args.questions_file
@@ -166,14 +194,7 @@ def run_mistral_eval(args):
                 row["table_metadata_string"],
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
-                row["question_0"],
-                row["query_0"],
-                row["question_1"],
-                row["query_1"],
-                row["cot_instructions"],
-                row["cot_pregen"],
                 public_data,
-                args.num_columns,
                 args.shuffle_metadata,
             ),
             axis=1,
@@ -192,10 +213,9 @@ def run_mistral_eval(args):
                 for f in pbar:
                     row = f.result()
                     output_rows.append(row)
-                    if row["correct"]:
+                    if row.get("correct", 0):
                         total_correct += 1
                     total_tried += 1
-                    pbar.update(1)
                     pbar.set_description(
                         f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
                     )
