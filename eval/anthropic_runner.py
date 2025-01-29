@@ -65,7 +65,6 @@ def run_anthropic_eval(args):
                     prev_invalid_sql=row["prev_invalid_sql"],
                     prev_error_msg=row["prev_error_msg"],
                     cot_instructions=row["cot_instructions"],
-                    columns_to_keep=args.num_columns,
                     shuffle=args.shuffle_metadata,
                 )
                 futures.append(generated_query_fut)

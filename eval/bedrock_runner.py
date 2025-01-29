@@ -121,7 +121,6 @@ def run_bedrock_eval(args):
                 row["cot_instructions"],
                 row["cot_pregen"],
                 public_data,
-                args.num_columns,
                 args.shuffle_metadata,
             ),
             axis=1,

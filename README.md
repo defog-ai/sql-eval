@@ -149,9 +149,8 @@ python main.py \
   -o results/openai_classic.csv results/openai_basic.csv results/openai_advanced.csv \
   -g oa \
   -f prompts/prompt_openai.json \
-  -m gpt-4-turbo \
-  -p 5 \
-  -c 0
+  -m gpt-4o \
+  -p 5
 ```
 
 If testing with the latest `o1-*` models (which do not support system prompts), you should use a different prompt file, reduce parallel requests and increase the timeout:
@@ -164,8 +163,7 @@ python main.py \
   -f prompts/prompt_openai_o1.json \
   -m o1-mini \
   -p 1 \
-  -t 120 \
-  -c 0
+  -t 120
 ```
 
 ### Anthropic
@@ -180,8 +178,7 @@ python main.py \
   -g anthropic \
   -f prompts/prompt_anthropic.md \
   -m claude-3-opus-20240229 \
-  -p 5 \
-  -c 0
+  -p 5
 ```
 
 ### Hugging Face
@@ -196,8 +193,7 @@ python -W ignore main.py \
   -o results/hf_classic.csv results/hf_basic.csv results/hf_advanced.csv \
   -g hf \
   -f prompts/prompt.md \
-  -m defog/llama-3-sqlcoder-8b \
-  -c 0
+  -m defog/llama-3-sqlcoder-8b
 ```
 
 We also support loading a peft adapter here as well via the `-a` flag. Note that the loading of the adapter with the model will take slightly longer than usual.
@@ -214,8 +210,7 @@ python -W ignore main.py \
   -g vllm \
   -f "prompts/prompt.md" \
   -m defog/llama-3-sqlcoder-8b \
-  -a path/to_adapter \
-  -c 0
+  -a path/to_adapter
 ```
 
 Optionally, if you're running evals on a model that is quantized with AWQ, add the `-qz` or `--quantized` parameter. Only applicable for the vllm runner.
@@ -407,7 +402,6 @@ python3 main.py \
   -g bedrock \
   -f prompts/prompt_cot_postgres.md \
   -m meta.llama3-70b-instruct-v1:0 \
-  -c 0 \
   -p 10
 ```
 
@@ -423,8 +417,7 @@ python main.py \
   -g deepseek \
   -f prompts/prompt_openai.json \
   -m deepseek-chat \
-  -p 5 \
-  -c 0
+  -p 5
 
 #### Deepseek Reasoner
 python main.py \
@@ -434,8 +427,7 @@ python main.py \
   -g deepseek \
   -f prompts/prompt_openai_o1.json \
   -m deepseek-reasoner \
-  -p 5 \
-  -c 0
+  -p 5
 
 
 ### Together
@@ -450,7 +442,6 @@ python3 main.py \
   -g together \
   -f prompts/prompt_together.json \
   -m "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo" \
-  -c 0 \
   -p 10
 ```
 
@@ -484,7 +475,6 @@ You can use the following flags in the command line to change the configurations
 | ---------------------- |------------- | --- |
 | -f, --prompt_file      | Markdown file with the prompt used for query generation. You can pass in a list of prompts to test sequentially without reloading the script. |
 | -b, --num_beams        | Indicates the number of beams you want to use for beam search at inference. Only available for `hf_runner`, `vllm_runner`, and `api_runner`. |
-| -c, --num_columns      | Number of columns, default 20. To not prune the columns, set it to 0. |
 | -s, --shuffle_metadata | Shuffle metadata, default False. This shuffles the order of the tables within the schema and the order of the columns within each table but does not shift columns between tables (to preserve the structure of the database). |
 | -k, --k_shot           | Used when you want to include k-shot examples in your prompt. Make sure that the column 'k_shot_prompt' exists in your questions_file. |
 | --cot_table_alias      | (Experimental) Used when you want to include chain-of-thought instructions before the actual sql generation. Allowed values are `instruct`. If using `instruct`, make sure that the placeholder '{cot_instructions}' exists in your prompt file. `instruct` will get your model generate the chain-of-thought table aliases. |

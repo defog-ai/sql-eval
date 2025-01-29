@@ -66,7 +66,6 @@ def run_openai_eval(args):
                     prev_invalid_sql=row["prev_invalid_sql"],
                     prev_error_msg=row["prev_error_msg"],
                     table_aliases=row["table_aliases"],
-                    columns_to_keep=args.num_columns,
                     shuffle=args.shuffle_metadata,
                 )
                 futures.append(generated_query_fut)

@@ -47,7 +47,6 @@ def generate_prompt(
     prev_invalid_sql="",
     prev_error_msg="",
     public_data=True,
-    num_columns_to_keep=20,
     shuffle=True,
 ):
     if "gemini" not in prompt_file:
@@ -189,7 +188,6 @@ def run_gemini_eval(args):
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
                 public_data,
-                args.num_columns,
                 args.shuffle_metadata,
             ),
             axis=1,

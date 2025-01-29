@@ -119,7 +119,6 @@ def run_together_eval(args):
                 row["cot_instructions"],
                 row["cot_pregen"],
                 public_data,
-                args.num_columns,
                 args.shuffle_metadata,
                 row["table_aliases"],
             ),
