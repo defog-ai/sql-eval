@@ -34,7 +34,9 @@ class APIRunner(BaseRunner):
         self.api_url = None
         self.api_type = None
 
-    def _mk_vllm_json(self, prompt, num_beams, logprobs=False, sql_lora_path=None, sql_lora_name=None):
+    def _mk_vllm_json(
+        self, prompt, num_beams, logprobs=False, sql_lora_path=None, sql_lora_name=None
+    ):
         payload = {
             "prompt": prompt,
             "n": 1,
@@ -67,12 +69,16 @@ class APIRunner(BaseRunner):
         # model_name is unused but kept for BaseRunner compatibility
         start_time = time()
         json_data = None
-        
+
         if self.api_type == "tgi":
             json_data = self._mk_tgi_json(prompt, self.num_beams)
         elif self.api_type == "vllm":
             json_data = self._mk_vllm_json(
-                prompt, self.num_beams, self.logprobs, self.sql_lora_path, self.sql_lora_name
+                prompt,
+                self.num_beams,
+                self.logprobs,
+                self.sql_lora_path,
+                self.sql_lora_name,
             )
         else:
             json_data = {
@@ -84,7 +90,7 @@ class APIRunner(BaseRunner):
                 "stop": [";", "```"],
                 "max_tokens": 4000,
             }
-            
+
         try:
             response = requests.post(
                 self.api_url,
@@ -130,7 +136,7 @@ class APIRunner(BaseRunner):
         self.logprobs = args.logprobs
         self.sql_lora_path = args.adapter
         self.sql_lora_name = args.adapter_name
-        
+
         try:
             prompt = generate_prompt(
                 prompt_file=args.prompt_file[0],
@@ -169,11 +175,13 @@ class APIRunner(BaseRunner):
                         rank = prob["rank"]
                         logprob = prob["logprob"]
                         token = prob["decoded_token"]
-                        probs_to_append.update({
-                            f"rank_{rank}_token": token,
-                            f"rank_{rank}_logprob": logprob,
-                            f"rank_{rank}_prob": 10**logprob,
-                        })
+                        probs_to_append.update(
+                            {
+                                f"rank_{rank}_token": token,
+                                f"rank_{rank}_logprob": logprob,
+                                f"rank_{rank}_prob": 10**logprob,
+                            }
+                        )
                     probs_to_append["prob_diff"] = (
                         probs_to_append["rank_1_prob"] - probs_to_append["rank_2_prob"]
                     )
@@ -184,7 +192,7 @@ class APIRunner(BaseRunner):
                 "generated_query": generated_query,
                 "latency_seconds": self.request_time,
                 "tokens_used": None,  # API doesn't provide token counts
-                "logprobs": logprobs_display if self.logprobs else None
+                "logprobs": logprobs_display if self.logprobs else None,
             }
 
             # Run comparison
@@ -218,8 +226,10 @@ class APIRunner(BaseRunner):
                 "error_db_exec": 1,
                 "error_msg": f"API ERROR: {str(e)}",
                 "tokens_used": None,
-                "latency_seconds": self.request_time if hasattr(self, 'request_time') else None,
-                "logprobs": [] if self.logprobs else None
+                "latency_seconds": (
+                    self.request_time if hasattr(self, "request_time") else None
+                ),
+                "logprobs": [] if self.logprobs else None,
             }
 
     def run_eval(self, args):
@@ -250,19 +260,21 @@ class APIRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
 
             # Process all rows
             output_rows = []
             total_tried = total_correct = 0
-            
+
             with ThreadPoolExecutor(args.parallel_threads) as executor:
                 futures = []
                 for row in df.to_dict("records"):
-                    futures.append(
-                        executor.submit(self.process_row, row, None, args)
-                    )
+                    futures.append(executor.submit(self.process_row, row, None, args))
 
                 with tqdm(as_completed(futures), total=len(futures)) as pbar:
                     for f in pbar:
@@ -277,7 +289,7 @@ class APIRunner(BaseRunner):
 
             # Save results
             output_df = pd.DataFrame(output_rows)
-            
+
             # Handle logprobs if needed
             if args.logprobs:
                 print(
@@ -291,10 +303,14 @@ class APIRunner(BaseRunner):
 
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
-                
-            print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-            
+
+            print(
+                output_df.groupby("query_category")[["correct", "error_db_exec"]].mean()
+            )
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):
@@ -307,7 +323,9 @@ class APIRunner(BaseRunner):
 
             # Upload results if needed
             if args.upload_url is not None:
-                run_name = args.run_name or output_file.split("/")[-1].replace(".csv", "")
+                run_name = args.run_name or output_file.split("/")[-1].replace(
+                    ".csv", ""
+                )
                 upload_results(
                     results=output_rows,
                     url=args.upload_url,

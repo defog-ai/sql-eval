@@ -27,7 +27,7 @@ class OpenAIRunner(BaseRunner):
         questions_file_list = args.questions_file
         prompt_file_list = args.prompt_file
         output_file_list = args.output_file
-        
+
         for questions_file, prompt_file, output_file in zip(
             questions_file_list, prompt_file_list, output_file_list
         ):
@@ -37,11 +37,15 @@ class OpenAIRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             question_query_df = self.prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
             input_rows = question_query_df.to_dict("records")
             output_rows = []
-            
+
             with ThreadPoolExecutor(args.parallel_threads) as executor:
                 futures = []
                 for row in input_rows:
@@ -105,7 +109,9 @@ class OpenAIRunner(BaseRunner):
 
             # save results to csv
             output_df = pd.DataFrame(output_rows)
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
             # get num rows, mean correct, mean error_db_exec for each query_category
@@ -142,6 +148,7 @@ class OpenAIRunner(BaseRunner):
                     prompt=prompt,
                     args=args,
                 )
+
 
 def run_openai_eval(args):
     runner = OpenAIRunner()

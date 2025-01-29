@@ -24,7 +24,9 @@ class TogetherRunner(BaseRunner):
         if model_name.startswith("meta-llama"):
             return ["<|eot_id|>", "<|eom_id|>"]
         else:
-            print("Undefined stop token(s). Please specify the stop token(s) for the model.")
+            print(
+                "Undefined stop token(s). Please specify the stop token(s) for the model."
+            )
             return []
 
     def _call_llm(self, messages, model_name, temperature=0.0):
@@ -38,7 +40,7 @@ class TogetherRunner(BaseRunner):
             stop=stop_tokens,
             stream=False,
         )
-        
+
         # Create a response object similar to other runners
         class TogetherResponse:
             def __init__(self, content):
@@ -86,7 +88,7 @@ class TogetherRunner(BaseRunner):
             result = {
                 "generated_query": generated_query,
                 "latency_seconds": time() - start_time,
-                "tokens_used": None  # Together doesn't provide token counts
+                "tokens_used": None,  # Together doesn't provide token counts
             }
 
             # Run comparison
@@ -119,14 +121,16 @@ class TogetherRunner(BaseRunner):
                 "error_db_exec": 1,
                 "error_msg": f"PROCESSING ERROR: {str(e)}",
                 "latency_seconds": time() - start_time,
-                "tokens_used": None
+                "tokens_used": None,
             }
 
     def run_eval(self, args):
         """Together-specific evaluation logic."""
         if not args.prompt_file[0].endswith(".json"):
-            raise ValueError(f"Prompt file must be a JSON file. Got {args.prompt_file[0]}")
-            
+            raise ValueError(
+                f"Prompt file must be a JSON file. Got {args.prompt_file[0]}"
+            )
+
         for questions_file, prompt_file, output_file in zip(
             args.questions_file, args.prompt_file, args.output_file
         ):
@@ -136,13 +140,17 @@ class TogetherRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
 
             # Process all rows
             output_rows = []
             total_tried = total_correct = 0
-            
+
             with ThreadPoolExecutor(args.parallel_threads) as executor:
                 futures = []
                 for row in df.to_dict("records"):
@@ -165,10 +173,14 @@ class TogetherRunner(BaseRunner):
             output_df = pd.DataFrame(output_rows)
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
-                
-            print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-            
+
+            print(
+                output_df.groupby("query_category")[["correct", "error_db_exec"]].mean()
+            )
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):

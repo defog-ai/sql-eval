@@ -26,13 +26,14 @@ class MLXRunner(BaseRunner):
         """Call MLX model."""
         # model_name is unused, as it's already loaded in _initialize_model
         text = generate(
-            self.model, 
-            self.tokenizer, 
-            prompt=prompt, 
-            max_tokens=512, 
-            temp=0, 
-            verbose=True
+            self.model,
+            self.tokenizer,
+            prompt=prompt,
+            max_tokens=512,
+            temp=0,
+            verbose=True,
         )
+
         # Create a response object similar to other runners
         class MLXResponse:
             def __init__(self, content):
@@ -63,9 +64,13 @@ class MLXRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
-            
+
             # Create prompts for all questions
             df["prompt"] = df.apply(
                 lambda row: generate_prompt(
@@ -99,7 +104,9 @@ class MLXRunner(BaseRunner):
             with tqdm(total=len(df)) as pbar:
                 for row in df.to_dict("records"):
                     try:
-                        result = self.process_row(row, None, args)  # None as model_name is unused
+                        result = self.process_row(
+                            row, None, args
+                        )  # None as model_name is unused
                         if result.get("correct", 0):
                             total_correct += 1
                         total_tried += 1
@@ -118,10 +125,14 @@ class MLXRunner(BaseRunner):
             output_df = pd.DataFrame(output_rows)
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
-                
-            print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-            
+
+            print(
+                output_df.groupby("query_category")[["correct", "error_db_exec"]].mean()
+            )
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):

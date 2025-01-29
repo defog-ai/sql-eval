@@ -21,20 +21,22 @@ class BedrockRunner(BaseRunner):
 
     def _call_llm(self, prompt, model_name, temperature=0.0):
         """Call AWS Bedrock API."""
-        body = json.dumps({
-            "prompt": prompt,
-            "max_gen_len": 600,
-            "temperature": 0,
-            "top_p": 1,
-        })
-        
+        body = json.dumps(
+            {
+                "prompt": prompt,
+                "max_gen_len": 600,
+                "temperature": 0,
+                "top_p": 1,
+            }
+        )
+
         accept = "application/json"
         contentType = "application/json"
         response = self.client.invoke_model(
             body=body, modelId=model_name, accept=accept, contentType=contentType
         )
         model_response = json.loads(response["body"].read())
-        
+
         # Create a response object similar to other runners
         class BedrockResponse:
             def __init__(self, content):
@@ -46,7 +48,10 @@ class BedrockRunner(BaseRunner):
 
     def _extract_query(self, response_content):
         """Extract SQL query from response."""
-        return response_content.split("```sql")[-1].split("```")[0].split(";")[0].strip() + ";"
+        return (
+            response_content.split("```sql")[-1].split("```")[0].split(";")[0].strip()
+            + ";"
+        )
 
     def process_row(self, row, model_name, args):
         """Override process_row to use simple handling."""
@@ -80,7 +85,7 @@ class BedrockRunner(BaseRunner):
             result = {
                 "generated_query": generated_query,
                 "latency_seconds": time() - start_time,
-                "tokens_used": None  # Bedrock doesn't provide token counts
+                "tokens_used": None,  # Bedrock doesn't provide token counts
             }
 
             # Run comparison
@@ -114,7 +119,7 @@ class BedrockRunner(BaseRunner):
                 "error_db_exec": 1,
                 "error_msg": f"PROCESSING ERROR: {str(e)}",
                 "latency_seconds": time() - start_time,
-                "tokens_used": None
+                "tokens_used": None,
             }
 
     def run_eval(self, args):
@@ -128,13 +133,17 @@ class BedrockRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
 
             # Process all rows
             output_rows = []
             total_tried = total_correct = 0
-            
+
             with ThreadPoolExecutor(args.parallel_threads) as executor:
                 futures = []
                 for row in df.to_dict("records"):
@@ -157,10 +166,14 @@ class BedrockRunner(BaseRunner):
             output_df = pd.DataFrame(output_rows)
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
-                
-            print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-            
+
+            print(
+                output_df.groupby("query_category")[["correct", "error_db_exec"]].mean()
+            )
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):

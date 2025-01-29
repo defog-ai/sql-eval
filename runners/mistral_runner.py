@@ -29,7 +29,7 @@ class MistralRunner(BaseRunner):
         # Check that System and User prompts are in the prompt file
         if "System:" not in prompt or "User:" not in prompt:
             raise ValueError("Invalid prompt file. Please use prompt_mistral.md")
-        
+
         sys_prompt = prompt.split("System:")[1].split("User:")[0].strip()
         user_prompt = prompt.split("User:")[1].strip()
 
@@ -73,11 +73,14 @@ class MistralRunner(BaseRunner):
             temperature=temperature,
             max_tokens=600,
         )
+
         # Create a response object similar to other runners
         class MistralResponse:
             def __init__(self, content):
                 self.content = content
-                self.input_tokens = 0  # Mistral doesn't provide token counts in this way
+                self.input_tokens = (
+                    0  # Mistral doesn't provide token counts in this way
+                )
                 self.output_tokens = 0
 
         return MistralResponse(chat_response.choices[0].message.content)
@@ -85,7 +88,7 @@ class MistralRunner(BaseRunner):
     def _extract_query(self, response_content):
         """Extract SQL query from response with Mistral-specific handling."""
         try:
-            # Replace backslashes 
+            # Replace backslashes
             content = response_content.replace("\\", "")
             # First try to extract from SQL code blocks
             query = content.split(";")[0].split("```sql")[-1].strip()
@@ -121,7 +124,7 @@ class MistralRunner(BaseRunner):
             result = {
                 "generated_query": generated_query,
                 "latency_seconds": time() - start_time,
-                "tokens_used": response.input_tokens + response.output_tokens
+                "tokens_used": response.input_tokens + response.output_tokens,
             }
 
             # Run comparison
@@ -155,7 +158,7 @@ class MistralRunner(BaseRunner):
                 "error_db_exec": 1,
                 "error_msg": f"PROCESSING ERROR: {str(e)}",
                 "latency_seconds": time() - start_time,
-                "tokens_used": 0
+                "tokens_used": 0,
             }
 
     def run_eval(self, args):
@@ -172,13 +175,17 @@ class MistralRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
 
             # Process all rows
             output_rows = []
             total_tried = total_correct = 0
-            
+
             with ThreadPoolExecutor(args.parallel_threads) as executor:
                 futures = []
                 for row in df.to_dict("records"):
@@ -201,10 +208,14 @@ class MistralRunner(BaseRunner):
             output_df = pd.DataFrame(output_rows)
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
-                
-            print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-            
+
+            print(
+                output_df.groupby("query_category")[["correct", "error_db_exec"]].mean()
+            )
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):

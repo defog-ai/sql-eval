@@ -28,13 +28,15 @@ class VLLMRunner(BaseRunner):
         """Initialize VLLM model with appropriate parameters."""
         model_name = args.model
         enable_lora = True if args.adapter else False
-        lora_request = LoRARequest("sql_adapter", 1, args.adapter) if args.adapter else None
+        lora_request = (
+            LoRARequest("sql_adapter", 1, args.adapter) if args.adapter else None
+        )
         self.lora_request = lora_request
 
         print(f"Preparing {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-        
+
         if not args.quantized:
             self.llm = LLM(
                 model=model_name,
@@ -76,7 +78,7 @@ class VLLMRunner(BaseRunner):
         """Process a batch of questions using VLLM."""
         prompts = batch["prompt"].tolist()
         print(f"Generating completions for {len(prompts)} prompts")
-        
+
         # Tokenize prompts
         prompt_tokens = []
         prompt_token_sizes = []
@@ -86,9 +88,11 @@ class VLLMRunner(BaseRunner):
                 token_ids = [self.tokenizer.bos_token_id] + token_ids
             prompt_tokens.append(token_ids)
             prompt_token_sizes.append(len(token_ids))
-        
-        print(f"Average prompt size: {sum(prompt_token_sizes)/len(prompt_token_sizes):.0f}")
-        
+
+        print(
+            f"Average prompt size: {sum(prompt_token_sizes)/len(prompt_token_sizes):.0f}"
+        )
+
         # Generate completions
         start_time = time.time()
         outputs = self.llm.generate(
@@ -107,7 +111,7 @@ class VLLMRunner(BaseRunner):
             generated_query = sqlparse.format(
                 generated_query, keyword_case="upper", strip_whitespace=True
             )
-            
+
             row["generated_query"] = generated_query
             row["tokens_used"] = len(output.outputs[0].token_ids)
             row["latency_seconds"] = time_taken / len(batch)
@@ -143,9 +147,15 @@ class VLLMRunner(BaseRunner):
         ):
             print(f"Using prompt file {prompt_file}")
             print("Preparing questions...")
-            print(f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}")
+            print(
+                f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
+            )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
 
             # Create prompts for all questions
@@ -180,7 +190,9 @@ class VLLMRunner(BaseRunner):
                 df_chunks = []
                 for i in range(0, len(df), chunk_size):
                     df_i = df.iloc[i : min(i + chunk_size, len(df))]
-                    print(f"Chunk {i//chunk_size+1}/{len(df)//chunk_size+1} with {len(df_i)} questions")
+                    print(
+                        f"Chunk {i//chunk_size+1}/{len(df)//chunk_size+1} with {len(df_i)} questions"
+                    )
                     df_chunks.append(df_i)
                 return df_chunks
 
@@ -192,7 +204,7 @@ class VLLMRunner(BaseRunner):
             for batch in (pbar := tqdm(df_chunks, total=len(df_chunks))):
                 batch_results = self._process_batch(batch, args)
                 all_results.extend(batch_results)
-                
+
                 # Update progress stats
                 batch_correct = sum(1 for r in batch_results if r.get("correct", 0))
                 total_correct += batch_correct
@@ -205,11 +217,15 @@ class VLLMRunner(BaseRunner):
             results_df = pd.DataFrame(all_results)
             if "prompt" in results_df.columns:
                 del results_df["prompt"]
-            
-            print(results_df.groupby("query_category")[["exact_match", "correct"]].mean())
-            results_df = results_df.sort_values(by=["db_name", "query_category", "question"])
+
+            print(
+                results_df.groupby("query_category")[["exact_match", "correct"]].mean()
+            )
+            results_df = results_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
             print(f"Average tokens generated: {results_df['tokens_used'].mean():.1f}")
-            
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):

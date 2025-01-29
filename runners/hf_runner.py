@@ -28,14 +28,18 @@ class HFRunner(BaseRunner):
         self.model = None
         self.pipe = None
 
-    def _initialize_model(self, model_name: Optional[str], adapter_path: Optional[str], batch_size: int):
+    def _initialize_model(
+        self, model_name: Optional[str], adapter_path: Optional[str], batch_size: int
+    ):
         """Load a HuggingFace tokenizer and model."""
         if adapter_path is not None:
             from peft import PeftModel, PeftConfig
 
             print(f"Loading adapter model {adapter_path}")
             config = PeftConfig.from_pretrained(adapter_path)
-            self.tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                config.base_model_name_or_path
+            )
             self.model = AutoModelForCausalLM.from_pretrained(
                 config.base_model_name_or_path,
                 torch_dtype=torch.float16,
@@ -57,7 +61,7 @@ class HFRunner(BaseRunner):
                 )
 
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-        
+
         if model_name and "8b" in model_name.lower():
             # do this since it doesn't seem to have been done by default
             self.tokenizer.padding_side = "left"
@@ -69,10 +73,13 @@ class HFRunner(BaseRunner):
                 trust_remote_code=True,
                 device_map=device_map,
             )
-            
+
         self.model.tie_weights()
         self.pipe = pipeline(
-            "text-generation", model=self.model, tokenizer=self.tokenizer, batch_size=batch_size
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            batch_size=batch_size,
         )
 
     def _extract_query(self, generated_text, prompt):
@@ -97,7 +104,7 @@ class HFRunner(BaseRunner):
             temperature=None,
             top_p=None,
         )
-        
+
         # Clean up GPU memory
         gc.collect()
         if torch.cuda.is_available():
@@ -109,7 +116,7 @@ class HFRunner(BaseRunner):
             generated_query = self._extract_query(
                 result[0]["generated_text"], row["prompt"]
             )
-            
+
             # More GPU cleanup
             gc.collect()
             if torch.cuda.is_available():
@@ -117,7 +124,9 @@ class HFRunner(BaseRunner):
                 torch.cuda.synchronize()
 
             row["generated_query"] = generated_query
-            row["latency_seconds"] = None  # HF pipeline doesn't provide per-item latency
+            row["latency_seconds"] = (
+                None  # HF pipeline doesn't provide per-item latency
+            )
 
             try:
                 exact_match, correct = compare_query_results(
@@ -162,7 +171,11 @@ class HFRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
             # Create prompts for all questions
             df["prompt"] = df.apply(
@@ -203,7 +216,7 @@ class HFRunner(BaseRunner):
                 for batch in df_chunks:
                     batch_results = self._process_batch(batch, args)
                     all_results.extend(batch_results)
-                    
+
                     # Update progress stats
                     batch_correct = sum(1 for r in batch_results if r.get("correct", 0))
                     total_correct += batch_correct
@@ -217,10 +230,16 @@ class HFRunner(BaseRunner):
             results_df = pd.DataFrame(all_results)
             if "prompt" in results_df.columns:
                 del results_df["prompt"]
-            
-            print(results_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
-            results_df = results_df.sort_values(by=["db_name", "query_category", "question"])
-            
+
+            print(
+                results_df.groupby("query_category")[
+                    ["correct", "error_db_exec"]
+                ].mean()
+            )
+            results_df = results_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
+
             # Save to file
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):

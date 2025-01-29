@@ -59,7 +59,7 @@ class GeminiRunner(BaseRunner):
 
             response = self._call_llm(prompt, model_name)
             generated_query = self._extract_query(response.content)
-            
+
             row["generated_query"] = generated_query
             row["latency_seconds"] = time() - start_time
             row["tokens_used"] = response.input_tokens + response.output_tokens
@@ -103,7 +103,7 @@ class GeminiRunner(BaseRunner):
         questions_file_list = args.questions_file
         prompt_file_list = args.prompt_file
         output_file_list = args.output_file
-        
+
         for questions_file, prompt_file, output_file in zip(
             questions_file_list, prompt_file_list, output_file_list
         ):
@@ -113,23 +113,26 @@ class GeminiRunner(BaseRunner):
                 f"Using {'all' if args.num_questions is None else args.num_questions} question(s) from {questions_file}"
             )
             question_query_df = prepare_questions_df(
-                questions_file, args.db_type, args.num_questions, args.k_shot, args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
             input_rows = question_query_df.to_dict("records")
             output_rows = []
-            
+
             total_tried = 0
             total_correct = 0
-            
+
             with ThreadPoolExecutor(args.parallel_threads) as executor:
                 futures = []
                 for row in input_rows:
-                    futures.append(executor.submit(
-                        self.process_row,
-                        row=row,
-                        model_name=args.model,
-                        args=args
-                    ))
+                    futures.append(
+                        executor.submit(
+                            self.process_row, row=row, model_name=args.model, args=args
+                        )
+                    )
 
                 with tqdm(as_completed(futures), total=len(futures)) as pbar:
                     for f in pbar:
@@ -144,10 +147,12 @@ class GeminiRunner(BaseRunner):
 
             # save results to csv
             output_df = pd.DataFrame(output_rows)
-            output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
+            output_df = output_df.sort_values(
+                by=["db_name", "query_category", "question"]
+            )
             if "prompt" in output_df.columns:
                 del output_df["prompt"]
-                
+
             # get num rows, mean correct, mean error_db_exec for each query_category
             agg_stats = (
                 output_df.groupby("query_category")
@@ -159,7 +164,7 @@ class GeminiRunner(BaseRunner):
                 .reset_index()
             )
             print(agg_stats)
-            
+
             # get directory of output_file and create if not exist
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):
@@ -183,6 +188,7 @@ class GeminiRunner(BaseRunner):
                     prompt=prompt,
                     args=args,
                 )
+
 
 def run_gemini_eval(args):
     runner = GeminiRunner()

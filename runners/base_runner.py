@@ -69,9 +69,7 @@ def generate_prompt(
 
 def format_sql_query(generated_query):
     try:
-        return sqlparse.format(
-            generated_query, reindent=True, keyword_case="upper"
-        )
+        return sqlparse.format(generated_query, reindent=True, keyword_case="upper")
     except:
         return generated_query
 
@@ -148,11 +146,11 @@ class BaseRunner:
             print(f"Using prompt file {prompt_file}")
             print("Preparing questions...")
             question_query_df = prepare_questions_df(
-                questions_file, 
-                args.db_type, 
-                args.num_questions, 
-                args.k_shot, 
-                args.cot_table_alias
+                questions_file,
+                args.db_type,
+                args.num_questions,
+                args.k_shot,
+                args.cot_table_alias,
             )
             input_rows = question_query_df.to_dict("records")
 
