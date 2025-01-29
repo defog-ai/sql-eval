@@ -121,7 +121,7 @@ Some things to take note of:
 
 The runner calls is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) for each question/query pair.
 
-We have provided a few common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support), `eval/anthropic_runner` for calling Anthropic's API, `eval/hf_runner.py` for calling a local Hugging Face model and finally, `eval/api_runner.py` makes it possible to use a custom API for evaluation.
+We have provided a few common runners: `runners/openai_runner.py` for calling OpenAI's API (with parallelization support), `runners/anthropic_runner` for calling Anthropic's API, `runners/hf_runner.py` for calling a local Hugging Face model and finally, `runners/api_runner.py` makes it possible to use a custom API for evaluation.
 
 ## Running the Test
 
