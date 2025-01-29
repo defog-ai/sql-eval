@@ -117,19 +117,11 @@ Some things to take note of:
 - If you do not populate your database with data (ie only create the tables without inserting data), you would return empty dataframes most of the time (regardless of whether the query generated was what you want), and it would result in results matching all the time and generate a lot of false positives. Hence, you might want to consider populating your database with some meaningful data that would return different results if the queries should be different from what you want.
 - If testing out on your private data, you would also need to change the questions file to point to your own questions file (tailored to your database schema).
 
-### Query Generator
-
-To test your own query generator with our framework, you would need to extend [Query Generator](query_generators/query_generator.py) and implement the [generate_query](query_generators/query_generator.py#L18) method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can also reference [OpenAIQueryGenerator](query_generators/openai.py) which implements `Query Generator` and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use.
-
-If there are functions that are generally useful for all query generators, they can be placed in the `utils` folder. If you need to incorporate specific verbose templates (e.g. for prompt testing), you can store them in the `prompts` folder, and later import them. Being able to version control the prompts in a central place has been a productivity win for our team.
-
 ### Runner
 
-Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) to the query generator for each question/query pair.
+The runner calls is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) for each question/query pair.
 
 We have provided a few common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support), `eval/anthropic_runner` for calling Anthropic's API, `eval/hf_runner.py` for calling a local Hugging Face model and finally, `eval/api_runner.py` makes it possible to use a custom API for evaluation.
-
-When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
 
 ## Running the Test
 
@@ -500,8 +492,6 @@ You can use the following flags in the command line to change the configurations
 
 ## Checking the Results
 
-To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about.
-
 ### Upload URL
 
 If you would like to start a google cloud function to receive the results, you can use the `--upload_url` flag to specify the URL that you want to report the results to. Before running the evaluation code with this flag, you would need to create a server that serves at the provided URL. We have provided 2 sample cloud function endpoints for writing either to bigquery or postgres, in the `results_fn_bigquery` and `results_fn_postgres` folders. You may also implement your own server to take in similar arguments. Before deploying either cloud functions, you would need to set up the environment variables by making a copy of .env.yaml.template and renaming it to .env.yaml, and then filling in the relevant fields. For the bigquery cloud function, you would also need to put your service account's key.json file in the same folder, and put the file name in the `CREDENTIALS_PATH` field in the .env.yaml file.
@@ -572,7 +562,6 @@ We welcome contributions to our project, specifically:
 - Dataset
   - Adding new database schema/data
 - Framework code
-  - New query generators/runners (in the [query_generators](query_generators) and [eval](eval) folders respectively)
   - Improving existing generators/runners (e.g. adding new metrics)
 
 Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.
