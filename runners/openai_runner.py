@@ -1,19 +1,18 @@
-import os
 from time import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
-
+import os
 import pandas as pd
-import sqlparse
-from tqdm import tqdm
 
-from eval.eval import compare_query_results
-from utils.creds import db_creds_all
-from utils.dialects import convert_postgres_ddl_to_dialect
-from utils.gen_prompt import to_prompt_schema
+from runners.base_runner import (
+    generate_base_prompt,
+    extract_sql_from_response,
+    run_eval_in_threadpool,
+)
 from utils.questions import prepare_questions_df
-from utils.reporting import upload_results
 from utils.llm import chat_openai
+from utils.creds import db_creds_all
+from utils.reporting import upload_results
+from eval.eval import compare_query_results
 
 
 def generate_prompt(
@@ -30,45 +29,28 @@ def generate_prompt(
     public_data=True,
     shuffle=True,
 ):
-    if public_data:
-        from defog_data.metadata import dbs
-        import defog_data.supplementary as sup
-    else:
-        from defog_data_private.metadata import dbs
-        import defog_data_private.supplementary as sup
+    """OpenAI-specific prompt handling"""
+    # Get base prompt data
+    base_data = generate_base_prompt(
+        prompt_file,
+        question,
+        db_name,
+        db_type,
+        instructions,
+        k_shot_prompt,
+        glossary,
+        table_metadata_string,
+        prev_invalid_sql,
+        prev_error_msg,
+        public_data,
+        shuffle,
+    )
 
+    # Load and format OpenAI-specific JSON prompt
     with open(prompt_file, "r") as f:
         prompt = json.load(f)
 
-    if table_metadata_string == "":
-        md = dbs[db_name]["table_metadata"]
-        pruned_metadata_ddl = to_prompt_schema(md, shuffle)
-        pruned_metadata_ddl = convert_postgres_ddl_to_dialect(
-            postgres_ddl=pruned_metadata_ddl,
-            to_dialect=db_type,
-            db_name=db_name,
-        )
-        column_join = sup.columns_join.get(db_name, {})
-        join_list = []
-        for values in column_join.values():
-            if isinstance(values[0], tuple):
-                for col_pair in values:
-                    col_1, col_2 = col_pair
-                    join_str = f"{col_1} can be joined with {col_2}"
-                    if join_str not in join_list:
-                        join_list.append(join_str)
-            else:
-                col_1, col_2 = values[0]
-                join_str = f"{col_1} can be joined with {col_2}"
-                if join_str not in join_list:
-                    join_list.append(join_str)
-        if len(join_list) > 0:
-            join_str = "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
-        else:
-            join_str = ""
-        pruned_metadata_str = pruned_metadata_ddl + join_str
-    else:
-        pruned_metadata_str = table_metadata_string
+    pruned_metadata_str = base_data["table_metadata_string"]
 
     if prompt[0]["role"] == "system":
         prompt[0]["content"] = prompt[0]["content"].format(
@@ -81,7 +63,7 @@ def generate_prompt(
             k_shot_prompt=k_shot_prompt,
         )
     else:
-        prompt[0]["content"] = prompt[1]["content"].format(
+        prompt[0]["content"] = prompt[0]["content"].format(
             db_type=db_type,
             user_question=question,
             instructions=instructions,
@@ -92,6 +74,7 @@ def generate_prompt(
 
 
 def process_row(row, model_name, args):
+    """Process a single row using OpenAI"""
     start_time = time()
     messages = generate_prompt(
         prompt_file=args.prompt_file[0],
@@ -109,34 +92,57 @@ def process_row(row, model_name, args):
     )
     try:
         response = chat_openai(messages=messages, model=model_name, temperature=0.0)
-        generated_query = (
-            response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
-        )
-        try:
-            generated_query = sqlparse.format(
-                generated_query, reindent=True, keyword_case="upper"
-            )
-        except:
-            pass
-        return {
-            "query": generated_query,
+        generated_query = extract_sql_from_response(response.content)
+
+        result = {
+            "generated_query": generated_query,
             "reason": "",
-            "err": "",
+            "error_msg": "",
             "latency_seconds": time() - start_time,
             "tokens_used": response.input_tokens + response.output_tokens,
         }
+
+        # Verify results
+        expected_query = row["query"]
+        db_name = row["db_name"]
+        db_type = row["db_type"]
+        try:
+            is_correct = compare_query_results(
+                query_gold=expected_query,
+                query_gen=generated_query,
+                db_name=db_name,
+                db_type=db_type,
+                db_creds=db_creds_all[db_type],
+                question=row["question"],
+                query_category=row["query_category"],
+                decimal_points=(
+                    args.decimal_points if hasattr(args, "decimal_points") else 2
+                ),
+            )
+            if is_correct:
+                row["is_correct"] = 1
+            else:
+                row["is_correct"] = 0
+                result["error_msg"] = "INCORRECT RESULTS"
+        except Exception as e:
+            row["error_db_exec"] = 1
+            result["error_msg"] = f"EXECUTION ERROR: {str(e)}"
+
+        # Update row with result data
+        row.update(result)
+        return row
     except Exception as e:
-        return {
-            "query": "",
-            "reason": "",
-            "err": f"GENERATION ERROR: {str(e)}",
-            "latency_seconds": time() - start_time,
-            "tokens_used": 0,
-        }
+        row["error_query_gen"] = 1
+        row["generated_query"] = ""
+        row["reason"] = ""
+        row["error_msg"] = f"GENERATION ERROR: {str(e)}"
+        row["latency_seconds"] = time() - start_time
+        row["tokens_used"] = 0
+        return row
 
 
 def run_openai_eval(args):
-    # get params from args
+    """Run evaluation using OpenAI"""
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
     output_file_list = args.output_file
@@ -153,78 +159,21 @@ def run_openai_eval(args):
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
         )
-        question_query_df = prepare_questions_df(
+        df = prepare_questions_df(
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
-        input_rows = question_query_df.to_dict("records")
-        output_rows = []
-        with ThreadPoolExecutor(args.parallel_threads) as executor:
-            futures = []
-            for row in input_rows:
-                generated_query_fut = executor.submit(
-                    process_row,
-                    row=row,
-                    model_name=args.model,
-                    args=args,
-                )
-                futures.append(generated_query_fut)
 
-            total_tried = 0
-            total_correct = 0
-            for f in (pbar := tqdm(as_completed(futures), total=len(futures))):
-                total_tried += 1
-                i = futures.index(f)
-                row = input_rows[i]
-                result_dict = f.result()
-                query_gen = result_dict["query"]
-                reason = result_dict["reason"]
-                err = result_dict["err"]
-                # save custom metrics
-                if "latency_seconds" in result_dict:
-                    row["latency_seconds"] = result_dict["latency_seconds"]
-                if "tokens_used" in result_dict:
-                    row["tokens_used"] = result_dict["tokens_used"]
-                row["generated_query"] = query_gen
-                row["reason"] = reason
-                row["error_msg"] = err
-                # save failures into relevant columns in the dataframe
-                if "GENERATION ERROR" in err:
-                    row["error_query_gen"] = 1
-                else:
-                    expected_query = row["query"]
-                    db_name = row["db_name"]
-                    db_type = row["db_type"]
-                    try:
-                        is_correct = compare_query_results(
-                            query_gold=expected_query,
-                            query_gen=query_gen,
-                            db_name=db_name,
-                            db_type=db_type,
-                            question=row["question"],
-                            query_category=row["query_category"],
-                            db_creds=db_creds_all[db_type],
-                        )
-                        if is_correct:
-                            total_correct += 1
-                            row["is_correct"] = 1
-                            row["error_msg"] = ""
-                        else:
-                            row["is_correct"] = 0
-                            row["error_msg"] = "INCORRECT RESULTS"
-                    except Exception as e:
-                        row["error_db_exec"] = 1
-                        row["error_msg"] = f"EXECUTION ERROR: {str(e)}"
-                output_rows.append(row)
-                pbar.set_description(
-                    f"Accuracy: {round(total_correct/total_tried * 100, 2)}% ({total_correct}/{total_tried})"
-                )
+        output_rows, total_correct, total_tried = run_eval_in_threadpool(
+            df, args.model, process_row, args
+        )
 
-        # save results to csv
+        # Convert to DataFrame and save results
         output_df = pd.DataFrame(output_rows)
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
         if "prompt" in output_df.columns:
             del output_df["prompt"]
-        # get num rows, mean correct, mean error_db_exec for each query_category
+
+        # Get stats by query category
         agg_stats = (
             output_df.groupby("query_category")
             .agg(
@@ -235,26 +184,30 @@ def run_openai_eval(args):
             .reset_index()
         )
         print(agg_stats)
-        # get directory of output_file and create if not exist
+
+        # Create output directory if needed
         output_dir = os.path.dirname(output_file)
-        if not os.path.exists(output_dir):
+        if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
+
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
-        # get average rate of correct results
-        avg_subset = output_df["correct"].sum() / len(output_df)
-        print(f"Average correct rate: {avg_subset:.2f}")
+        # Print summary stats
+        print(f"Total questions: {total_tried}")
+        print(f"Total correct: {total_correct}")
+        print(f"Accuracy: {total_correct/total_tried:.3f}")
 
-        results = output_df.to_dict("records")
-
-        # upload results
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="openai",
-                prompt=prompt,
-                args=args,
-            )
+        # Upload results if URL provided
+        try:
+            if hasattr(args, "upload_url") and args.upload_url:
+                with open(prompt_file, "r") as f:
+                    prompt = f.read()
+                upload_results(
+                    results=output_df.to_dict("records"),
+                    url=args.upload_url,
+                    runner_type="openai",
+                    prompt=prompt,
+                    args=args,
+                )
+        except Exception as e:
+            print(f"Error uploading results: {e}")

@@ -1,19 +1,23 @@
-from typing import Optional
 import pandas as pd
+from typing import Optional
 
 
 def get_table_aliases(db_name: str) -> str:
-    from defog_data.metadata import dbs
-    from utils.aliases import generate_aliases
+    try:
+        from defog_data.metadata import dbs
+        from utils.aliases import generate_aliases
 
-    metadata = dbs[db_name]["table_metadata"]
-    table_names = list(metadata.keys())
-    aliases = generate_aliases(table_names)
-    aliases_instruction = (
-        "Use the following table aliases when referencing tables in the query:\n"
-        + aliases
-    )
-    return aliases_instruction
+        metadata = dbs[db_name]["table_metadata"]
+        table_names = list(metadata.keys())
+        aliases = generate_aliases(table_names)
+        aliases_instruction = (
+            "Use the following table aliases when referencing tables in the query:\n"
+            + aliases
+        )
+        return aliases_instruction
+    except ImportError:
+        # Return empty string when defog_data is not available
+        return ""
 
 
 def prepare_questions_df(

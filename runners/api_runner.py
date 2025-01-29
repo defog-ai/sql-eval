@@ -206,34 +206,30 @@ def process_row(
 
 
 def run_api_eval(args):
-    # get params from args
+    """Run evaluation using API"""
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
+    output_file_list = args.output_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
-    api_url = args.api_url
-    api_type = args.api_type
-    output_file_list = args.output_file
     k_shot = args.k_shot
-    num_beams = args.num_beams
-    max_workers = args.parallel_threads
-    db_type = args.db_type
-    decimal_points = args.decimal_points
-    logprobs = args.logprobs
     cot_table_alias = args.cot_table_alias
-    sql_lora_path = args.adapter if args.adapter else None
-    sql_lora_name = args.adapter_name if args.adapter_name else None
-    run_name = args.run_name if args.run_name else None
+    db_type = args.db_type
+    logprobs = args.logprobs
+    run_name = getattr(args, "run_name", None)
+    sql_lora_path = getattr(args, "adapter", None)
+
     if sql_lora_path:
         print("Using LoRA adapter at:", sql_lora_path)
-    if logprobs:
-        # check that the eval-visualizer/public directory exists
-        if not os.path.exists("./eval-visualizer"):
-            # thorow error
-            raise Exception(
-                "The eval-visualizer directory does not exist. Please clone it with `git clone https://github.com/defog-ai/eval-visualizer/` before running sql-eval with the --logprobs flag."
-            )
 
+    # Logprobs visualization directory handling
+    if logprobs:
+        if not os.path.exists("./eval-visualizer"):
+            raise Exception(
+                "The eval-visualizer directory does not exist. Please clone it with "
+                "`git clone https://github.com/defog-ai/eval-visualizer/` before running "
+                "sql-eval with the --logprobs flag."
+            )
         if not os.path.exists("./eval-visualizer/public"):
             os.makedirs("./eval-visualizer/public")
 
@@ -241,7 +237,6 @@ def run_api_eval(args):
         questions_file_list, prompt_file_list, output_file_list
     ):
         print(f"Using prompt file {prompt_file}")
-        # get questions
         print("Preparing questions...")
         print(
             f"Using {'all' if num_questions is None else num_questions} question(s) from {questions_file}"
@@ -249,7 +244,8 @@ def run_api_eval(args):
         df = prepare_questions_df(
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
-        # create a prompt for each question
+
+        # Create prompts with all parameters
         df["prompt"] = df.apply(
             lambda row: generate_prompt(
                 prompt_file,
@@ -262,65 +258,30 @@ def run_api_eval(args):
                 row["table_metadata_string"],
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
-                row["question_0"],
-                row["query_0"],
-                row["question_1"],
-                row["query_1"],
-                row["cot_instructions"],
-                row["cot_pregen"],
+                row.get("question_0", ""),
+                row.get("query_0", ""),
+                row.get("question_1", ""),
+                row.get("query_1", ""),
+                row.get("cot_instructions", ""),
+                row.get("cot_pregen", False),
                 public_data,
-                args.num_columns,
+                args.num_columns if hasattr(args, "num_columns") else 40,
                 args.shuffle_metadata,
-                row["table_aliases"],
+                row.get("table_aliases", ""),
             ),
             axis=1,
         )
 
-        total_tried = 0
-        total_correct = 0
-        output_rows = []
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
-            for row in df.to_dict("records"):
-                futures.append(
-                    executor.submit(
-                        process_row,
-                        row,
-                        api_url,
-                        api_type,
-                        num_beams,
-                        decimal_points,
-                        logprobs,
-                        sql_lora_path,
-                        sql_lora_name,
-                    )
-                )
-
-            with tqdm(as_completed(futures), total=len(futures)) as pbar:
-                for f in pbar:
-                    row = f.result()
-                    output_rows.append(row)
-                    if row["correct"]:
-                        total_correct += 1
-                    total_tried += 1
-                    pbar.update(1)
-                    pbar.set_description(
-                        f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
-                    )
+        output_rows, total_correct, total_tried = run_eval_in_threadpool(
+            df, args.api_url, process_row, args
+        )
 
         output_df = pd.DataFrame(output_rows)
-
-        print(output_df.groupby("query_category")[["correct", "error_db_exec"]].mean())
         output_df = output_df.sort_values(by=["db_name", "query_category", "question"])
-        # get directory of output_file and create if not exist
-        output_dir = os.path.dirname(output_file)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
 
-        results = output_df.to_dict("records")
-
+        # Handle logprobs visualization
         if logprobs:
+            results = output_df.to_dict("records")
             print(
                 f"Writing logprobs to JSON file at eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}"
             )
@@ -330,27 +291,50 @@ def run_api_eval(args):
             ) as f:
                 json.dump(results, f)
 
-        del output_df["prompt"]
+        # Get stats by query category
+        agg_stats = (
+            output_df.groupby("query_category")
+            .agg(
+                num_rows=("db_name", "count"),
+                mean_correct=("correct", "mean"),
+                mean_error_db_exec=("error_db_exec", "mean"),
+            )
+            .reset_index()
+        )
+        print(agg_stats)
+
+        # Clean up and save results
+        if "prompt" in output_df.columns:
+            del output_df["prompt"]
+
+        output_dir = os.path.dirname(output_file)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         try:
             output_df.to_csv(output_file, index=False, float_format="%.2f")
         except:
             output_df.to_pickle(output_file)
 
-        # upload results
-        # with open(prompt_file, "r") as f:
-        #     prompt = f.read()
-
-        if args.run_name is None:
+        # Handle run naming and result upload
+        if run_name is None:
             run_name = output_file.split("/")[-1].replace(".csv", "")
             print(
-                "Run name not provided. Using a output filename for run name:", run_name
+                "Run name not provided. Using output filename for run name:", run_name
             )
 
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="api_runner",
-                args=args,
-                run_name=run_name,
-            )
+        print(f"Total questions: {total_tried}")
+        print(f"Total correct: {total_correct}")
+        print(f"Accuracy: {total_correct/total_tried:.3f}")
+
+        try:
+            if hasattr(args, "upload_url") and args.upload_url:
+                upload_results(
+                    results=output_df.to_dict("records"),
+                    url=args.upload_url,
+                    runner_type="api_runner",
+                    args=args,
+                    run_name=run_name,
+                )
+        except Exception as e:
+            print(f"Error uploading results: {e}")
