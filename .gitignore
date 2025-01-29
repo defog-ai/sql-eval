@@ -23,3 +23,6 @@ eda_*.ipynb
 
 # wandb output (created when running upload_wandb.ipynb)
 wandb/
+
+# mac os specific
+.DS_Store
