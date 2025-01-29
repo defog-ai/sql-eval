@@ -25,7 +25,6 @@ Firstly, clone the repository where we store our database data and schema. Insta
 git clone https://github.com/defog-ai/defog-data.git
 cd defog-data
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
 pip install -e .
 ```
 
@@ -106,8 +105,6 @@ If you have a private dataset that you do not want to make publicly available bu
 - Begin by creating a separate git repository for your private data, that has a `setup.py` file, similar to [defog-data](https://github.com/defog-ai/defog-data).
 - Create the metadata and data files, and import them into your database. This is to allow our evaluation framework to run the generated queries with some actual data. You can refer to `defog-data`'s [metadata objects](https://github.com/defog-ai/defog-data/blob/main/defog_data/metadata.py) for the schema, and [setup.sh](https://github.com/defog-ai/defog-data/blob/main/setup.sh) as an example on how import the data into your database. We do not prescribe any specific folder structure, and leave it to you to decide how you want to organize your data, so long as you can import it into your database easily.
 - To use our metadata pruning utilities, you would need to have the following defined:
-  - A way to load your embeddings. In our case, we call a function [load_embeddings](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L85) from `defog-data`'s supplementary module to load a dictionary of database name to a tuple of the 2D embedding matrix (num examples x embedding dimension) and the associated text metadata for each row/example. If you would like to see how we generate this tuple, you may refer to [generate_embeddings](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L11) in the `defog-data` repository.
-  - A way to load columns associated with various named entities. In our case, we call a dictionary [columns_ner](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L106) of database name to a nested dictionary that maps each named entity type to a list of column metadata strings that are associated with that named entity type. You can refer to the raw data for an example of how we generate this dictionary.
   - A way to define joinable columns between tables. In our case, we call a dictionary [columns_join](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L233) of database name to a nested dictionary of table tuples to column name tuples. You can refer to the raw data for an example of how we generate this dictionary.
 
 Once all of the 3 above steps have completed, you would need to

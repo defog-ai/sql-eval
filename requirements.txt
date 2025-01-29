@@ -15,7 +15,6 @@ pytest
 pyyaml
 sentence-transformers
 snowflake-connector-python
-spacy
 sqlalchemy
 tiktoken
 together
