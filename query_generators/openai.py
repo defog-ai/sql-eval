@@ -1,19 +1,12 @@
-import time
 from typing import Dict, List
-
+import time
 from func_timeout import FunctionTimedOut, func_timeout
-from openai import OpenAI
-import tiktoken
 import json
 
 from query_generators.query_generator import QueryGenerator
-from utils.pruning import prune_metadata_str
 from utils.gen_prompt import to_prompt_schema
-from utils.dialects import (
-    convert_postgres_ddl_to_dialect,
-)
-
-openai = OpenAI()
+from utils.dialects import convert_postgres_ddl_to_dialect
+from utils.llm import chat_openai, LLMResponse
 
 
 class OpenAIQueryGenerator(QueryGenerator):
@@ -40,7 +33,6 @@ class OpenAIQueryGenerator(QueryGenerator):
         self.o1 = self.model.startswith("o1-")
         self.prompt_file = prompt_file
         self.use_public_data = use_public_data
-
         self.timeout = timeout
         self.verbose = verbose
 
@@ -53,76 +45,23 @@ class OpenAIQueryGenerator(QueryGenerator):
         stop=[],
         logit_bias={},
         seed=100,
-    ):
-        """Get OpenAI chat completion for a given prompt and model"""
-        generated_text = ""
+    ) -> str:
+        """Get OpenAI chat completion using the new utility function"""
         try:
-            if self.o1:
-                completion = openai.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    seed=seed,
-                )
-            else:
-                completion = openai.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    stop=stop,
-                    logit_bias=logit_bias,
-                    seed=seed,
-                )
-            generated_text = completion.choices[0].message.content
-        except Exception as e:
-            print(type(e), e)
-        return generated_text
-
-    def get_nonchat_completion(
-        self,
-        model,
-        prompt,
-        max_tokens=600,
-        temperature=0,
-        stop=[],
-        logit_bias={},
-    ):
-        """Get OpenAI nonchat completion for a given prompt and model"""
-        generated_text = ""
-        try:
-            completion = openai.completions.create(
+            response: LLMResponse = chat_openai(
+                messages=messages,
                 model=model,
-                prompt=prompt,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 temperature=temperature,
                 stop=stop,
-                logit_bias=logit_bias,
-                seed=42,
+                seed=seed
             )
-            generated_text = completion["choices"][0]["text"]
+            return response.content
         except Exception as e:
-            print(type(e), e)
-        return generated_text
-
-    @staticmethod
-    def count_tokens(
-        model: str, messages: List[Dict[str, str]] = [], prompt: str = ""
-    ) -> int:
-        """
-        This function counts the number of tokens used in a prompt
-        model: the model used to generate the prompt. can be any valid OpenAI model
-        messages: (only for OpenAI chat models) a list of messages to be used as a prompt. Each message is a dict with two keys: role and content
-        """
-        try:
-            tokenizer = tiktoken.encoding_for_model(model)
-        except KeyError:
-            # default to o200k_base if the model is not in the list. this is just for approximating the max token count
-            tokenizer = tiktoken.get_encoding("o200k_base")
-        num_tokens = 0
-        for message in messages:
-            for _, value in message.items():
-                num_tokens += len(tokenizer.encode(value))
-        return num_tokens
+            print(str(e))
+            if self.verbose:
+                print(type(e), e)
+            return ""
 
     def generate_query(
         self,
@@ -141,6 +80,7 @@ class OpenAIQueryGenerator(QueryGenerator):
         self.err = ""
         self.query = ""
         self.reason = ""
+        tokens_used = 0
 
         if self.use_public_data:
             from defog_data.metadata import dbs
@@ -148,51 +88,43 @@ class OpenAIQueryGenerator(QueryGenerator):
         else:
             # raise Exception("Replace this with your private data import")
             from defog_data_private.metadata import dbs
+            import defog_data_private.supplementary as sup
 
         with open(self.prompt_file) as file:
             chat_prompt = json.load(file)
         question_instructions = question + " " + instructions
+        
         if table_metadata_string == "":
-            if columns_to_keep > 0:
-                table_metadata_ddl, join_str = prune_metadata_str(
-                    question_instructions,
-                    self.db_name,
-                    self.use_public_data,
-                    columns_to_keep,
-                    shuffle,
-                )
-                table_metadata_ddl = convert_postgres_ddl_to_dialect(
-                    postgres_ddl=table_metadata_ddl,
-                    to_dialect=self.db_type,
-                    db_name=self.db_name,
-                )
-                table_metadata_string = table_metadata_ddl + join_str
-            elif columns_to_keep == 0:
-                md = dbs[self.db_name]["table_metadata"]
-                table_metadata_ddl = to_prompt_schema(md, shuffle)
-                table_metadata_ddl = convert_postgres_ddl_to_dialect(
-                    postgres_ddl=table_metadata_ddl,
-                    to_dialect=self.db_type,
-                    db_name=self.db_name,
-                )
-                column_join = sup.columns_join.get(self.db_name, {})
-                # get join_str from column_join
-                join_list = []
-                for values in column_join.values():
+            md = dbs[self.db_name]["table_metadata"]
+            table_metadata_ddl = to_prompt_schema(md, shuffle)
+            table_metadata_ddl = convert_postgres_ddl_to_dialect(
+                postgres_ddl=table_metadata_ddl,
+                to_dialect=self.db_type,
+                db_name=self.db_name,
+            )
+            column_join = sup.columns_join.get(self.db_name, {})
+            # get join_str from column_join
+            join_list = []
+            for values in column_join.values():
+                if isinstance(values[0], tuple):
+                    for col_pair in values:
+                        col_1, col_2 = col_pair
+                        # add to join_list
+                        join_str = f"{col_1} can be joined with {col_2}"
+                        if join_str not in join_list:
+                            join_list.append(join_str)
+                else:
                     col_1, col_2 = values[0]
                     # add to join_list
                     join_str = f"{col_1} can be joined with {col_2}"
                     if join_str not in join_list:
                         join_list.append(join_str)
-                if len(join_list) > 0:
-                    join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
-                        join_list
-                    )
-                else:
-                    join_str = ""
-                table_metadata_string = table_metadata_ddl + join_str
+            if len(join_list) > 0:
+                join_str = "\nHere is a list of joinable columns:\n" + "\n".join(join_list)
             else:
-                raise ValueError("columns_to_keep must be >= 0")
+                join_str = ""
+            table_metadata_string = table_metadata_ddl + join_str
+
         if glossary == "":
             glossary = dbs[self.db_name]["glossary"]
         try:
@@ -230,8 +162,6 @@ class OpenAIQueryGenerator(QueryGenerator):
             if len(chat_prompt) == 3:
                 messages.append({"role": "assistant", "content": assistant_prompt})
 
-        function_to_run = None
-        package = None
         function_to_run = self.get_chat_completion
         package = messages
 
@@ -258,8 +188,6 @@ class OpenAIQueryGenerator(QueryGenerator):
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}, Completion: {self.completion}"
             else:
                 self.err = f"QUERY GENERATION ERROR: {type(e)}, {e}"
-
-        tokens_used = self.count_tokens(self.model, messages=messages)
 
         return {
             "table_metadata_string": table_metadata_string,
