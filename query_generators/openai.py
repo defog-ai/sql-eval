@@ -7,8 +7,7 @@ import tiktoken
 import json
 
 from query_generators.query_generator import QueryGenerator
-from utils.pruning import prune_metadata_str
-from utils.gen_prompt import to_prompt_schema
+from utils.gen_prompt import generate_prompt
 from utils.dialects import (
     convert_postgres_ddl_to_dialect,
 )
@@ -153,46 +152,28 @@ class OpenAIQueryGenerator(QueryGenerator):
             chat_prompt = json.load(file)
         question_instructions = question + " " + instructions
         if table_metadata_string == "":
-            if columns_to_keep > 0:
-                table_metadata_ddl, join_str = prune_metadata_str(
-                    question_instructions,
-                    self.db_name,
-                    self.use_public_data,
-                    columns_to_keep,
-                    shuffle,
+            table_metadata_string = generate_prompt(dbs[self.db_name]["table_metadata"], shuffle)
+            table_metadata_string = convert_postgres_ddl_to_dialect(
+                postgres_ddl=table_metadata_string,
+                to_dialect=self.db_type,
+                db_name=self.db_name,
+            )
+            column_join = sup.columns_join.get(self.db_name, {})
+            # get join_str from column_join
+            join_list = []
+            for values in column_join.values():
+                col_1, col_2 = values[0]
+                # add to join_list
+                join_str = f"{col_1} can be joined with {col_2}"
+                if join_str not in join_list:
+                    join_list.append(join_str)
+            if len(join_list) > 0:
+                join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
+                    join_list
                 )
-                table_metadata_ddl = convert_postgres_ddl_to_dialect(
-                    postgres_ddl=table_metadata_ddl,
-                    to_dialect=self.db_type,
-                    db_name=self.db_name,
-                )
-                table_metadata_string = table_metadata_ddl + join_str
-            elif columns_to_keep == 0:
-                md = dbs[self.db_name]["table_metadata"]
-                table_metadata_ddl = to_prompt_schema(md, shuffle)
-                table_metadata_ddl = convert_postgres_ddl_to_dialect(
-                    postgres_ddl=table_metadata_ddl,
-                    to_dialect=self.db_type,
-                    db_name=self.db_name,
-                )
-                column_join = sup.columns_join.get(self.db_name, {})
-                # get join_str from column_join
-                join_list = []
-                for values in column_join.values():
-                    col_1, col_2 = values[0]
-                    # add to join_list
-                    join_str = f"{col_1} can be joined with {col_2}"
-                    if join_str not in join_list:
-                        join_list.append(join_str)
-                if len(join_list) > 0:
-                    join_str = "\nHere is a list of joinable columns:\n" + "\n".join(
-                        join_list
-                    )
-                else:
-                    join_str = ""
-                table_metadata_string = table_metadata_ddl + join_str
             else:
-                raise ValueError("columns_to_keep must be >= 0")
+                join_str = ""
+            table_metadata_string = table_metadata_string + join_str
         if glossary == "":
             glossary = dbs[self.db_name]["glossary"]
         try:

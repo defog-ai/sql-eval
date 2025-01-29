@@ -10,68 +10,13 @@ from tqdm import tqdm
 
 from eval.eval import compare_query_results
 from utils.creds import db_creds_all
-from utils.pruning import prune_metadata_str
 from utils.questions import prepare_questions_df
 from utils.reporting import upload_results
+from utils.gen_prompt import generate_prompt
 
 api_key = os.environ.get("MISTRAL_API_KEY")
 
 client = MistralClient(api_key=api_key)
-
-
-def generate_prompt(
-    prompt_file,
-    question,
-    db_name,
-    instructions="",
-    k_shot_prompt="",
-    glossary="",
-    table_metadata_string="",
-    prev_invalid_sql="",
-    prev_error_msg="",
-    public_data=True,
-    columns_to_keep=20,
-    shuffle=True,
-):
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
-
-    # Check that System and User prompts are in the prompt file
-    if "System:" not in prompt or "User:" not in prompt:
-        raise ValueError("Invalid prompt file. Please use prompt_mistral.md")
-    sys_prompt = prompt.split("System:")[1].split("User:")[0].strip()
-    user_prompt = prompt.split("User:")[1].strip()
-
-    question_instructions = question + " " + instructions
-
-    if table_metadata_string == "":
-        pruned_metadata_ddl, join_str = prune_metadata_str(
-            question_instructions, db_name, public_data, columns_to_keep, shuffle
-        )
-        pruned_metadata_str = pruned_metadata_ddl + join_str
-    else:
-        pruned_metadata_str = table_metadata_string
-
-    user_prompt = user_prompt.format(
-        user_question=question,
-        instructions=instructions,
-        table_metadata_string=pruned_metadata_str,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-        prev_invalid_sql=prev_invalid_sql,
-        prev_error_msg=prev_error_msg,
-    )
-    messages = [
-        ChatMessage(
-            role="system",
-            content=sys_prompt,
-        ),
-        ChatMessage(
-            role="user",
-            content=user_prompt,
-        ),
-    ]
-    return messages
 
 
 def process_row(row, model, args):
@@ -166,15 +111,7 @@ def run_mistral_eval(args):
                 row["table_metadata_string"],
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
-                row["question_0"],
-                row["query_0"],
-                row["question_1"],
-                row["query_1"],
-                row["cot_instructions"],
-                row["cot_pregen"],
                 public_data,
-                args.num_columns,
-                args.shuffle_metadata,
             ),
             axis=1,
         )
