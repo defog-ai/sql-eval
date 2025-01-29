@@ -127,7 +127,7 @@ def process_row(row, model_name, args):
             query_gen=generated_query,
             db_name=db_name,
             db_type=db_type,
-            db_creds=db_creds_all[row["db_type"]],
+            db_creds=db_creds_all[db_type],
             question=question,
             query_category=query_category,
             decimal_points=args.decimal_points,
