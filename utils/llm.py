@@ -237,7 +237,7 @@ def chat_gemini(
         generation_config.response_schema = response_format
 
     try:
-        response = client.aio.models.generate_content(
+        response = client.models.generate_content(
             model=model,
             contents=message,
             config=generation_config,
