@@ -15,7 +15,6 @@ Firstly, clone the repository where we store our database data and schema. Insta
 git clone https://github.com/defog-ai/defog-data.git
 cd defog-data
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
 pip install -e .
 ```
 
