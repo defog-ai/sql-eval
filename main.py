@@ -80,13 +80,13 @@ if __name__ == "__main__":
         )
 
     if args.model_type == "oa":
-        from eval.openai_runner import run_openai_eval
+        from runners.openai_runner import run_openai_eval
 
         if args.model is None:
             args.model = "gpt-3.5-turbo-0613"
         run_openai_eval(args)
     elif args.model_type == "anthropic":
-        from eval.anthropic_runner import run_anthropic_eval
+        from runners.anthropic_runner import run_anthropic_eval
 
         if args.model is None:
             args.model = "claude-2"
@@ -98,11 +98,11 @@ if __name__ == "__main__":
             raise ValueError(
                 "vLLM is not supported on macOS. Please run on another OS supporting CUDA."
             )
-        from eval.vllm_runner import run_vllm_eval
+        from runners.vllm_runner import run_vllm_eval
 
         run_vllm_eval(args)
     elif args.model_type == "hf":
-        from eval.hf_runner import run_hf_eval
+        from runners.hf_runner import run_hf_eval
 
         run_hf_eval(args)
     elif args.model_type == "api":
@@ -110,35 +110,35 @@ if __name__ == "__main__":
         assert args.api_type is not None, "api_type must be provided for api model"
         assert args.api_type in ["vllm", "tgi"], "api_type must be one of 'vllm', 'tgi'"
 
-        from eval.api_runner import run_api_eval
+        from runners.api_runner import run_api_eval
 
         run_api_eval(args)
     elif args.model_type == "llama_cpp":
-        from eval.llama_cpp_runner import run_llama_cpp_eval
+        from runners.llama_cpp_runner import run_llama_cpp_eval
 
         run_llama_cpp_eval(args)
     elif args.model_type == "mlx":
-        from eval.mlx_runner import run_mlx_eval
+        from runners.mlx_runner import run_mlx_eval
 
         run_mlx_eval(args)
     elif args.model_type == "gemini":
-        from eval.gemini_runner import run_gemini_eval
+        from runners.gemini_runner import run_gemini_eval
 
         run_gemini_eval(args)
     elif args.model_type == "mistral":
-        from eval.mistral_runner import run_mistral_eval
+        from runners.mistral_runner import run_mistral_eval
 
         run_mistral_eval(args)
     elif args.model_type == "bedrock":
-        from eval.bedrock_runner import run_bedrock_eval
+        from runners.bedrock_runner import run_bedrock_eval
 
         run_bedrock_eval(args)
     elif args.model_type == "together":
-        from eval.together_runner import run_together_eval
+        from runners.together_runner import run_together_eval
 
         run_together_eval(args)
     elif args.model_type == "deepseek":
-        from eval.deepseek_runner import run_deepseek_eval
+        from runners.deepseek_runner import run_deepseek_eval
 
         run_deepseek_eval(args)
     else:
