@@ -189,7 +189,7 @@ def run_anthropic_eval(args):
                     db_name = row["db_name"]
                     db_type = row["db_type"]
                     try:
-                        is_correct = compare_query_results(
+                        exact_match, correct = compare_query_results(
                             query_gold=expected_query,
                             query_gen=query_gen,
                             db_name=db_name,
@@ -199,7 +199,7 @@ def run_anthropic_eval(args):
                             query_category=row["query_category"],
                             decimal_points=args.decimal_points,
                         )
-                        if is_correct:
+                        if correct:
                             total_correct += 1
                             row["is_correct"] = 1
                             row["error_msg"] = ""
