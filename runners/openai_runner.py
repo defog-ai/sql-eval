@@ -85,8 +85,7 @@ def generate_prompt(
             table_metadata_string=pruned_metadata_str,
             k_shot_prompt=k_shot_prompt,
         )
-    
-    # print(prompt[-1]["content"])
+
     return prompt
 
 
@@ -184,10 +183,6 @@ def run_openai_eval(args):
                 row["reason"] = reason
                 row["error_msg"] = err
                 # save failures into relevant columns in the dataframe
-                # print("Expected Query:")
-                # print(row["query"])
-                # print("Generated Query:")
-                # print(query_gen)
                 if "GENERATION ERROR" in err:
                     row["error_query_gen"] = 1
                 else:
