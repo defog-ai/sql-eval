@@ -169,8 +169,7 @@ def get_all_minimal_queries(query: str) -> "list[str]":
                 column_str = ", ".join(column_tuple)
                 right = query[end + 1 :]
                 # change group by size dynamically if necessary
-                if right.find("GROUP BY {}"):
-                    right = right.replace("GROUP BY {}", f"GROUP BY {column_str}")
+                right = right.replace("GROUP BY {}", f"GROUP BY {column_str}")
                 result_queries.append(left + column_str + right)
     return result_queries
 
