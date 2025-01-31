@@ -1,74 +1,34 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
-from time import time
-
-import pandas as pd
-from tqdm import tqdm
-from vertexai.preview.generative_models import GenerativeModel
 
 from eval.eval import compare_query_results
-from utils.creds import db_creds_all
-from utils.pruning import prune_metadata_str
+import pandas as pd
+from utils.gen_prompt import generate_prompt
 from utils.questions import prepare_questions_df
+from utils.creds import db_creds_all
+from tqdm import tqdm
+from time import time
 from utils.reporting import upload_results
+from llama_cpp import Llama
 
 
-def multiturn_generate_content(model_name="gemini-pro"):
-    config = {"max_output_tokens": 600, "temperature": 0, "top_p": 1}
-    model = GenerativeModel(model_name, generation_config=config)
-    chat = model.start_chat()
-    return chat
-
-
-def generate_prompt(
-    prompt_file,
-    question,
-    db_name,
-    instructions="",
-    k_shot_prompt="",
-    glossary="",
-    table_metadata_string="",
-    prev_invalid_sql="",
-    prev_error_msg="",
-    public_data=True,
-    num_columns_to_keep=20,
-    shuffle=True,
-):
-    if "gemini" not in prompt_file:
-        raise ValueError("Invalid prompt file. Please use prompt_gemini.md")
-
-    with open(prompt_file, "r") as f:
-        prompt = f.read()
-    question_instructions = question + " " + instructions
-
-    if table_metadata_string == "":
-        pruned_metadata_ddl, join_str = prune_metadata_str(
-            question_instructions, db_name, public_data, num_columns_to_keep, shuffle
-        )
-        pruned_metadata_str = pruned_metadata_ddl + join_str
-    else:
-        pruned_metadata_str = table_metadata_string
-
-    prompt = prompt.format(
-        user_question=question,
-        instructions=instructions,
-        table_metadata_string=pruned_metadata_str,
-        k_shot_prompt=k_shot_prompt,
-        glossary=glossary,
-        prev_invalid_sql=prev_invalid_sql,
-        prev_error_msg=prev_error_msg,
-    )
-    return prompt
-
-
-def process_row(row, model_name, args):
+def process_row(llm, row, args):
     start_time = time()
-    chat = multiturn_generate_content(model_name=model_name)
-    response = chat.send_message(row["prompt"])
-
+    prompt = row["prompt"]
+    generated_query = (
+        llm(
+            prompt,
+            max_tokens=512,
+            temperature=0,
+            top_p=1,
+            echo=False,
+            repeat_penalty=1.0,
+        )["choices"][0]["text"]
+        .split(";")[0]
+        .split("```")[0]
+        .strip()
+        + ";"
+    )
     end_time = time()
-    generated_query = response.text.split("```sql")[-1].split("```")[0].strip()
-
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
     golden_query = row["query"]
@@ -76,6 +36,7 @@ def process_row(row, model_name, args):
     db_type = row["db_type"]
     question = row["question"]
     query_category = row["query_category"]
+    table_metadata_string = row["table_metadata_string"]
     exact_match = correct = 0
 
     try:
@@ -87,6 +48,7 @@ def process_row(row, model_name, args):
             db_creds=db_creds_all[row["db_type"]],
             question=question,
             query_category=query_category,
+            table_metadata_string=table_metadata_string,
             decimal_points=args.decimal_points,
         )
         row["exact_match"] = int(exact_match)
@@ -95,22 +57,22 @@ def process_row(row, model_name, args):
     except Exception as e:
         row["error_db_exec"] = 1
         row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
-
     return row
 
 
-def run_gemini_eval(args):
+def run_llama_cpp_eval(args):
     # get params from args
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
-    model_name = args.model
+    model_path = args.model
     output_file_list = args.output_file
     k_shot = args.k_shot
-    max_workers = args.parallel_threads
     db_type = args.db_type
     cot_table_alias = args.cot_table_alias
+
+    llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=4096)
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -137,6 +99,10 @@ def run_gemini_eval(args):
                 row["table_metadata_string"],
                 row["prev_invalid_sql"],
                 row["prev_error_msg"],
+                row["question_0"],
+                row["query_0"],
+                row["question_1"],
+                row["query_1"],
                 row["cot_instructions"],
                 row["cot_pregen"],
                 public_data,
@@ -150,23 +116,17 @@ def run_gemini_eval(args):
         total_correct = 0
         output_rows = []
 
-        print(f"Running evaluation using {model_name}...")
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
+        with tqdm(total=len(df)) as pbar:
             for row in df.to_dict("records"):
-                futures.append(executor.submit(process_row, row, model_name, args))
-
-            with tqdm(as_completed(futures), total=len(futures)) as pbar:
-                for f in pbar:
-                    row = f.result()
-                    output_rows.append(row)
-                    if row["correct"]:
-                        total_correct += 1
-                    total_tried += 1
-                    pbar.update(1)
-                    pbar.set_description(
-                        f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
-                    )
+                row = process_row(llm, row, args)
+                output_rows.append(row)
+                if row["correct"]:
+                    total_correct += 1
+                total_tried += 1
+                pbar.update(1)
+                pbar.set_description(
+                    f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
+                )
 
         output_df = pd.DataFrame(output_rows)
         del output_df["prompt"]
@@ -189,7 +149,7 @@ def run_gemini_eval(args):
             upload_results(
                 results=results,
                 url=args.upload_url,
-                runner_type="api_runner",
+                runner_type="llama_cpp_runner",
                 prompt=prompt,
                 args=args,
             )

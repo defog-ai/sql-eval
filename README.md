@@ -25,7 +25,6 @@ Firstly, clone the repository where we store our database data and schema. Insta
 git clone https://github.com/defog-ai/defog-data.git
 cd defog-data
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
 pip install -e .
 ```
 
@@ -106,8 +105,6 @@ If you have a private dataset that you do not want to make publicly available bu
 - Begin by creating a separate git repository for your private data, that has a `setup.py` file, similar to [defog-data](https://github.com/defog-ai/defog-data).
 - Create the metadata and data files, and import them into your database. This is to allow our evaluation framework to run the generated queries with some actual data. You can refer to `defog-data`'s [metadata objects](https://github.com/defog-ai/defog-data/blob/main/defog_data/metadata.py) for the schema, and [setup.sh](https://github.com/defog-ai/defog-data/blob/main/setup.sh) as an example on how import the data into your database. We do not prescribe any specific folder structure, and leave it to you to decide how you want to organize your data, so long as you can import it into your database easily.
 - To use our metadata pruning utilities, you would need to have the following defined:
-  - A way to load your embeddings. In our case, we call a function [load_embeddings](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L85) from `defog-data`'s supplementary module to load a dictionary of database name to a tuple of the 2D embedding matrix (num examples x embedding dimension) and the associated text metadata for each row/example. If you would like to see how we generate this tuple, you may refer to [generate_embeddings](https://github.com/defog-ai/defog-data/blob/main/defog_data/supplementary.py#L11) in the `defog-data` repository.
-  - A way to load columns associated with various named entities. In our case, we call a dictionary [columns_ner](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L106) of database name to a nested dictionary that maps each named entity type to a list of column metadata strings that are associated with that named entity type. You can refer to the raw data for an example of how we generate this dictionary.
   - A way to define joinable columns between tables. In our case, we call a dictionary [columns_join](https://github.com/defog-ai/defog-data/blob/db8c3d4c4004144d2b3ff5a2701529f5545f520f/defog_data/supplementary.py#L233) of database name to a nested dictionary of table tuples to column name tuples. You can refer to the raw data for an example of how we generate this dictionary.
 
 Once all of the 3 above steps have completed, you would need to
@@ -120,19 +117,11 @@ Some things to take note of:
 - If you do not populate your database with data (ie only create the tables without inserting data), you would return empty dataframes most of the time (regardless of whether the query generated was what you want), and it would result in results matching all the time and generate a lot of false positives. Hence, you might want to consider populating your database with some meaningful data that would return different results if the queries should be different from what you want.
 - If testing out on your private data, you would also need to change the questions file to point to your own questions file (tailored to your database schema).
 
-### Query Generator
-
-To test your own query generator with our framework, you would need to extend [Query Generator](query_generators/query_generator.py) and implement the [generate_query](query_generators/query_generator.py#L18) method to return the query of interest. We create a new class for each question/query pair to isolate each pair's runtime state against the others when running concurrently. You can also reference [OpenAIQueryGenerator](query_generators/openai.py) which implements `Query Generator` and uses a simple prompt to send a message over to OpenAI's API. Feel free to extend it for your own use.
-
-If there are functions that are generally useful for all query generators, they can be placed in the `utils` folder. If you need to incorporate specific verbose templates (e.g. for prompt testing), you can store them in the `prompts` folder, and later import them. Being able to version control the prompts in a central place has been a productivity win for our team.
-
 ### Runner
 
-Having implemented the query generator, the next piece of abstraction would be the runner. The runner calls the query generator, and is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) to the query generator for each question/query pair.
+The runner calls is responsible for handling the configuration of work (e.g. parallelization / batching / model selected etc.) for each question/query pair.
 
-We have provided a few common runners: `eval/openai_runner.py` for calling OpenAI's API (with parallelization support), `eval/anthropic_runner` for calling Anthropic's API, `eval/hf_runner.py` for calling a local Hugging Face model and finally, `eval/api_runner.py` makes it possible to use a custom API for evaluation.
-
-When testing your own query generator with an existing runner, you can replace the `qg_class` in the runner's code with your own query generator class.
+We have provided a few common runners: `runners/openai_runner.py` for calling OpenAI's API (with parallelization support), `runners/anthropic_runner` for calling Anthropic's API, `runners/hf_runner.py` for calling a local Hugging Face model and finally, `runners/api_runner.py` makes it possible to use a custom API for evaluation.
 
 ## Running the Test
 
@@ -363,18 +352,17 @@ python -W ignore main.py \
 
 ### Gemini
 
-Before running this, you must create an account with [Google AI](https://ai.google.dev/) and set your credentials with `export GOOGLE_APPLICATION_CREDENTIALS=</path/to/service_account.json>`. Then, install these packages with `pip install vertexai google-cloud-aiplatform`.
+Before running this, you need to set your credentials with `export GEMINI_API_KEY=<your_api_key>`. Then, install these packages with `pip install google-generative-ai`.
 
 ```bash
-python -W ignore main.py \
+python main.py \
   -db postgres \
-  -q "data/questions_gen_postgres.csv" \
-  -o "results/gemini_pro.csv" \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o "results/gemini_flash_basic.csv" "results/gemini_flash_basic.csv" "results/gemini_flash_advanced.csv" \
   -g gemini \
-  -f "prompts/prompt_gemini.md" \
-  -m gemini-pro \
-  -p 1 \
-  -n 5
+  -f "prompts/prompt_gemini.md" "prompts/prompt_gemini.md" "prompts/prompt_gemini.md" \
+  -m gemini-2.0-flash-exp \
+  -p 10
 ```
 
 ### Mistral
@@ -411,6 +399,33 @@ python3 main.py \
   -c 0 \
   -p 10
 ```
+
+### Deepseek
+
+Before running this, you must create an account with [Deepseek](https://deepseek.com/) and obtain an API key and store it with `export DEEPSEEK_API_KEY=<your_api_key>`. Then, install `openai` with `pip install openai`. You can then run the following command:
+
+#### Deepseek Chat
+python main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/deepseek_classic.csv results/deepseek_basic.csv results/deepseek_advanced.csv \
+  -g deepseek \
+  -f prompts/prompt_openai.json \
+  -m deepseek-chat \
+  -p 5 \
+  -c 0
+
+#### Deepseek Reasoner
+python main.py \
+  -db postgres \
+  -q "data/questions_gen_postgres.csv" "data/instruct_basic_postgres.csv" "data/instruct_advanced_postgres.csv" \
+  -o results/deepseek_classic.csv results/deepseek_basic.csv results/deepseek_advanced.csv \
+  -g deepseek \
+  -f prompts/prompt_openai_o1.json \
+  -m deepseek-reasoner \
+  -p 5 \
+  -c 0
+
 
 ### Together
 
@@ -476,8 +491,6 @@ You can use the following flags in the command line to change the configurations
 | --run_name             | (optional) the name of this run for logging purposes                                                                                                                             |
 
 ## Checking the Results
-
-To better understand your query generator's performance, you can explore the results generated and aggregated for the various metrics that you care about.
 
 ### Upload URL
 
@@ -549,7 +562,6 @@ We welcome contributions to our project, specifically:
 - Dataset
   - Adding new database schema/data
 - Framework code
-  - New query generators/runners (in the [query_generators](query_generators) and [eval](eval) folders respectively)
   - Improving existing generators/runners (e.g. adding new metrics)
 
 Please see [CONTRIBUTING.md](https://github.com/defog-ai/sql-generation-evaluation/blob/main/CONTRIBUTING.md) for more information.

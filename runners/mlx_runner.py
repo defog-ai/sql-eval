@@ -1,5 +1,4 @@
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from eval.eval import compare_query_results
 import pandas as pd
@@ -9,21 +8,15 @@ from utils.creds import db_creds_all
 from tqdm import tqdm
 from time import time
 from utils.reporting import upload_results
-from llama_cpp import Llama
+from mlx_lm import load, generate
 
 
-def process_row(llm, row, args):
+def process_row(model, tokenizer, row, args):
     start_time = time()
     prompt = row["prompt"]
+
     generated_query = (
-        llm(
-            prompt,
-            max_tokens=512,
-            temperature=0,
-            top_p=1,
-            echo=False,
-            repeat_penalty=1.0,
-        )["choices"][0]["text"]
+        generate(model, tokenizer, prompt=prompt, max_tokens=512, temp=0, verbose=True)
         .split(";")[0]
         .split("```")[0]
         .strip()
@@ -61,7 +54,7 @@ def process_row(llm, row, args):
     return row
 
 
-def run_llama_cpp_eval(args):
+def run_mlx_eval(args):
     # get params from args
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
@@ -70,11 +63,10 @@ def run_llama_cpp_eval(args):
     model_path = args.model
     output_file_list = args.output_file
     k_shot = args.k_shot
-    max_workers = args.parallel_threads
     db_type = args.db_type
     cot_table_alias = args.cot_table_alias
 
-    llm = Llama(model_path=model_path, n_gpu_layers=-1, n_ctx=2048)
+    model, tokenizer = load(model_path)
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
@@ -120,7 +112,7 @@ def run_llama_cpp_eval(args):
 
         with tqdm(total=len(df)) as pbar:
             for row in df.to_dict("records"):
-                row = process_row(llm, row, args)
+                row = process_row(model, tokenizer, row, args)
                 output_rows.append(row)
                 if row["correct"]:
                     total_correct += 1
@@ -151,7 +143,7 @@ def run_llama_cpp_eval(args):
             upload_results(
                 results=results,
                 url=args.upload_url,
-                runner_type="llama_cpp_runner",
+                runner_type="mlx_runner",
                 prompt=prompt,
                 args=args,
             )

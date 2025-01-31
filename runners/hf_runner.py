@@ -1,11 +1,9 @@
-import json
 import os
 from typing import Optional
 
 from eval.eval import compare_query_results
 import pandas as pd
 import torch
-import traceback
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,

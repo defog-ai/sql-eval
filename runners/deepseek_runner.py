@@ -1,5 +1,6 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict
 
 from eval.eval import compare_query_results
 import pandas as pd
@@ -8,24 +9,38 @@ from utils.questions import prepare_questions_df
 from utils.creds import db_creds_all
 from tqdm import tqdm
 from time import time
+from openai import OpenAI
 from utils.reporting import upload_results
-from mlx_lm import load, generate
 
 
-def process_row(model, tokenizer, row, args):
+client = OpenAI(
+    base_url="https://api.deepseek.com", api_key=os.environ.get("DEEPSEEK_API_KEY")
+)
+
+
+def process_row(row: Dict, model: str):
     start_time = time()
-    prompt = row["prompt"]
-
-    generated_query = (
-        generate(model, tokenizer, prompt=prompt, max_tokens=512, temp=0, verbose=True)
-        .split(";")[0]
-        .split("```")[0]
-        .strip()
-        + ";"
-    )
+    messages = row["prompt"]
+    if model != "deepseek-reasoner":
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=800,
+            temperature=0.0,
+        )
+    else:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=800,
+        )
+    content = response.choices[0].message.content
+    generated_query = content.replace("```sql", "").replace("```", "").strip()
     end_time = time()
+
     row["generated_query"] = generated_query
     row["latency_seconds"] = end_time - start_time
+    row["tokens_used"] = None
     golden_query = row["query"]
     db_name = row["db_name"]
     db_type = row["db_type"]
@@ -44,7 +59,6 @@ def process_row(model, tokenizer, row, args):
             question=question,
             query_category=query_category,
             table_metadata_string=table_metadata_string,
-            decimal_points=args.decimal_points,
         )
         row["exact_match"] = int(exact_match)
         row["correct"] = int(correct)
@@ -52,26 +66,29 @@ def process_row(model, tokenizer, row, args):
     except Exception as e:
         row["error_db_exec"] = 1
         row["error_msg"] = f"QUERY EXECUTION ERROR: {e}"
+
     return row
 
 
-def run_mlx_eval(args):
+def run_deepseek_eval(args):
     # get params from args
     questions_file_list = args.questions_file
     prompt_file_list = args.prompt_file
     num_questions = args.num_questions
     public_data = not args.use_private_data
-    model_path = args.model
     output_file_list = args.output_file
     k_shot = args.k_shot
+    max_workers = args.parallel_threads
     db_type = args.db_type
+    decimal_points = args.decimal_points
+    model = args.model
     cot_table_alias = args.cot_table_alias
-
-    model, tokenizer = load(model_path)
 
     for questions_file, prompt_file, output_file in zip(
         questions_file_list, prompt_file_list, output_file_list
     ):
+        if not prompt_file.endswith(".json"):
+            raise ValueError(f"Prompt file must be a JSON file. Got {prompt_file}")
         print(f"Using prompt file {prompt_file}")
         # get questions
         print("Preparing questions...")
@@ -82,6 +99,7 @@ def run_mlx_eval(args):
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
         # create a prompt for each question
+        # note that the prompt for together ai uses the openai chat API
         df["prompt"] = df.apply(
             lambda row: generate_prompt(
                 prompt_file,
@@ -103,6 +121,7 @@ def run_mlx_eval(args):
                 public_data,
                 args.num_columns,
                 args.shuffle_metadata,
+                row["table_aliases"],
             ),
             axis=1,
         )
@@ -111,17 +130,22 @@ def run_mlx_eval(args):
         total_correct = 0
         output_rows = []
 
-        with tqdm(total=len(df)) as pbar:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
             for row in df.to_dict("records"):
-                row = process_row(model, tokenizer, row, args)
-                output_rows.append(row)
-                if row["correct"]:
-                    total_correct += 1
-                total_tried += 1
-                pbar.update(1)
-                pbar.set_description(
-                    f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
-                )
+                futures.append(executor.submit(process_row, row, model))
+
+            with tqdm(as_completed(futures), total=len(futures)) as pbar:
+                for f in pbar:
+                    row = f.result()
+                    output_rows.append(row)
+                    if row["correct"]:
+                        total_correct += 1
+                    total_tried += 1
+                    pbar.update(1)
+                    pbar.set_description(
+                        f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
+                    )
 
         output_df = pd.DataFrame(output_rows)
         del output_df["prompt"]
@@ -144,7 +168,7 @@ def run_mlx_eval(args):
             upload_results(
                 results=results,
                 url=args.upload_url,
-                runner_type="mlx_runner",
+                runner_type="api_runner",
                 prompt=prompt,
                 args=args,
             )
