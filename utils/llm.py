@@ -10,6 +10,7 @@ LLM_COSTS_PER_TOKEN = {
     "o1": {"input_cost_per1k": 0.015, "output_cost_per1k": 0.06},
     "o1-preview": {"input_cost_per1k": 0.015, "output_cost_per1k": 0.06},
     "o1-mini": {"input_cost_per1k": 0.003, "output_cost_per1k": 0.012},
+    "o3-mini": {"input_cost_per1k": 0.0011, "output_cost_per1k": 0.0044},
     "gpt-4-turbo": {"input_cost_per1k": 0.01, "output_cost_per1k": 0.03},
     "gpt-3.5-turbo": {"input_cost_per1k": 0.0005, "output_cost_per1k": 0.0015},
     "claude-3-5-sonnet": {"input_cost_per1k": 0.003, "output_cost_per1k": 0.015},
@@ -134,7 +135,7 @@ def chat_openai(
 
     client_openai = OpenAI()
     t = time.time()
-    if model.startswith("o1"):
+    if model.startswith("o"):
         if messages[0].get("role") == "system":
             sys_msg = messages[0]["content"]
             messages = messages[1:]
