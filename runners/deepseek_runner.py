@@ -161,14 +161,10 @@ def run_deepseek_eval(args):
             output_df.to_pickle(output_file)
 
         results = output_df.to_dict("records")
-        # upload results
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="api_runner",
-                prompt=prompt,
-                args=args,
-            )
+        with open(
+            f"./eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}",
+            "w",
+        ) as f:
+            json.dump(results, f)
+
+        print("Total cost of evaluation (in cents): ", output_df["cost_in_cents"].sum())
