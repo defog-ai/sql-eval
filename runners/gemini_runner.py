@@ -217,14 +217,8 @@ def run_gemini_eval(args):
             output_df.to_pickle(output_file)
 
         results = output_df.to_dict("records")
-
-        if args.upload_url is not None:
-            with open(prompt_file, "r") as f:
-                prompt = f.read()
-                upload_results(
-                    results=results,
-                    url=args.upload_url,
-                    runner_type="api_runner",
-                    prompt=prompt,
-                    args=args,
-                )
+        with open(
+            f"./eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}",
+            "w",
+        ) as f:
+            json.dump(results, f)
