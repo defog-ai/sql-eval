@@ -13,7 +13,7 @@ from utils.gen_prompt import to_prompt_schema
 from utils.questions import prepare_questions_df
 from utils.reporting import upload_results
 from utils.llm import chat_anthropic
-
+import json
 
 def generate_prompt(
     prompt_file,
