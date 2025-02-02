@@ -85,7 +85,7 @@ car_dealership,instructions_string_matching,"How many sales were made for each c
 When using car makes, model names, engine_type and vin_number, match case-insensitively and allow partial matches using LIKE with wildcards.
 To calculate the average selling price, join the sales and cars tables, and divide the total sales amount by the number of sales
 For understanding the number of sales achieved by each salesperson within a specified period, merge the salespersons and sales tables and apply a filter based on the given time frame."
-car_dealership,keywords_aggregate,"What is the TSC in the past 7 days, inclusive of today?","TSC = Total Sales Count.",SELECT COUNT(id) AS TSC FROM sales WHERE sale_date >= CURRENT_DATE - INTERVAL '7 days',"To determine the average selling price, divide the total sales amount by the number of sales
+car_dealership,keywords_aggregate,"What is the TSC in the past 7 days, inclusive of today?","TSC = Total Sales Count.",SELECT COUNT(id) AS TSC FROM sales WHERE sale_date BETWEEN CURRENT_DATE - INTERVAL '6 days' AND CURRENT_DATE,"To determine the average selling price, divide the total sales amount by the number of sales
 To calculate the gross profit margin, subtract the total cost from the total revenue, then divide by the total cost and multiply by 100
 To ascertain the sales rank of each salesperson, order them by their total sales amount in descending order.
 TSC = Total Sales Count."
