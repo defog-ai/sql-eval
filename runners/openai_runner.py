@@ -119,6 +119,7 @@ def process_row(row, model_name, args):
             "err": "",
             "latency_seconds": time() - start_time,
             "tokens_used": response.input_tokens + response.output_tokens,
+            "cost_in_cents": response.cost_in_cents,
         }
     except Exception as e:
         return {
@@ -127,6 +128,7 @@ def process_row(row, model_name, args):
             "err": f"GENERATION ERROR: {str(e)}",
             "latency_seconds": time() - start_time,
             "tokens_used": 0,
+            "cost_in_cents": None,
         }
 
 
@@ -179,6 +181,8 @@ def run_openai_eval(args):
                     row["latency_seconds"] = result_dict["latency_seconds"]
                 if "tokens_used" in result_dict:
                     row["tokens_used"] = result_dict["tokens_used"]
+                if "cost_in_cents" in result_dict:
+                    row["cost_in_cents"] = result_dict["cost_in_cents"]
                 row["generated_query"] = query_gen
                 row["reason"] = reason
                 row["error_msg"] = err
@@ -241,16 +245,4 @@ def run_openai_eval(args):
         avg_subset = output_df["correct"].sum() / len(output_df)
         print(f"Average correct rate: {avg_subset:.2f}")
 
-        results = output_df.to_dict("records")
-
-        # upload results
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="openai",
-                prompt=prompt,
-                args=args,
-            )
+        print("Total cost of evaluation (in cents): ", output_df["cost_in_cents"].sum())

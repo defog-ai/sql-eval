@@ -39,7 +39,7 @@ class LLMResponse:
     input_tokens: int
     output_tokens: int
     output_tokens_details: Optional[Dict[str, int]] = None
-    cost: Optional[float] = None
+    cost_in_cents: Optional[float] = None
 
     def __post_init__(self):
         if self.model in LLM_COSTS_PER_TOKEN:
@@ -56,14 +56,14 @@ class LLMResponse:
                 model_name = max(potential_model_names, key=len)
 
         if model_name:
-            self.cost = (
+            self.cost_in_cents = (
                 self.input_tokens
                 / 1000
                 * LLM_COSTS_PER_TOKEN[model_name]["input_cost_per1k"]
                 + self.output_tokens
                 / 1000
                 * LLM_COSTS_PER_TOKEN[model_name]["output_cost_per1k"]
-            )
+            ) * 100
 
 
 def chat_anthropic(
