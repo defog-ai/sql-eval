@@ -201,10 +201,10 @@ def run_anthropic_eval(args):
                         )
                         if correct:
                             total_correct += 1
-                            row["is_correct"] = 1
+                            row["correct"] = 1
                             row["error_msg"] = ""
                         else:
-                            row["is_correct"] = 0
+                            row["correct"] = 0
                             row["error_msg"] = "INCORRECT RESULTS"
                     except Exception as e:
                         row["error_db_exec"] = 1
@@ -224,18 +224,12 @@ def run_anthropic_eval(args):
         output_df.to_csv(output_file, index=False, float_format="%.2f")
 
         # get average rate of correct results
-        avg_subset = output_df["is_correct"].sum() / len(output_df)
+        avg_subset = output_df["correct"].sum() / len(output_df)
         print(f"Average correct rate: {avg_subset:.2f}")
 
         results = output_df.to_dict("records")
-        # upload results
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        if args.upload_url is not None:
-            upload_results(
-                results=results,
-                url=args.upload_url,
-                runner_type="anthropic",
-                prompt=prompt,
-                args=args,
-            )
+        with open(
+            f"./eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}",
+            "w",
+        ) as f:
+            json.dump(results, f)
