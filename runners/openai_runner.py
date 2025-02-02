@@ -205,13 +205,13 @@ def run_openai_eval(args):
                         )
                         if correct:
                             total_correct += 1
-                            row["is_correct"] = 1
+                            row["correct"] = 1
                             row["error_msg"] = ""
                         else:
-                            row["is_correct"] = 0
+                            row["correct"] = 0
                             row["error_msg"] = "INCORRECT RESULTS"
                     except Exception as e:
-                        row["is_correct"] = 0
+                        row["correct"] = 0
                         row["error_db_exec"] = 1
                         row["error_msg"] = f"EXECUTION ERROR: {str(e)}"
                 output_rows.append(row)
@@ -229,7 +229,7 @@ def run_openai_eval(args):
             output_df.groupby("query_category")
             .agg(
                 num_rows=("db_name", "count"),
-                mean_correct=("is_correct", "mean"),
+                mean_correct=("correct", "mean"),
                 mean_error_db_exec=("error_db_exec", "mean"),
             )
             .reset_index()
@@ -244,5 +244,12 @@ def run_openai_eval(args):
         # get average rate of correct results
         avg_subset = output_df["correct"].sum() / len(output_df)
         print(f"Average correct rate: {avg_subset:.2f}")
+
+        results = output_df.to_dict("records")
+        with open(
+            f"./eval-visualizer/public/{output_file.split('/')[-1].replace('.csv', '.json')}",
+            "w",
+        ) as f:
+            json.dump(results, f)
 
         print("Total cost of evaluation (in cents): ", output_df["cost_in_cents"].sum())
