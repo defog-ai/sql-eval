@@ -173,14 +173,15 @@ def get_all_minimal_queries(query: str) -> "list[str]":
                 # check if the column str contains columns defined with alias AS ...
                 if " as " in column_str.lower() and "group by {}" in right.lower():
                     g_column_str = ""
-                    for i,column in enumerate(column_tuple):
-                        as_index = column.lower().find(" as ")+4
+                    for i, column in enumerate(column_tuple):
+                        as_index = column.lower().find(" as ") + 4
                         g_column_str += column[as_index:] if as_index - 3 else column
-                        g_column_str += ", " if i != len_tuple-1 else ""
+                        g_column_str += ", " if i != len_tuple - 1 else ""
                 # change group by size dynamically if necessary
                 right = right.replace("GROUP BY {}", f"GROUP BY {g_column_str}")
                 result_queries.append(left + column_str + right)
     return result_queries
+
 
 def query_postgres_db(
     query: str,
