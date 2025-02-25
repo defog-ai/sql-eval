@@ -72,6 +72,7 @@ def chat_anthropic(
     max_completion_tokens: int = 8192,
     temperature: float = 0.0,
     stop: List[str] = [],
+    thinking: Dict[str, Any] = None,
     json_mode: bool = False,
     response_format=None,
     seed: int = 0,
@@ -100,6 +101,7 @@ def chat_anthropic(
         temperature=temperature,
         stop_sequences=stop,
         timeout=timeout,
+        thinking=thinking,
     )
     if response.stop_reason == "max_tokens":
         raise Exception("Max tokens reached")
@@ -107,7 +109,7 @@ def chat_anthropic(
         raise Exception("Max tokens reached")
     return LLMResponse(
         model=model,
-        content=response.content[0].text,
+        content=response.content[-1].text,
         time=round(time.time() - t, 3),
         input_tokens=response.usage.input_tokens,
         output_tokens=response.usage.output_tokens,
