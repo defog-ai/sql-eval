@@ -75,14 +75,18 @@ def mk_tgi_json(prompt, num_beams):
     }
 
 
-def mk_openai_json(prompt: List[Dict[str, str]], model_name: Optional[str] = None, thinking: bool = False):
+def mk_openai_json(
+    prompt: List[Dict[str, str]],
+    model_name: Optional[str] = None,
+    thinking: bool = False,
+):
     # See https://docs.vllm.ai/en/v0.7.1/serving/openai_compatible_server.html
     # for the full list of routes and their respective parameters
     data = {
         "model": model_name,
         "messages": prompt,
         "temperature": 0,
-        "max_tokens": 32768
+        "max_tokens": 32768,
     }
     # See https://qwen.readthedocs.io/en/latest/deployment/vllm.html#thinking-non-thinking-modes
     if not thinking:
