@@ -30,6 +30,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cot_table_alias", type=str, choices=["instruct", "pregen", ""], default=""
     )
+    parser.add_argument("--thinking", action="store_true")
     # execution-related parameters
     parser.add_argument("-o", "--output_file", nargs="+", type=str, required=True)
     parser.add_argument("-p", "--parallel_threads", type=int, default=5)
@@ -83,7 +84,7 @@ if __name__ == "__main__":
         from runners.openai_runner import run_openai_eval
 
         if args.model is None:
-            args.model = "gpt-3.5-turbo-0613"
+            args.model = "gpt-4o"
         run_openai_eval(args)
     elif args.model_type == "anthropic":
         from runners.anthropic_runner import run_anthropic_eval
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     elif args.model_type == "api":
         assert args.api_url is not None, "api_url must be provided for api model"
         assert args.api_type is not None, "api_type must be provided for api model"
-        assert args.api_type in ["vllm", "tgi"], "api_type must be one of 'vllm', 'tgi'"
+        assert args.api_type in ["openai", "vllm", "tgi"], "api_type must be one of 'openai', 'vllm', 'tgi'"
 
         from runners.api_runner import run_api_eval
 

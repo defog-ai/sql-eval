@@ -1,6 +1,6 @@
 from copy import deepcopy
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import numpy as np
 from utils.dialects import (
     ddl_to_bigquery,
@@ -123,7 +123,7 @@ def generate_prompt(
     columns_to_keep=40,
     shuffle_metadata=False,
     table_aliases="",
-):
+) -> Union[List[Dict[str, str]], str]:
     """
     Generates the prompt for the given question.
     If a json file is passed in as the prompt_file, please ensure that it is a list

@@ -1,7 +1,7 @@
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from typing import Dict, List, Optional
 
 from eval.eval import compare_query_results
 import pandas as pd
@@ -75,6 +75,21 @@ def mk_tgi_json(prompt, num_beams):
     }
 
 
+def mk_openai_json(prompt: List[Dict[str, str]], model_name: Optional[str] = None, thinking: bool = False):
+    # See https://docs.vllm.ai/en/v0.7.1/serving/openai_compatible_server.html
+    # for the full list of routes and their respective parameters
+    data = {
+        "model": model_name,
+        "messages": prompt,
+        "temperature": 0,
+        "max_tokens": 32768
+    }
+    # See https://qwen.readthedocs.io/en/latest/deployment/vllm.html#thinking-non-thinking-modes
+    if not thinking:
+        data["chat_template_kwargs"] = {"enable_thinking": False}
+    return data
+
+
 def process_row(
     row,
     api_url: str,
@@ -84,6 +99,8 @@ def process_row(
     logprobs: bool = False,
     sql_lora_path: Optional[str] = None,
     sql_lora_name: Optional[str] = None,
+    model_name: Optional[str] = None,
+    thinking: bool = False,
 ):
     start_time = time()
     if api_type == "tgi":
@@ -92,6 +109,8 @@ def process_row(
         json_data = mk_vllm_json(
             row["prompt"], num_beams, logprobs, sql_lora_path, sql_lora_name
         )
+    elif api_type == "openai":
+        json_data = mk_openai_json(row["prompt"], model_name, thinking)
     else:
         # add any custom JSON data here, e.g. for a custom API
         json_data = {
@@ -129,7 +148,7 @@ def process_row(
         except KeyError:
             print(r.json())
             generated_query = ""
-    elif "[SQL]" not in row["prompt"]:
+    elif "[SQL]" not in row["prompt"] and api_type == "vllm":
         generated_query = (
             r.json()["text"][0]
             .split("```sql")[-1]
@@ -139,9 +158,18 @@ def process_row(
             + ";"
         )
     else:
-        generated_query = r.json()["text"][0]
+        response_json = r.json()
+        if "choices" in response_json:
+            generated_query = response_json["choices"][0]["message"]["content"]
+        elif "text" in response_json:
+            generated_query = response_json["text"][0]
+        else:
+            print(f"choice/text not found as a key in response:\n{response_json}")
+            generated_query = ""
         if "[SQL]" in generated_query:
             generated_query = generated_query.split("[SQL]", 1)[1].strip()
+        elif "</think>" in generated_query:
+            generated_query = generated_query.split("</think>", 1)[-1].strip()
         else:
             generated_query = generated_query.strip()
 
@@ -224,6 +252,9 @@ def run_api_eval(args):
     sql_lora_path = args.adapter if args.adapter else None
     sql_lora_name = args.adapter_name if args.adapter_name else None
     run_name = args.run_name if args.run_name else None
+    model_name = args.model if args.model else None
+    thinking = True if args.thinking else False
+
     if sql_lora_path:
         print("Using LoRA adapter at:", sql_lora_path)
     if logprobs:
@@ -250,6 +281,7 @@ def run_api_eval(args):
             questions_file, db_type, num_questions, k_shot, cot_table_alias
         )
         # create a prompt for each question
+        # note that prompt will be a list of dicts for json prompt templates
         df["prompt"] = df.apply(
             lambda row: generate_prompt(
                 prompt_file,
@@ -294,6 +326,8 @@ def run_api_eval(args):
                         logprobs,
                         sql_lora_path,
                         sql_lora_name,
+                        model_name,
+                        thinking,
                     )
                 )
 

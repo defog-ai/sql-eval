@@ -242,6 +242,10 @@ python utils/api_server.py \
     --enable-lora \
     --max-lora-rank 64
 
+# to use vllm's openai-compatible api server
+export MODEL_NAME="Qwen/Qwen3-4B"
+vllm serve "$MODEL_NAME" --port 8000
+
 # to run sql-eval using the api runner - depending on how much your GPUs can take, can increase p and b to higher values
 python main.py \
   -db postgres \
@@ -303,6 +307,16 @@ python -W ignore main.py \
 ```
 
 While you can do the same for the other runners, the time savings are most significant when loading a large model locally, vs calling an always-on API.
+
+#### Thinking Models
+
+If you'd like to use a model that outputs thinking tokens, you can pass in the flag `--enable_thinking` to the runner so that we will remove the thinking tokens from the LLM output before running the generated query.
+
+You can check out `run_qwen.sh` for an example of how to run a thinking model.
+
+```bash
+./run_qwen.sh --thinking # add --thinking to generate thinking tokens
+```
 
 ### Bedrock
 
