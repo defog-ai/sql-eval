@@ -24,7 +24,7 @@ for model_name in "${model_names[@]}"; do
 
   echo "Running model ${model_name}"
   # first, get the API up
-  python3 utils/api_server.py --model "${model_name}" --tensor-parallel-size 1 --dtype float16 --max-model-len 8192 --gpu-memory-utilization 0.40 --block-size 16 --disable-log-requests --port "${PORT}" &
+  python3 utils/api_server.py --model "${model_name}" --tensor-parallel-size 1 --dtype float16 --max-model-len 16384 --gpu-memory-utilization 0.90 --block-size 16 --disable-log-requests --port "${PORT}" &
 
   # run a loop to check if the http://localhost:8080/health endpoint returns a valid 200 result
   while true; do
