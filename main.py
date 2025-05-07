@@ -109,7 +109,11 @@ if __name__ == "__main__":
     elif args.model_type == "api":
         assert args.api_url is not None, "api_url must be provided for api model"
         assert args.api_type is not None, "api_type must be provided for api model"
-        assert args.api_type in ["openai", "vllm", "tgi"], "api_type must be one of 'openai', 'vllm', 'tgi'"
+        assert args.api_type in [
+            "openai",
+            "vllm",
+            "tgi",
+        ], "api_type must be one of 'openai', 'vllm', 'tgi'"
 
         from runners.api_runner import run_api_eval
 
