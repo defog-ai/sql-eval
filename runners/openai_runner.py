@@ -12,8 +12,9 @@ from utils.creds import db_creds_all
 from utils.dialects import convert_postgres_ddl_to_dialect
 from utils.gen_prompt import to_prompt_schema
 from utils.questions import prepare_questions_df
-from utils.reporting import upload_results
-from utils.llm import chat_openai
+from defog.llm.utils import chat_async
+import asyncio
+from utils.asyncio_helpers import run_coro_sync
 
 
 def generate_prompt(
@@ -103,7 +104,14 @@ def process_row(row, model_name, args):
         shuffle=args.shuffle_metadata,
     )
     try:
-        response = chat_openai(messages=messages, model=model_name, temperature=0.0)
+        response = run_coro_sync(
+            chat_async(
+                messages=messages,
+                provider="openai",
+                model=model_name,
+                temperature=0.0,
+            )
+        )
         generated_query = (
             response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
         )

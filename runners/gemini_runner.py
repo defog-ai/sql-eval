@@ -13,7 +13,8 @@ from utils.dialects import convert_postgres_ddl_to_dialect
 from utils.gen_prompt import to_prompt_schema
 from utils.questions import prepare_questions_df
 from utils.reporting import upload_results
-from utils.llm import chat_gemini
+from defog.llm.utils import chat_async
+from utils.asyncio_helpers import run_coro_sync
 
 
 def generate_prompt(
@@ -91,7 +92,13 @@ def process_row(row, model_name, args):
     start_time = time()
     messages = [{"role": "user", "content": row["prompt"]}]
     try:
-        response = chat_gemini(messages=messages, model=model_name, temperature=0.0)
+        response = run_coro_sync(
+            chat_async(
+                messages=messages,
+                provider="gemini",
+                model=model_name,
+            )
+        )
         generated_query = (
             response.content.split("```sql", 1)[-1].split("```", 1)[0].strip()
         )
