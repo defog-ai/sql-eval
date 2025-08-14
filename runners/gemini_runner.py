@@ -114,9 +114,11 @@ def process_row(row, model_name, args):
         row["generated_query"] = generated_query
         row["latency_seconds"] = response.time
         row["tokens_used"] = response.input_tokens + response.output_tokens
+        row["cost_in_cents"] = response.cost_in_cents
     except Exception as e:
         row["error_db_exec"] = 1
         row["error_msg"] = f"GENERATION ERROR: {e}"
+        row["cost_in_cents"] = None
         return row
 
     golden_query = row["query"]
@@ -230,3 +232,5 @@ def run_gemini_eval(args):
             "w",
         ) as f:
             json.dump(results, f)
+        
+        print("Total cost of evaluation (in cents): ", output_df["cost_in_cents"].sum())

@@ -125,6 +125,7 @@ def process_row(row, model_name, args):
             "err": "",
             "latency_seconds": time() - start_time,
             "tokens_used": response.input_tokens + response.output_tokens,
+            "cost_in_cents": response.cost_in_cents,
         }
     except Exception as e:
         return {
@@ -133,6 +134,7 @@ def process_row(row, model_name, args):
             "err": f"GENERATION ERROR: {str(e)}",
             "latency_seconds": time() - start_time,
             "tokens_used": 0,
+            "cost_in_cents": None,
         }
 
 
@@ -185,6 +187,8 @@ def run_anthropic_eval(args):
                     row["latency_seconds"] = result_dict["latency_seconds"]
                 if "tokens_used" in result_dict:
                     row["tokens_used"] = result_dict["tokens_used"]
+                if "cost_in_cents" in result_dict:
+                    row["cost_in_cents"] = result_dict["cost_in_cents"]
                 row["generated_query"] = query_gen
                 row["reason"] = reason
                 row["error_msg"] = err
@@ -242,3 +246,5 @@ def run_anthropic_eval(args):
             "w",
         ) as f:
             json.dump(results, f)
+        
+        print("Total cost of evaluation (in cents): ", output_df["cost_in_cents"].sum())
